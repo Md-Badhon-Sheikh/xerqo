@@ -1,22 +1,34 @@
 import { Link } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { categories, flashSale, topSelling, homeSections, reviews } from '../../data/store'
-import { Button, ProductCard, CatProductCard, TopProductCard, SectionHead, Dots, Stars, cx } from '../../components/store/ui'
+import { heroBanners, categories, flashSale, topSelling, homeSections, reviews } from '../../data/store'
+import { Button, ProductCard, CatProductCard, TopProductCard, SectionHead, Stars } from '../../components/store/ui'
+import { Carousel, BP } from '../../components/store/Carousel'
 
-const Arrow = ({ dir, className }) => (
-  <button aria-label={dir === 'l' ? 'Previous' : 'Next'} className={cx('grid size-9 place-items-center rounded-full bg-ink text-white shadow-md transition hover:bg-tan', className)}>
-    {dir === 'l' ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-  </button>
-)
+function HeroBanner({ b, first }) {
+  return (
+    <Link to={b.to} className="relative block aspect-[1983/793] h-full overflow-hidden bg-espresso lg:aspect-auto lg:min-h-[340px]">
+      <img src={b.image} alt={b.alt || b.title} loading={first ? 'eager' : 'lazy'} draggable={false} className="absolute inset-0 size-full object-cover" />
+      {b.title && (
+        <>
+          <span className="absolute inset-0 bg-gradient-to-r from-espresso/90 via-espresso/55 to-transparent" />
+          <span className="relative flex h-full max-w-[72%] flex-col justify-center gap-1 p-4 pb-6 text-white sm:max-w-[60%] sm:gap-3 sm:p-10 lg:p-14">
+            <span className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gold sm:text-xs">{b.eyebrow}</span>
+            <span className="h-display text-[19px] sm:text-4xl lg:text-5xl">{b.title}</span>
+            <span className="hidden text-sm text-white/75 sm:block">{b.text}</span>
+            <span className="mt-1 w-fit rounded bg-tan px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.08em] sm:mt-2 sm:px-6 sm:py-3 sm:text-xs">{b.cta}</span>
+          </span>
+        </>
+      )}
+    </Link>
+  )
+}
 
 function Hero() {
   return (
     <section className="container-x grid gap-3 pt-3 sm:gap-4 sm:pt-6 lg:grid-cols-[2fr_1fr] lg:pt-8">
-      <div className="relative overflow-hidden rounded-lg bg-espresso">
-        <img src="/images/cover.jpg" alt="XERQO — crafted for class, made to last" className="aspect-[1983/793] w-full object-cover lg:h-full" />
-        <Arrow dir="l" className="absolute left-3 top-1/2 hidden -translate-y-1/2 bg-white/90 !text-ink sm:grid" />
-        <Arrow dir="r" className="absolute right-3 top-1/2 hidden -translate-y-1/2 bg-white/90 !text-ink sm:grid" />
-        <Dots className="absolute inset-x-0 bottom-3" />
+      <div className="overflow-hidden rounded-lg bg-espresso">
+        <Carousel label="Featured offers" delay={5000} arrows="inside" dots="overlay">
+          {heroBanners.map((b, i) => <HeroBanner key={b.image} b={b} first={i === 0} />)}
+        </Carousel>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1">
         <Link to="/product/custom-name-passport-cover" className="group relative min-h-[150px] overflow-hidden rounded-lg bg-espresso sm:min-h-[190px]">
@@ -42,21 +54,16 @@ function FeaturedCategories() {
   return (
     <section className="container-x py-7 sm:py-12 lg:py-14">
       <SectionHead center title="Featured Categories" sub="The right piece for every pocket, passport and occasion" className="mb-5 sm:mb-8" />
-      <div className="relative">
-        <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 sm:mx-0 sm:gap-6 sm:px-0">
-          {categories.map((c) => (
-            <Link key={c.slug} to={`/shop?c=${c.slug}`} className="group w-[27%] shrink-0 snap-start space-y-2 text-center sm:w-[calc((100%-96px)/5)] sm:space-y-3 lg:w-[calc((100%-144px)/7)] xl:w-[calc((100%-168px)/8)]">
-              <span className="block aspect-square overflow-hidden rounded-[14px] bg-tile sm:rounded-[20px]">
-                <img src={c.image} alt={c.name} loading="lazy" className="size-full object-cover transition duration-500 group-hover:scale-110" />
-              </span>
-              <span className="block text-xs font-medium sm:text-[15px]">{c.name}</span>
-            </Link>
-          ))}
-        </div>
-        <Arrow dir="l" className="absolute -left-[18px] top-[calc(50%-18px)] hidden -translate-y-1/2 sm:grid" />
-        <Arrow dir="r" className="absolute -right-[18px] top-[calc(50%-18px)] hidden -translate-y-1/2 sm:grid" />
-        <Dots className="mt-4 sm:hidden" />
-      </div>
+      <Carousel label="Featured categories" breakpoints={BP.categories} delay={3000} arrowTop="top-[calc(50%-18px)]" dotsClassName="sm:hidden">
+        {categories.map((c) => (
+          <Link key={c.slug} to={`/shop?c=${c.slug}`} className="group space-y-2 text-center sm:space-y-3">
+            <span className="block aspect-square overflow-hidden rounded-[14px] bg-tile sm:rounded-[20px]">
+              <img src={c.image} alt={c.name} loading="lazy" draggable={false} className="size-full object-cover transition duration-500 group-hover:scale-110" />
+            </span>
+            <span className="block text-xs font-medium sm:text-[15px]">{c.name}</span>
+          </Link>
+        ))}
+      </Carousel>
     </section>
   )
 }
@@ -74,9 +81,9 @@ function FlashSale() {
   return (
     <section className="container-x pb-10 sm:pb-16">
       <SectionHead eyebrow="Limited time" title="Flash Sale" action={<Countdown />} className="mb-5 sm:mb-8" />
-      <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:px-0 lg:grid-cols-5">
-        {flashSale.map((p) => <div key={p.id} className="w-[46%] shrink-0 snap-start sm:w-auto"><ProductCard p={p} /></div>)}
-      </div>
+      <Carousel label="Flash sale" breakpoints={BP.products} delay={3800} arrowTop="top-[calc(50%-16px)]">
+        {flashSale.map((p) => <ProductCard key={p.id} p={p} />)}
+      </Carousel>
     </section>
   )
 }
@@ -111,7 +118,7 @@ function TopSelling() {
   )
 }
 
-function CategorySection({ title, sub, items }) {
+function CategorySection({ title, sub, items, delay }) {
   return (
     <section className="container-x space-y-3.5 pt-7 sm:space-y-6 sm:pt-[52px]">
       <div className="flex items-center justify-between gap-3">
@@ -121,10 +128,9 @@ function CategorySection({ title, sub, items }) {
         </div>
         <Button to="/shop" size="sm" className="sm:!px-[18px] sm:!py-2.5 sm:!text-[11px]">View all</Button>
       </div>
-      <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 sm:mx-0 sm:gap-5 sm:px-0 lg:grid lg:grid-cols-5">
-        {items.slice(0, 5).map((p) => <CatProductCard key={p.id} p={p} />)}
-      </div>
-      <Dots />
+      <Carousel label={title} breakpoints={BP.products} delay={delay} arrowTop="top-[calc(50%-16px)]">
+        {items.map((p) => <CatProductCard key={p.id} p={p} className="h-full" />)}
+      </Carousel>
     </section>
   )
 }
@@ -194,7 +200,7 @@ export default function Home() {
       <FlashSale />
       <TrustStrip />
       <TopSelling />
-      {homeSections.map((s) => <CategorySection key={s.title} {...s} />)}
+      {homeSections.map((s, i) => <CategorySection key={s.title} {...s} delay={3500 + (i % 3) * 500} />)}
       <CraftStory />
       <Personalise />
       <Reviews />

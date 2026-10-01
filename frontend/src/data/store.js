@@ -1,6 +1,14 @@
 // Static demo data for the storefront. Replace with Laravel REST API calls (see src/lib/api.js).
 export const img = (name) => `/images/${name}.jpg`
 
+// Home hero slider — a banner without `title` is shown as a plain image
+export const heroBanners = [
+  { image: img('cover'), alt: 'XERQO — crafted for class, made to last', to: '/shop' },
+  { image: img('workshop'), to: '/about', eyebrow: 'Made by hand', title: 'Cut, stitched & burnished in Dhaka', text: 'Full-grain leather goods that only get better with age.', cta: 'Our story' },
+  { image: img('leather-close'), to: '/shop?c=bags', eyebrow: 'New season', title: 'The leather bag edit', text: 'Totes, messengers and doctor bags — up to 15% off.', cta: 'Shop bags' },
+  { image: img('hands-brown'), to: '/shop?c=wallets', eyebrow: 'Up to 25% off', title: 'Wallets for every day', text: 'Bifold, slim and card-slot wallets in full-grain leather.', cta: 'Shop wallets' },
+]
+
 export const categories = [
   { slug: 'wallets', name: 'Wallets', image: img('fb-wallet'), count: 48 },
   { slug: 'long-wallets', name: 'Long Wallets', image: img('fb-long-wallet'), count: 22 },

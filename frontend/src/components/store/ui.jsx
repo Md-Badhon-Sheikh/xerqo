@@ -142,11 +142,11 @@ export function ProductCard({ p, badge, cta = 'Add to cart', fav }) {
 }
 
 // White card used in the per-category home sliders (urbaland style)
-export function CatProductCard({ p }) {
+export function CatProductCard({ p, className = 'w-[150px] shrink-0 snap-start sm:w-[218px] lg:w-auto' }) {
   const off = discount(p)
   const sold = p.stock === 0
   return (
-    <article className="flex w-[150px] shrink-0 snap-start flex-col overflow-hidden rounded-lg bg-white sm:w-[218px] lg:w-auto">
+    <article className={cx('flex flex-col overflow-hidden rounded-lg bg-white', className)}>
       <Link to={`/product/${p.slug}`} className="relative block aspect-square overflow-hidden bg-tile">
         <img src={p.image} alt={p.name} loading="lazy" className={cx('size-full object-cover transition duration-500 hover:scale-105', sold && 'opacity-50')} />
         <HeartBtn className="absolute left-2 top-2 !size-7 sm:left-2.5 sm:top-2.5 sm:!size-8" />
