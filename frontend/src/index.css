@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+/* XERQO design tokens — mirrored from the Figma file */
+@theme {
+  --font-sans: "DM Sans Variable", "DM Sans", "Hind Siliguri", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Cormorant Garamond", "Hind Siliguri", Georgia, serif;
+
+  /* Storefront */
+  --color-cream: #F6F1EA;      /* page background */
+  --color-ink: #231A15;        /* text / primary buttons */
+  --color-tan: #9C5B2E;        /* brand accent */
+  --color-tan-dark: #7E4822;
+  --color-mute: #6F5E52;       /* secondary text */
+  --color-line: #E2D6C6;       /* borders */
+  --color-sand: #EDE3D5;       /* soft surfaces */
+  --color-tile: #EFE6DA;       /* image tiles */
+  --color-espresso: #1C1410;   /* dark sections */
+  --color-gold: #D9B77E;
+  --color-leaf: #3E6B48;
+  --color-rust: #B3261E;
+  --color-amber: #B7791F;
+
+  /* Admin */
+  --color-abg: #F5F2EE;
+  --color-asoft: #F3ECE3;
+  --color-aline: #E8E0D6;
+  --color-amute: #7A6B60;
+  --color-ok: #2F7A4B;
+  --color-bad: #C0392B;
+  --color-info: #2C5AA0;
+  --color-violet: #6B4FA0;
+  --color-teal: #1F7A8C;
+  --color-bkash: #E2136E;
+  --color-nagad: #F6921E;
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-cream text-ink font-sans antialiased; }
+  img { @apply block max-w-full; }
+  button { @apply cursor-pointer; }
+}
+
+@layer components {
+  .container-x { @apply mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12 xl:px-20; }
+  .eyebrow { @apply text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-tan; }
+  .h-display { @apply font-display font-semibold leading-[1.1]; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
+  .input {
+    @apply w-full rounded border border-line bg-white px-4 py-3 text-sm text-ink placeholder:text-mute
+      outline-none transition focus:border-ink focus:ring-1 focus:ring-ink;
+  }
+  .ainput {
+    @apply w-full rounded-lg border border-aline bg-white px-3 py-2.5 text-[13px] text-ink placeholder:text-amute
+      outline-none transition focus:border-tan focus:ring-1 focus:ring-tan;
+  }
+}
