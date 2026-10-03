@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Search, Heart, User, ShoppingBag, Menu, X, ChevronUp, MessageCircle, Home, LayoutGrid, Plus, Trash2, Truck, ChevronDown } from 'lucide-react'
 import { cartItems, tk, categories } from '../../data/store'
 import { Button, Qty, cx } from './ui'
+import { useAuth } from '../../context/AuthContext'
 
 const UI = createContext(null)
 export const useUI = () => useContext(UI)
@@ -63,6 +64,8 @@ function Header() {
 
 function MobileMenu() {
   const { menu, setMenu } = useUI()
+  const { user, logout } = useAuth()
+  const close = () => setMenu(false)
   return (
     <div className={cx('fixed inset-0 z-50 lg:hidden', menu ? 'visible' : 'invisible')}>
       <div onClick={() => setMenu(false)} className={cx('absolute inset-0 bg-black/40 transition', menu ? 'opacity-100' : 'opacity-0')} />
@@ -75,7 +78,13 @@ function MobileMenu() {
             {categories.slice(0, 6).map((c) => <Link key={c.slug} to={`/shop?c=${c.slug}`} onClick={() => setMenu(false)} className="space-y-1.5 text-center text-[11px]"><img src={c.image} alt="" className="aspect-square w-full rounded-xl object-cover" />{c.name}</Link>)}
           </div>
         </nav>
-        <div className="grid grid-cols-2 gap-2 border-t border-line p-4"><Button to="/login" variant="outline" size="sm" onClick={() => setMenu(false)}>Login</Button><Button to="/register" size="sm" onClick={() => setMenu(false)}>Register</Button></div>
+        <div className="grid grid-cols-2 gap-2 border-t border-line p-4">
+          {user ? (
+            <><Button to="/account" size="sm" onClick={close}>My account</Button><Button variant="outline" size="sm" onClick={() => { close(); logout() }}>Sign out</Button></>
+          ) : (
+            <><Button to="/login" variant="outline" size="sm" onClick={close}>Login</Button><Button to="/register" size="sm" onClick={close}>Register</Button></>
+          )}
+        </div>
       </aside>
     </div>
   )

@@ -17,6 +17,7 @@ class UserSeeder extends Seeder
         // Staff (password: "password", bcrypt-hashed)
         $staff = [
             ['name' => 'Dip Hossain', 'email' => 'dip@xerqo.com', 'phone' => '01700000001', 'role' => Role::SUPER_ADMIN, 'active' => true],
+            ['name' => 'Mahmud Karim', 'email' => 'admin@xerqo.com', 'phone' => '01700000006', 'role' => Role::ADMIN, 'active' => true],
             ['name' => 'Rakib Hasan', 'email' => 'rakib@xerqo.com', 'phone' => '01700000002', 'role' => 'order-manager', 'active' => true],
             ['name' => 'Nasir Ahmed', 'email' => 'nasir@xerqo.com', 'phone' => '01700000003', 'role' => 'inventory', 'active' => true],
             ['name' => 'Sumaiya Khan', 'email' => 'sumaiya@xerqo.com', 'phone' => '01700000004', 'role' => 'support', 'active' => true],

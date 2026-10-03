@@ -2,19 +2,23 @@ import { Link } from 'react-router-dom'
 import { ChevronDown, Star, Truck, FileText, RotateCcw } from 'lucide-react'
 import { orders, tk } from '../../data/store'
 import { AccountShell } from '../../components/store/AccountShell'
+import { useAuth } from '../../context/AuthContext'
 import { Button, StatusBadge } from '../../components/store/ui'
 
 const STATS = [['3', 'Orders'], ['6', 'Wishlist'], ['2', 'Reviews'], ['৳120', 'Reward']]
 
 function Greeting() {
+  const { user } = useAuth()
+  const initials = (user?.name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+  const since = user?.created_at ? new Date(user.created_at).getFullYear() : null
   return (
     <section className="bg-sand">
       <div className="container-x flex flex-col gap-4 py-5 sm:py-7 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3 sm:gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-tan text-base font-bold text-white sm:size-14 sm:text-lg">RU</span>
+          <span className="grid size-12 shrink-0 place-items-center rounded-full bg-tan text-base font-bold text-white sm:size-14 sm:text-lg">{initials}</span>
           <div className="min-w-0">
-            <h1 className="h-display text-[28px] sm:text-4xl">Hi, Rahim Uddin</h1>
-            <p className="text-xs text-mute sm:text-[13px]">01XXXXXXXXX · Member since 2025</p>
+            <h1 className="h-display text-[28px] sm:text-4xl">Hi, {user?.name}</h1>
+            <p className="text-xs text-mute sm:text-[13px]">{[user?.phone, since && `Member since ${since}`].filter(Boolean).join(' · ')}</p>
           </div>
         </div>
         <div className="grid grid-cols-4 gap-2 sm:gap-3 lg:flex">

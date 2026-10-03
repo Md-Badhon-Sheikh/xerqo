@@ -19,6 +19,12 @@ class RoleSeeder extends Seeder
                 'permissions' => Role::fullMatrix(),
             ],
             [
+                'name' => 'Admin',
+                'slug' => Role::ADMIN,
+                'description' => 'Manages the whole store; SMS gateway, SMS balance and Super Admins stay with the Super Admin',
+                'permissions' => Role::fullMatrix(),
+            ],
+            [
                 'name' => 'Order Manager',
                 'slug' => 'order-manager',
                 'description' => 'Orders, returns, shipments, customers (view)',

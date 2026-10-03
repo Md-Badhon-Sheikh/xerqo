@@ -77,9 +77,9 @@ export const Field = ({ label, help, error, className, children, ...input }) => 
   </label>
 )
 
-export const Checkbox = ({ label, defaultChecked }) => (
+export const Checkbox = ({ label, ...input }) => (
   <label className="flex items-center gap-2.5 text-sm text-ink">
-    <input type="checkbox" defaultChecked={defaultChecked} className="size-4 rounded-sm accent-ink" /> {label}
+    <input type="checkbox" className="size-4 rounded-sm accent-ink" {...input} /> {label}
   </label>
 )
 

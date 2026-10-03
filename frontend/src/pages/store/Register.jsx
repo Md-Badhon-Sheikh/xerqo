@@ -1,28 +1,62 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { ChevronDown, Loader2 } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { useReturnTo } from '../../components/common/guards'
+import { FormError } from '../../components/common/feedback'
 import { AuthShell } from '../../components/store/AccountShell'
 import { Button, Field, Checkbox, cx } from '../../components/store/ui'
 import { AuthTabs, OrDivider, SocialButtons, PasswordInput } from './Login'
 
 const DISTRICTS = ['Dhaka', 'Chattogram', 'Gazipur', 'Narayanganj', 'Sylhet', 'Rajshahi', 'Khulna', 'Barishal', 'Rangpur', 'Mymensingh', 'Cumilla']
 
-// Static strength preview for the demo password ("Leather25")
-function Strength({ level = 3 }) {
+// 0–4: length ≥ 8, has a number, mixed case, has a symbol / 12+ chars
+const strength = (pw) => !pw ? 0 : [pw.length >= 8, /\d/.test(pw), /[a-z]/.test(pw) && /[A-Z]/.test(pw), /[^A-Za-z0-9]/.test(pw) || pw.length >= 12].filter(Boolean).length
+
+function Strength({ level }) {
   const labels = ['Weak', 'Fair', 'Good', 'Strong']
   const tones = ['bg-rust', 'bg-amber', 'bg-leaf', 'bg-leaf']
+  const text = ['text-rust', 'text-amber', 'text-leaf', 'text-leaf']
   return (
     <div className="space-y-1.5">
       <div className="grid grid-cols-4 gap-1.5">
         {labels.map((_, i) => <span key={i} className={cx('h-1 rounded-full', i < level ? tones[level - 1] : 'bg-line')} />)}
       </div>
-      <p className="flex justify-between text-xs text-mute"><span>Min. 8 characters with a number</span><span className="font-semibold text-leaf">{labels[level - 1]}</span></p>
+      <p className="flex justify-between text-xs text-mute"><span>Min. 8 characters with a number</span>{level > 0 && <span className={cx('font-semibold', text[level - 1])}>{labels[level - 1]}</span>}</p>
     </div>
   )
 }
 
 export default function Register() {
   const [gender, setGender] = useState('Male')
+  const [form, setForm] = useState({ name: '', phone: '', email: '', password: '', password_confirmation: '', terms: true })
+  const [errors, setErrors] = useState({})
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const { user, register } = useAuth()
+  const navigate = useNavigate()
+  const returnTo = useReturnTo('/account')
+
+  if (user) return <Navigate to={returnTo} replace />
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+  const submit = async (e) => {
+    e.preventDefault()
+    if (form.password !== form.password_confirmation) { setErrors({ password_confirmation: 'Passwords do not match.' }); return }
+    setBusy(true)
+    setErrors({})
+    setError(null)
+    try {
+      const { terms: _terms, ...payload } = form
+      await register(payload)
+      navigate(returnTo, { replace: true })
+    } catch (err) {
+      setErrors(err.fields)
+      setError(Object.keys(err.fields).length ? null : err.message)
+      setBusy(false)
+    }
+  }
+
   return (
     <AuthShell photo="/images/hands-brown.jpg" quote="Join XERQO — your leather, your name, your story.">
       <AuthTabs active="Create account" />
@@ -31,17 +65,17 @@ export default function Register() {
         <p className="text-sm text-mute">Takes 30 seconds. We’ll verify your mobile with an OTP.</p>
       </div>
 
-      <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-        <Field label="Full name *" defaultValue="Rahim Uddin" />
-        <Field label="Mobile number *">
-          <div className="flex items-center rounded border-[1.5px] border-ink bg-white">
+      <form className="space-y-4" onSubmit={submit} noValidate>
+        <FormError>{error}</FormError>
+        <Field label="Full name *" autoComplete="name" value={form.name} onChange={set('name')} error={errors.name} />
+        <Field label="Mobile number *" error={errors.phone}>
+          <div className={cx('flex items-center rounded border-[1.5px] bg-white', errors.phone ? 'border-rust' : 'border-ink')}>
             <span className="pl-4 text-sm font-semibold">+880</span>
-            <input inputMode="tel" placeholder="1712-XXXXXX" className="min-w-0 flex-1 bg-transparent px-2.5 py-3 text-sm outline-none placeholder:text-mute" />
-            <button type="button" className="px-4 text-xs font-semibold text-tan">Send OTP</button>
+            <input inputMode="tel" autoComplete="tel-national" placeholder="1712-XXXXXX" value={form.phone} onChange={set('phone')} className="min-w-0 flex-1 bg-transparent px-2.5 py-3 text-sm outline-none placeholder:text-mute" />
           </div>
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Email (optional)" type="email" placeholder="you@email.com" />
+          <Field label="Email (optional)" type="email" autoComplete="email" placeholder="you@email.com" value={form.email} onChange={set('email')} error={errors.email} />
           <Field label="District">
             <div className="relative">
               <select defaultValue="Dhaka" className="input appearance-none pr-10">{DISTRICTS.map((d) => <option key={d}>{d}</option>)}</select>
@@ -49,9 +83,9 @@ export default function Register() {
             </div>
           </Field>
         </div>
-        <Field label="Password *"><PasswordInput defaultValue="Leather25" /></Field>
-        <Strength />
-        <Field label="Confirm password *"><PasswordInput defaultValue="Leather25" placeholder="Re-enter password" /></Field>
+        <Field label="Password *" error={errors.password}><PasswordInput autoComplete="new-password" value={form.password} onChange={set('password')} error={errors.password} /></Field>
+        <Strength level={strength(form.password)} />
+        <Field label="Confirm password *" error={errors.password_confirmation}><PasswordInput autoComplete="new-password" placeholder="Re-enter password" value={form.password_confirmation} onChange={set('password_confirmation')} error={errors.password_confirmation} /></Field>
 
         <div className="flex flex-wrap gap-2">
           {['Male', 'Female', 'Prefer not to say'].map((g) => (
@@ -60,10 +94,12 @@ export default function Register() {
         </div>
 
         <div className="space-y-2.5">
-          <Checkbox label={<span>I agree to the <Link to="/policy" className="underline underline-offset-2">Terms &amp; Privacy Policy</Link></span>} defaultChecked />
+          <Checkbox label={<span>I agree to the <Link to="/policy" className="underline underline-offset-2">Terms &amp; Privacy Policy</Link></span>} checked={form.terms} onChange={set('terms')} />
           <Checkbox label="Send me offers & new arrivals by SMS" />
         </div>
-        <Button size="lg" className="w-full">Create account</Button>
+        <Button size="lg" className="w-full" disabled={busy || !form.terms || !form.name || !form.phone || !form.password}>
+          {busy && <Loader2 className="size-4 animate-spin" />}{busy ? 'Creating account…' : 'Create account'}
+        </Button>
       </form>
 
       <OrDivider />

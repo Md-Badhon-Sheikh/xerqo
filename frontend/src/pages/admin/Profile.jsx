@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Upload, LogOut } from 'lucide-react'
+import { useAdminAuth } from '../../context/AuthContext'
 import { Btn, Badge, Card, PageHead, Field, Select, Toggle, KV, Two, Col, cx } from '../../components/admin/ui'
 
 function Switch({ label, sub, on: init }) {
@@ -50,6 +52,9 @@ function ChangePassword() {
 }
 
 export default function AdminProfile() {
+  const { logout } = useAdminAuth()
+  const navigate = useNavigate()
+  const signOut = async () => { await logout(); navigate('/admin/login', { replace: true }) }
   return (
     <>
       <PageHead title="My profile" sub="Your personal details, password and preferences" />
@@ -93,7 +98,7 @@ export default function AdminProfile() {
             <div className="flex items-center justify-between text-[13px]"><span className="text-amute">Backup codes</span><button className="font-semibold text-tan">8 remaining</button></div>
             <Switch label="Use authenticator app instead" sub="Google Authenticator / Authy" on={false} />
           </Card>
-          <Btn v="danger" to="/admin/login" icon={LogOut} className="w-full">Log out</Btn>
+          <Btn v="danger" onClick={signOut} icon={LogOut} className="w-full">Log out</Btn>
         </Col>
       </Two>
     </>

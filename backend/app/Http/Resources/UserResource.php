@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'avatar' => Media::url($this->avatar),
             'is_active' => $this->is_active,
             'is_staff' => $this->isStaff(),
+            'is_super_admin' => $this->isSuperAdmin(),
             'role' => $this->whenLoaded('role', fn () => $this->role ? new RoleResource($this->role) : null),
             'last_login_at' => $this->last_login_at?->toIso8601String(),
             'created_at' => $this->created_at?->toIso8601String(),

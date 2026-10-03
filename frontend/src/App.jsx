@@ -1,7 +1,10 @@
 import { lazy, Suspense } from 'react'
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Outlet } from 'react-router-dom'
 import StoreLayout from './components/store/StoreLayout'
 import AdminLayout from './components/admin/AdminLayout'
+import { AdminAuthProvider } from './context/AuthContext'
+import { RequireAuth } from './components/common/guards'
+import { PageLoader } from './components/common/feedback'
 
 const S = (name) => lazy(() => import(`./pages/store/${name}.jsx`))
 const A = (name) => lazy(() => import(`./pages/admin/${name}.jsx`))
@@ -20,11 +23,12 @@ const Returns = A('Returns'), Shipments = A('Shipments'), Payments = A('Payments
 const Settings = A('Settings'), SettingsGeneral = A('SettingsGeneral'), SettingsSms = A('SettingsSms'), SettingsSecurity = A('SettingsSecurity')
 const Notifications = A('Notifications'), AProfile = A('Profile')
 
-const Loading = () => <div className="grid min-h-[50vh] place-items-center text-sm text-mute">Loading…</div>
+// Admin session lives only under /admin so the storefront never loads it
+const AdminScope = () => <AdminAuthProvider><Outlet /></AdminAuthProvider>
 
 export default function App() {
   return (
-    <Suspense fallback={<Loading />}>
+    <Suspense fallback={<PageLoader />}>
       <Routes>
         <Route element={<StoreLayout />}>
           <Route index element={<Home />} />
@@ -36,11 +40,13 @@ export default function App() {
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
-          <Route path="account" element={<Account />} />
-          <Route path="account/review/:orderId" element={<WriteReview />} />
-          <Route path="account/reviews" element={<MyReviews />} />
-          <Route path="account/wishlist" element={<Wishlist />} />
-          <Route path="account/profile" element={<Profile />} />
+          <Route element={<RequireAuth />}>
+            <Route path="account" element={<Account />} />
+            <Route path="account/review/:orderId" element={<WriteReview />} />
+            <Route path="account/reviews" element={<MyReviews />} />
+            <Route path="account/wishlist" element={<Wishlist />} />
+            <Route path="account/profile" element={<Profile />} />
+          </Route>
           <Route path="track" element={<TrackOrder />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
@@ -51,34 +57,36 @@ export default function App() {
           <Route path="*" element={<NotFound />} />
         </Route>
 
-        <Route path="admin/login" element={<ALogin />} />
-        <Route path="admin/forgot-password" element={<AForgot />} />
-        <Route path="admin" element={<AdminLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="orders" element={<Orders />} />
-          <Route path="orders/:id" element={<OrderDetail />} />
-          <Route path="invoice/:id" element={<Invoice />} />
-          <Route path="products" element={<Products />} />
-          <Route path="products/new" element={<ProductForm />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="customers" element={<Customers />} />
-          <Route path="customers/:id" element={<CustomerDetail />} />
-          <Route path="reviews" element={<Reviews />} />
-          <Route path="coupons" element={<Coupons />} />
-          <Route path="content" element={<Content />} />
-          <Route path="returns" element={<Returns />} />
-          <Route path="shipments" element={<Shipments />} />
-          <Route path="payments" element={<Payments />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="staff" element={<Staff />} />
-          <Route path="staff/roles/:id" element={<RoleEdit />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="settings/general" element={<SettingsGeneral />} />
-          <Route path="settings/sms" element={<SettingsSms />} />
-          <Route path="settings/security" element={<SettingsSecurity />} />
-          <Route path="notifications" element={<Notifications />} />
-          <Route path="profile" element={<AProfile />} />
+        <Route element={<AdminScope />}>
+          <Route path="admin/login" element={<ALogin />} />
+          <Route path="admin/forgot-password" element={<AForgot />} />
+          <Route path="admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} />
+            <Route path="orders" element={<Orders />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
+            <Route path="invoice/:id" element={<Invoice />} />
+            <Route path="products" element={<Products />} />
+            <Route path="products/new" element={<ProductForm />} />
+            <Route path="categories" element={<Categories />} />
+            <Route path="inventory" element={<Inventory />} />
+            <Route path="customers" element={<Customers />} />
+            <Route path="customers/:id" element={<CustomerDetail />} />
+            <Route path="reviews" element={<Reviews />} />
+            <Route path="coupons" element={<Coupons />} />
+            <Route path="content" element={<Content />} />
+            <Route path="returns" element={<Returns />} />
+            <Route path="shipments" element={<Shipments />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="staff" element={<Staff />} />
+            <Route path="staff/roles/:id" element={<RoleEdit />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="settings/general" element={<SettingsGeneral />} />
+            <Route path="settings/sms" element={<SettingsSms />} />
+            <Route path="settings/security" element={<SettingsSecurity />} />
+            <Route path="notifications" element={<Notifications />} />
+            <Route path="profile" element={<AProfile />} />
+          </Route>
         </Route>
       </Routes>
     </Suspense>

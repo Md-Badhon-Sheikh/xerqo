@@ -1,6 +1,9 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
-import { Eye, EyeOff } from 'lucide-react'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { useAuth } from '../../context/AuthContext'
+import { useReturnTo } from '../../components/common/guards'
+import { FormError } from '../../components/common/feedback'
 import { AuthShell } from '../../components/store/AccountShell'
 import { Button, Field, Checkbox, cx } from '../../components/store/ui'
 
@@ -42,11 +45,11 @@ export const OtpBoxes = ({ value = '482', className }) => (
   </div>
 )
 
-export const PasswordInput = ({ placeholder = 'Password', defaultValue }) => {
+export const PasswordInput = ({ placeholder = 'Password', error, ...input }) => {
   const [show, setShow] = useState(false)
   return (
     <div className="relative">
-      <input type={show ? 'text' : 'password'} defaultValue={defaultValue} placeholder={placeholder} className="input pr-16" />
+      <input type={show ? 'text' : 'password'} placeholder={placeholder} className={cx('input pr-16', error && 'border-rust')} {...input} />
       <button type="button" onClick={() => setShow(!show)} className="absolute inset-y-0 right-0 flex items-center gap-1 px-4 text-xs font-semibold text-tan" aria-label={show ? 'Hide password' : 'Show password'}>
         {show ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}{show ? 'Hide' : 'Show'}
       </button>
@@ -62,7 +65,31 @@ const PhoneInput = () => (
 )
 
 export default function Login() {
-  const [mode, setMode] = useState('otp')
+  // OTP sign-in arrives with the customer-account step; password sign-in is live
+  const [mode, setMode] = useState('password')
+  const [form, setForm] = useState({ login: '', password: '', remember: true })
+  const [error, setError] = useState(null)
+  const [busy, setBusy] = useState(false)
+  const { user, login } = useAuth()
+  const navigate = useNavigate()
+  const returnTo = useReturnTo('/account')
+
+  if (user) return <Navigate to={returnTo} replace />
+
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }))
+  const submit = async (e) => {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await login(form)
+      navigate(returnTo, { replace: true })
+    } catch (err) {
+      setError(err.fields?.login || err.message)
+      setBusy(false)
+    }
+  }
+
   return (
     <AuthShell photo="/images/tools-flat.jpg" quote="Early access to drops, free engraving & faster checkout.">
       <AuthTabs active="Sign in" />
@@ -83,14 +110,17 @@ export default function Login() {
           <Button size="lg" className="w-full">Verify &amp; continue</Button>
         </form>
       ) : (
-        <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-          <Field label="Phone or email" placeholder="01XXXXXXXXX or you@email.com" />
-          <Field label="Password"><PasswordInput /></Field>
+        <form className="space-y-4" onSubmit={submit} noValidate>
+          <FormError>{error}</FormError>
+          <Field label="Phone or email" placeholder="01XXXXXXXXX or you@email.com" autoComplete="username" value={form.login} onChange={set('login')} />
+          <Field label="Password"><PasswordInput autoComplete="current-password" value={form.password} onChange={set('password')} /></Field>
           <div className="flex items-center justify-between gap-3">
-            <Checkbox label="Remember me" defaultChecked />
+            <Checkbox label="Remember me" checked={form.remember} onChange={set('remember')} />
             <Link to="/forgot-password" className="text-[13px] font-semibold text-tan hover:underline">Forgot password?</Link>
           </div>
-          <Button size="lg" className="w-full">Login</Button>
+          <Button size="lg" className="w-full" disabled={busy || !form.login || !form.password}>
+            {busy && <Loader2 className="size-4 animate-spin" />}{busy ? 'Signing in…' : 'Login'}
+          </Button>
         </form>
       )}
 

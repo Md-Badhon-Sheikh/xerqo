@@ -9,6 +9,8 @@ class Role extends Model
 {
     public const SUPER_ADMIN = 'super-admin';
 
+    public const ADMIN = 'admin';
+
     /**
      * Admin panel modules (key => label), mirrors the permissions matrix in the React admin.
      */

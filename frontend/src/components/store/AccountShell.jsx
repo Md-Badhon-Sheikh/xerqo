@@ -1,6 +1,7 @@
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Package, Star, Heart, MapPin, User, LogOut } from 'lucide-react'
 import { cx } from './ui'
+import { useAuth } from '../../context/AuthContext'
 
 const ITEMS = [
   ['Orders', '/account', Package],
@@ -23,25 +24,33 @@ function useActive() {
 /* Sidebar on desktop, scrollable pill tabs on tablet/mobile */
 export function AccountShell({ title, hideUser, children }) {
   const isActive = useActive()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const signOut = async () => { await logout(); navigate('/login', { replace: true }) }
+  const initials = (user?.name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+  const since = user?.created_at ? new Date(user.created_at).getFullYear() : null
   return (
     <div className="container-x flex flex-col gap-5 py-5 sm:py-10 lg:flex-row lg:gap-8">
       <aside className="lg:w-[240px] lg:shrink-0">
         <div className="hidden space-y-1 rounded-lg bg-white p-3 lg:block">
           {!hideUser && <div className="mb-2 flex items-center gap-3 border-b border-line px-2 pb-4 pt-2">
-            <span className="grid size-11 place-items-center rounded-full bg-tan font-bold text-white">RU</span>
-            <div><p className="font-semibold">Rahim Uddin</p><p className="text-xs text-mute">Member since 2025</p></div>
+            {user?.avatar
+              ? <img src={user.avatar} alt="" className="size-11 rounded-full object-cover" />
+              : <span className="grid size-11 place-items-center rounded-full bg-tan font-bold text-white">{initials}</span>}
+            <div className="min-w-0"><p className="truncate font-semibold">{user?.name}</p>{since && <p className="text-xs text-mute">Member since {since}</p>}</div>
           </div>}
           {ITEMS.map(([t, to, I]) => (
             <Link key={t} to={to} className={cx('flex items-center gap-3 rounded-md px-3.5 py-3 text-sm', isActive(to) ? 'bg-sand font-semibold' : 'hover:bg-cream')}>
               <I className={cx('size-[18px]', isActive(to) ? 'text-tan' : 'text-mute')} />{t}
             </Link>
           ))}
-          <Link to="/login" className="flex items-center gap-3 rounded-md px-3.5 py-3 text-sm text-rust hover:bg-cream"><LogOut className="size-[18px]" />Sign out</Link>
+          <button onClick={signOut} className="flex w-full items-center gap-3 rounded-md px-3.5 py-3 text-sm text-rust hover:bg-cream"><LogOut className="size-[18px]" />Sign out</button>
         </div>
         <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0 lg:hidden">
           {ITEMS.map(([t, to]) => (
             <Link key={t} to={to} className={cx('shrink-0 rounded-full px-4 py-2 text-[13px] font-medium', isActive(to) ? 'bg-ink text-white' : 'border border-line bg-white')}>{t}</Link>
           ))}
+          <button onClick={signOut} className="shrink-0 rounded-full border border-rust/30 bg-white px-4 py-2 text-[13px] font-medium text-rust">Sign out</button>
         </div>
       </aside>
       <section className="min-w-0 flex-1 space-y-4 sm:space-y-5">
