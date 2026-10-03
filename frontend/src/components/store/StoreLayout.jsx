@@ -200,7 +200,7 @@ function Footer({ sticky }) {
         </div>
         <div className="flex flex-col gap-4 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-white/50">© 2026 XERQO. All rights reserved.</p>
-          <div className="flex flex-wrap gap-1.5">{['bKash', 'Nagad', 'Visa', 'Mastercard', 'COD'].map((p) => <span key={p} className="rounded-sm border border-white/25 px-2 py-1 text-[11px] font-semibold text-white/80">{p}</span>)}</div>
+          <div className="flex flex-wrap gap-1.5">{['COD', 'bKash', 'Rocket', 'Nagad', 'Bank / Card'].map((p) => <span key={p} className="rounded-sm border border-white/25 px-2 py-1 text-[11px] font-semibold text-white/80">{p}</span>)}</div>
         </div>
       </div>
     </footer>

@@ -5,12 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
     public const STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'];
 
-    public const PAYMENT_METHODS = ['cod', 'bkash', 'nagad', 'card'];
+    // manual payments for now (staff verify the transaction id / slip); a gateway can be added later
+    public const PAYMENT_METHODS = ['cod', 'bkash', 'rocket', 'nagad', 'bank'];
+
+    // mobile wallets need a transaction id + sender number
+    public const WALLET_METHODS = ['bkash', 'rocket', 'nagad'];
 
     public const PAYMENT_STATUSES = ['pending', 'paid', 'failed', 'refunded'];
 
@@ -41,6 +46,9 @@ class Order extends Model
         'area',
         'address_line',
         'delivery_zone',
+        'billing_name',
+        'billing_phone',
+        'billing_address',
         'subtotal',
         'delivery_charge',
         'discount',
@@ -96,6 +104,16 @@ class Order extends Model
     public function returnRequests(): HasMany
     {
         return $this->hasMany(ReturnRequest::class);
+    }
+
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->latest('id');
+    }
+
+    public function latestPayment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
     }
 
     public function canTransitionTo(string $status): bool

@@ -36,12 +36,13 @@ export default function App() {
           <Route path="shop" element={<Shop />} />
           <Route path="product/:slug" element={<Product />} />
           <Route path="cart" element={<Cart />} />
-          <Route path="checkout" element={<Checkout />} />
-          <Route path="order-success" element={<OrderSuccess />} />
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
           <Route element={<RequireAuth />}>
+            {/* ordering needs an account (no guest checkout) */}
+            <Route path="checkout" element={<Checkout />} />
+            <Route path="order-success" element={<OrderSuccess />} />
             <Route path="account" element={<Account />} />
             <Route path="account/review/:orderId" element={<WriteReview />} />
             <Route path="account/reviews" element={<MyReviews />} />

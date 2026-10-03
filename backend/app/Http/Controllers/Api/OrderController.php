@@ -45,7 +45,7 @@ class OrderController extends Controller
         $order = Order::query()
             ->where('order_number', strtoupper(trim($data['order_number'])))
             ->where('phone', $data['phone'])
-            ->with(['items', 'statusHistories'])
+            ->with(['items', 'statusHistories', 'latestPayment'])
             ->first();
 
         abort_if($order === null, 404, 'No order found with this order number and phone.');

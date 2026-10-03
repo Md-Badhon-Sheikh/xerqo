@@ -32,6 +32,15 @@ export const useProduct = (slug) => useQuery({
   enabled: !!slug,
 })
 
+// Validates a coupon against the cart (server-side prices) for a delivery zone -> { discount, delivery_charge, total, … }
+export const useCouponCheck = (code, lines, zone) => useQuery({
+  queryKey: ['coupon', code, lines, zone],
+  queryFn: () => api.post('/coupons/validate', { code, items: lines, delivery_zone: zone }),
+  enabled: !!code && lines.length > 0,
+  retry: false,
+  staleTime: 30_000,
+})
+
 // "Load more" grows perPage, so the list stays one request: { data, meta, summary }
 export const useProductReviews = (slug, perPage = 6) => useQuery({
   queryKey: ['product', slug, 'reviews', perPage],

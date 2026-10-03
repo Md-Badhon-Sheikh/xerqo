@@ -170,6 +170,9 @@ class CheckoutService
                 'area' => $data['area'] ?? null,
                 'address_line' => $data['address_line'],
                 'delivery_zone' => $data['delivery_zone'],
+                'billing_name' => $data['billing_name'] ?? null,
+                'billing_phone' => $data['billing_phone'] ?? null,
+                'billing_address' => $data['billing_address'] ?? null,
                 'subtotal' => $subtotal,
                 'delivery_charge' => $deliveryCharge,
                 'discount' => $discount,
@@ -184,6 +187,17 @@ class CheckoutService
             ]);
 
             $order->items()->createMany($lines);
+
+            // manual payment: staff verify the transaction id / deposit slip (Admin › Payments)
+            if ($order->payment_method !== 'cod') {
+                $order->payments()->create([
+                    'method' => $order->payment_method,
+                    'amount' => $order->total,
+                    'transaction_id' => $data['transaction_id'] ?? null,
+                    'sender_number' => $data['sender_number'] ?? null,
+                    'status' => 'pending',
+                ]);
+            }
 
             foreach ($movements as [$productId, $variantId, $change, $after]) {
                 StockLedger::record($productId, $variantId, $change, $after, 'order', 'Order placed', $order->order_number, $user?->id);
@@ -204,7 +218,7 @@ class CheckoutService
             'total' => number_format($order->total),
         ]);
 
-        return $order->load(['items', 'statusHistories']);
+        return $order->load(['items', 'statusHistories', 'latestPayment']);
     }
 
     /**

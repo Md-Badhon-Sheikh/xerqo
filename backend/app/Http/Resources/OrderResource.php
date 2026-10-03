@@ -23,6 +23,12 @@ class OrderResource extends JsonResource
             'area' => $this->area,
             'address_line' => $this->address_line,
             'delivery_zone' => $this->delivery_zone,
+            'billing' => $this->billing_name ? [
+                'name' => $this->billing_name,
+                'phone' => $this->billing_phone,
+                'address' => $this->billing_address,
+            ] : null,
+            'payment' => $this->whenLoaded('latestPayment', fn () => $this->latestPayment ? new PaymentResource($this->latestPayment) : null),
             'subtotal' => $this->subtotal,
             'delivery_charge' => $this->delivery_charge,
             'discount' => $this->discount,

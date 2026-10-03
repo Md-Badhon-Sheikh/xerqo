@@ -29,7 +29,6 @@ Route::get('products/{slug}/reviews', [ProductController::class, 'reviews']);
 Route::get('banners', [BannerController::class, 'index']);
 Route::get('settings', [SettingController::class, 'index']);
 
-Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:20,1');
 Route::get('orders/track', [OrderController::class, 'track'])->middleware('throttle:30,1');
 Route::post('coupons/validate', [CouponController::class, 'check'])->middleware('throttle:30,1');
 
@@ -54,6 +53,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('me/orders', [Customer\OrderController::class, 'index']);
     Route::get('me/orders/{orderNumber}', [Customer\OrderController::class, 'show']);
+    Route::post('me/orders/{orderNumber}/payment', [Customer\OrderController::class, 'submitPayment'])->middleware('throttle:10,1');
+
+    // checkout needs a signed-in customer (no guest orders)
+    Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:20,1');
 
     Route::apiResource('me/addresses', Customer\AddressController::class);
 

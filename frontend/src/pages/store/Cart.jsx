@@ -1,10 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, BadgeCheck, Loader2, RotateCcw, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react'
 import { tk } from '../../data/store'
-import { api } from '../../lib/api'
-import { useSettings } from '../../lib/queries'
+import { useCouponCheck, useSettings } from '../../lib/queries'
 import { useCart } from '../../context/CartContext'
 import { Breadcrumb, Button, EmptyState, Qty, cx } from '../../components/store/ui'
 
@@ -49,17 +47,6 @@ function LineItem({ item: i, onQty, onRemove }) {
       <b className="text-right text-base max-md:hidden">{tk(i.price * i.qty)}</b>
     </div>
   )
-}
-
-// Validates the saved coupon against the current cart (server-side prices) and delivery zone
-function useCoupon(code, lines, zone) {
-  return useQuery({
-    queryKey: ['coupon', code, lines, zone],
-    queryFn: () => api.post('/coupons/validate', { code, items: lines, delivery_zone: zone }),
-    enabled: !!code && lines.length > 0,
-    retry: false,
-    staleTime: 30_000,
-  })
 }
 
 function Summary({ cart, zone, setZone, delivery, couponQ, totals }) {
@@ -133,7 +120,7 @@ export default function Cart() {
   const { data: settings } = useSettings()
   const delivery = settings?.delivery
   const [zone, setZone] = useState('inside_dhaka')
-  const couponQ = useCoupon(cart.coupon, cart.orderLines, zone)
+  const couponQ = useCouponCheck(cart.coupon, cart.orderLines, zone)
 
   // the API's numbers win once the coupon is validated; until then estimate locally
   const freeAt = delivery?.free_delivery_threshold ?? 0

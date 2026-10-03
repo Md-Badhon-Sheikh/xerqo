@@ -33,11 +33,18 @@ class SettingSeeder extends Seeder
                 'couriers' => ['Steadfast', 'Pathao', 'RedX'],
             ], 'delivery', true],
 
+            // Manual payments: the customer pays to these accounts and submits the transaction id / slip.
             'payments' => [[
                 'cod' => ['enabled' => true, 'label' => 'Cash on Delivery'],
-                'bkash' => ['enabled' => true, 'label' => 'bKash', 'merchant_number' => '01700000000'],
-                'nagad' => ['enabled' => true, 'label' => 'Nagad', 'merchant_number' => '01700000000'],
-                'card' => ['enabled' => false, 'label' => 'Visa / Mastercard'],
+                'bkash' => ['enabled' => true, 'label' => 'bKash', 'number' => '01700000000', 'account_type' => 'Merchant', 'instructions' => 'Open bKash › Make Payment, enter the number below and the exact amount, then type the Transaction ID from the bKash SMS.'],
+                'rocket' => ['enabled' => true, 'label' => 'Rocket', 'number' => '017000000001', 'account_type' => 'Personal', 'instructions' => 'Dial *322# or open the Rocket app › Send Money to the number below, then type the TxnId from the Rocket SMS.'],
+                'nagad' => ['enabled' => true, 'label' => 'Nagad', 'number' => '01700000000', 'account_type' => 'Merchant', 'instructions' => 'Open Nagad › Merchant Pay, enter the number below and the exact amount, then type the TxnID from the Nagad SMS.'],
+                'bank' => [
+                    'enabled' => true, 'label' => 'Bank transfer / Card',
+                    'bank_name' => 'Dutch-Bangla Bank PLC', 'account_name' => 'XERQO', 'account_number' => '1234567890123',
+                    'branch' => 'Hazaribagh, Dhaka', 'routing_number' => '090260000',
+                    'instructions' => 'Transfer or deposit the order total (you can pay from any bank account or card via internet banking), then upload the deposit slip or transfer receipt.',
+                ],
             ], 'payments', true],
 
             'returns' => [[
