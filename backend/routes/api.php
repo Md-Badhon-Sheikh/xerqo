@@ -85,6 +85,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         Route::patch('orders/{order:order_number}/status', [Admin\OrderController::class, 'updateStatus']);
     });
 
+    // Manual payment verification (Payments & COD)
+    Route::get('payments', [Admin\PaymentController::class, 'index'])->middleware('admin:payments');
+    Route::middleware('admin:payments,edit')->group(function () {
+        Route::patch('payments/{payment}/verify', [Admin\PaymentController::class, 'verify']);
+        Route::patch('payments/{payment}/reject', [Admin\PaymentController::class, 'reject']);
+    });
+
     // Products + images (image management counts as editing the product)
     Route::apiResource('products', Admin\ProductController::class)->middleware('admin:products');
     Route::middleware('admin:products,edit')->group(function () {

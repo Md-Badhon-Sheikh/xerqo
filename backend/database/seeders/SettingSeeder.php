@@ -92,6 +92,21 @@ class SettingSeeder extends Seeder
                     'enabled' => true,
                     'body' => 'Hi {name}, your XERQO order {order_id} (৳{total}) is confirmed. We’ll call before dispatch. Thank you!',
                 ],
+                'order_processing' => [
+                    'name' => 'Processing',
+                    'enabled' => true,
+                    'body' => 'Hi {name}, your XERQO order {order_id} is being prepared in our workshop. We’ll text you when it ships.',
+                ],
+                'payment_verified' => [
+                    'name' => 'Payment verified',
+                    'enabled' => true,
+                    'body' => 'Hi {name}, we received your payment of ৳{amount} for order {order_id}. Thank you!',
+                ],
+                'payment_rejected' => [
+                    'name' => 'Payment not verified',
+                    'enabled' => true,
+                    'body' => 'Hi {name}, we couldn’t verify the payment for order {order_id}: {reason}. Please resend it: {tracking_link}',
+                ],
                 'order_shipped' => [
                     'name' => 'Shipped',
                     'enabled' => true,

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Models\Order;
+use App\Support\Phone;
 use Illuminate\Validation\Rule;
 
 /**
@@ -24,6 +25,13 @@ class UpdateOrderRequest extends AdminRequest
             'transaction_id' => ['nullable', 'string', 'max:100'],
             'courier' => ['nullable', 'string', 'max:50'],
             'tracking_code' => ['nullable', 'string', 'max:100'],
+            // fix the delivery details after a confirmation call
+            'name' => ['sometimes', 'string', 'max:100'],
+            'phone' => ['sometimes', 'string', 'regex:'.Phone::REGEX],
+            'district' => ['sometimes', 'string', 'max:100'],
+            'area' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'address_line' => ['sometimes', 'string', 'max:500'],
+            'admin_note' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }
 }

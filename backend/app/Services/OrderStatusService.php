@@ -89,6 +89,7 @@ class OrderStatusService
     {
         $template = match ($status) {
             'confirmed' => 'order_confirmed',
+            'processing' => 'order_processing',
             'shipped' => 'order_shipped',
             'delivered' => 'order_delivered_review',
             'cancelled' => 'order_cancelled',

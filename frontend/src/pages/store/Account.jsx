@@ -15,7 +15,7 @@ import { api } from '../../lib/api'
 import { toast } from '../../lib/alert'
 
 export const ORDER_STATUS = { pending: 'Pending', confirmed: 'Confirmed', packed: 'Processing', processing: 'Processing', shipped: 'Shipped', delivered: 'Delivered', cancelled: 'Cancelled', returned: 'Returned' }
-const FILTERS = [{ value: '', label: 'All orders' }, { value: 'pending', label: 'Pending' }, { value: 'confirmed', label: 'Confirmed' }, { value: 'packed', label: 'Processing' }, { value: 'shipped', label: 'Shipped' }, { value: 'delivered', label: 'Delivered' }, { value: 'cancelled', label: 'Cancelled' }]
+const FILTERS = [{ value: '', label: 'All orders' }, { value: 'pending', label: 'Pending' }, { value: 'confirmed', label: 'Confirmed' }, { value: 'processing', label: 'Processing' }, { value: 'shipped', label: 'Shipped' }, { value: 'delivered', label: 'Delivered' }, { value: 'cancelled', label: 'Cancelled' }]
 const day = (iso) => new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 
 function Greeting({ stats }) {

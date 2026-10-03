@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateOrderRequest;
 use App\Http\Resources\OrderResource;
+use App\Http\Resources\PaymentResource;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Services\OrderStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -27,10 +29,14 @@ class OrderController extends Controller
         ]);
 
         $orders = Order::query()
-            ->with('items')
+            ->with(['items', 'latestPayment'])
             ->withCount('items')
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->input('status')))
+            // several statuses at once, e.g. statuses[]=confirmed&statuses[]=processing ("to ship")
+            ->when($request->filled('statuses'), fn ($q) => $q->whereIn('status', array_intersect((array) $request->input('statuses'), Order::STATUSES)))
             ->when($request->filled('payment_method'), fn ($q) => $q->where('payment_method', $request->input('payment_method')))
+            ->when($request->filled('payment_status'), fn ($q) => $q->where('payment_status', $request->input('payment_status')))
+            ->when($request->boolean('needs_tracking'), fn ($q) => $q->whereIn('status', ['confirmed', 'processing', 'shipped'])->whereNull('tracking_code'))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.trim((string) $request->input('q')).'%';
                 $q->where(fn ($w) => $w->where('order_number', 'like', $term)
@@ -44,7 +50,20 @@ class OrderController extends Controller
             ->paginate(min($request->integer('per_page', 20), 100))
             ->withQueryString();
 
-        return OrderResource::collection($orders);
+        // tab counts (all statuses) + open money figures for the list header
+        $counts = Order::query()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
+
+        return OrderResource::collection($orders)->additional([
+            'counts' => [
+                'all' => (int) $counts->sum(),
+                ...collect(Order::STATUSES)->mapWithKeys(fn ($s) => [$s => (int) ($counts[$s] ?? 0)])->all(),
+            ],
+            'summary' => [
+                'today' => Order::whereDate('created_at', today())->count(),
+                'payments_to_verify' => Payment::where('status', 'pending')->count(),
+                'cod_open' => round((float) Order::where('payment_method', 'cod')->whereIn('status', ['confirmed', 'processing', 'shipped'])->sum('total'), 2),
+            ],
+        ]);
     }
 
     /**
@@ -52,12 +71,18 @@ class OrderController extends Controller
      */
     public function show(Order $order): OrderResource
     {
-        return new OrderResource($order->load([
+        return (new OrderResource($order->load([
             'user',
             'items.product:id,slug',
             'statusHistories.changedBy:id,name',
             'returnRequests',
-        ]));
+            'latestPayment.verifier:id,name',
+            'payments.verifier:id,name',
+        ])))->additional([
+            // every payment submission, newest first (verified / rejected / pending)
+            'payments' => PaymentResource::collection($order->payments),
+            'next_statuses' => Order::TRANSITIONS[$order->status] ?? [],
+        ]);
     }
 
     /**
@@ -68,7 +93,11 @@ class OrderController extends Controller
         $data = $request->validated();
 
         DB::transaction(function () use ($data, $order, $request, $statuses) {
-            $order->update(collect($data)->only(['payment_status', 'transaction_id', 'courier', 'tracking_code'])->all());
+            $order->update(collect($data)->only(['payment_status', 'transaction_id', 'courier', 'tracking_code', 'name', 'phone', 'district', 'area', 'address_line'])->all());
+
+            if (array_key_exists('admin_note', $data) && $data['admin_note']) {
+                $order->statusHistories()->create(['status' => $order->status, 'note' => $data['admin_note'], 'changed_by' => $request->user()->id]);
+            }
 
             if (isset($data['status']) && $data['status'] !== $order->status) {
                 $statuses->transition($order, $data['status'], $data['note'] ?? null, $request->user());

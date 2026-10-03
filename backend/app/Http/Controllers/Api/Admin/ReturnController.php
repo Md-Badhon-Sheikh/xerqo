@@ -28,7 +28,16 @@ class ReturnController extends Controller
             ->paginate(min($request->integer('per_page', 20), 100))
             ->withQueryString();
 
-        return ReturnRequestResource::collection($returns);
+        $counts = ReturnRequest::query()->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
+
+        return ReturnRequestResource::collection($returns)->additional([
+            'counts' => [
+                'all' => (int) $counts->sum(),
+                ...collect(ReturnRequest::STATUSES)->mapWithKeys(fn ($s) => [$s => (int) ($counts[$s] ?? 0)])->all(),
+            ],
+            'refunded_this_month' => round((float) ReturnRequest::where('status', 'completed')->where('resolution', 'refund')
+                ->where('resolved_at', '>=', now()->startOfMonth())->sum('amount'), 2),
+        ]);
     }
 
     public function show(ReturnRequest $return): ReturnRequestResource

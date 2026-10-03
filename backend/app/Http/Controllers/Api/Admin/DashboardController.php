@@ -21,7 +21,7 @@ class DashboardController extends Controller
      */
     public function __invoke(): JsonResponse
     {
-        $revenueStatuses = ['pending', 'confirmed', 'packed', 'shipped', 'delivered'];
+        $revenueStatuses = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
         $today = now()->startOfDay();
         $monthStart = now()->startOfMonth();
         $lastMonthStart = now()->subMonthNoOverflow()->startOfMonth();

@@ -21,11 +21,11 @@ class OrderSeeder extends Seeder
     private const PATHS = [
         'pending' => ['pending'],
         'confirmed' => ['pending', 'confirmed'],
-        'packed' => ['pending', 'confirmed', 'packed'],
-        'shipped' => ['pending', 'confirmed', 'packed', 'shipped'],
-        'delivered' => ['pending', 'confirmed', 'packed', 'shipped', 'delivered'],
+        'processing' => ['pending', 'confirmed', 'processing'],
+        'shipped' => ['pending', 'confirmed', 'processing', 'shipped'],
+        'delivered' => ['pending', 'confirmed', 'processing', 'shipped', 'delivered'],
         'cancelled' => ['pending', 'cancelled'],
-        'returned' => ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'returned'],
+        'returned' => ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'returned'],
     ];
 
     public function run(): void
@@ -37,7 +37,7 @@ class OrderSeeder extends Seeder
             ['XQ-21877', 'rahim@example.com', null, 'delivered', 'bkash', 'Pathao', 43, [['Voyager Passport Cover', 1], ['Key Holder — Red', 1]]],
             // Admin panel demo orders
             ['XQ-24816', 'nusrat@example.com', null, 'confirmed', 'bkash', 'Pathao', 2, [['Voyager Passport Cover', 1], ['Zip-Around Long Wallet', 1]]],
-            ['XQ-24815', 'tanvir@example.com', null, 'packed', 'nagad', 'Steadfast', 2, [['Heritage Long Wallet', 1, 'Coffee']]],
+            ['XQ-24815', 'tanvir@example.com', null, 'processing', 'nagad', 'Steadfast', 2, [['Heritage Long Wallet', 1, 'Coffee']]],
             ['XQ-24812', 'farzana@example.com', null, 'shipped', 'cod', 'Pathao', 3, [['Rose Clasp Purse', 1], ['Snap Card Purse', 1], ['Key Holder — Red', 1]]],
             ['XQ-24809', 'imran@example.com', null, 'delivered', 'card', 'RedX', 4, [['Everyday Tote Bag', 1]], 'XERQO500'],
             ['XQ-24802', null, ['Sabbir Rahman', '01799345678', 'Rajshahi', 'Shaheb Bazar', '21 Shaheb Bazar Road'], 'delivered', 'cod', 'Steadfast', 5, [['Zip-Around Long Wallet', 1]]],
@@ -153,7 +153,7 @@ class OrderSeeder extends Seeder
         $notes = [
             'pending' => 'Order placed',
             'confirmed' => 'Confirmed by phone call',
-            'packed' => 'Packed and ready for pickup',
+            'processing' => 'Packed and ready for pickup',
             'shipped' => $courier ? "Handed over to {$courier}" : 'Shipped',
             'delivered' => 'Delivered to customer',
             'cancelled' => 'Customer cancelled on confirmation call',

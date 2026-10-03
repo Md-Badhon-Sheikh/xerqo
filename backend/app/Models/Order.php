@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
-    public const STATUSES = ['pending', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled', 'returned'];
+    public const STATUSES = ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled', 'returned'];
 
     // manual payments for now (staff verify the transaction id / slip); a gateway can be added later
     public const PAYMENT_METHODS = ['cod', 'bkash', 'rocket', 'nagad', 'bank'];
@@ -28,8 +28,8 @@ class Order extends Model
      */
     public const TRANSITIONS = [
         'pending' => ['confirmed', 'cancelled'],
-        'confirmed' => ['packed', 'shipped', 'cancelled'],
-        'packed' => ['shipped', 'cancelled'],
+        'confirmed' => ['processing', 'shipped', 'cancelled'],
+        'processing' => ['shipped', 'cancelled'],
         'shipped' => ['delivered', 'returned', 'cancelled'],
         'delivered' => ['returned'],
         'cancelled' => [],

@@ -24,8 +24,10 @@ export function Badge({ children, tone }) {
   return <span className={cx('inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-semibold', t)}><span className="size-1.5 rounded-full bg-current" />{children}</span>
 }
 
-const PAY = { COD: 'text-ink bg-ink/10', bKash: 'text-bkash bg-bkash/10', Nagad: 'text-nagad bg-nagad/10', Card: 'text-info bg-info/10' }
-export const PayChip = ({ m }) => <span className={cx('rounded px-2 py-0.5 text-[11px] font-bold', PAY[m])}>{m}</span>
+const PAY = { COD: 'text-ink bg-ink/10', bKash: 'text-bkash bg-bkash/10', Nagad: 'text-nagad bg-nagad/10', Rocket: 'text-violet bg-violet/10', Bank: 'text-info bg-info/10', Card: 'text-info bg-info/10' }
+const PAY_LABEL = { cod: 'COD', bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', bank: 'Bank', card: 'Card' }
+// m: method code ("bkash") or label ("bKash")
+export const PayChip = ({ m }) => { const l = PAY_LABEL[m] ?? m; return <span className={cx('rounded px-2 py-0.5 text-[11px] font-bold', PAY[l])}>{l}</span> }
 
 export function Card({ title, sub, right, className, bodyClass, children, pad = true }) {
   return (
