@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Seeder;
@@ -70,15 +71,30 @@ class ProductSeeder extends Seeder
             'Belts' => 'A full-grain leather belt with a solid metal buckle. Cut from a single piece of leather and hand-finished on the edges.',
         ];
 
-        // Colour options for a few best sellers (product stock = sum of variant stock).
-        $variants = [
-            'Classic Bifold Wallet' => [['Burgundy Croc', 4], ['Black', 5], ['Tan', 3]],
-            'Custom Name Passport Cover' => [['Black', 4], ['Brown', 4], ['Tan', 4]],
-            'Heritage Long Wallet' => [['Coffee', 6], ['Black', 6]],
-            'Classic Dress Belt' => [['Tan · 34"', 4], ['Tan · 36"', 4], ['Black · 36"', 4]],
+        // Colour swatches used by the variants below
+        $hex = [
+            'Black' => '#231A15', 'Brown' => '#5C3A21', 'Tan' => '#B9874E', 'Cognac' => '#8B4A22',
+            'Burgundy' => '#6E2427', 'Coffee' => '#4A2E1F', 'Navy' => '#2B3550',
         ];
 
+        // Colour options (product stock = sum of variant stock)
+        $variants = [
+            'Classic Bifold Wallet' => [['Burgundy', 4], ['Black', 5], ['Tan', 3]],
+            'Slim Croc Wallet' => [['Burgundy', 6], ['Black', 6]],
+            'Mini Bifold Wallet' => [['Brown', 6], ['Black', 6]],
+            'Custom Name Passport Cover' => [['Black', 4], ['Brown', 4], ['Tan', 4]],
+            'Voyager Passport Cover' => [['Black', 6], ['Navy', 6]],
+            'Heritage Long Wallet' => [['Coffee', 6], ['Black', 6]],
+            'Classic Dress Belt' => [['Tan', 6], ['Black', 6]],
+            'Everyday Tote Bag' => [['Cognac', 6], ['Black', 6]],
+        ];
+
+        $featured = ['Classic Bifold Wallet', 'Heritage Long Wallet', 'Voyager Passport Cover', 'Custom Name Passport Cover', 'Everyday Tote Bag', 'Rose Clasp Purse'];
+        $travel = ['Passport Covers'];
+        $travelProducts = ['Travel Long Wallet', 'Leather Backpack'];
+
         $categories = Category::pluck('id', 'name');
+        $brands = Brand::pluck('id', 'slug');
 
         foreach ($products as $row) {
             [$id, $name, $category, $image, $price, $oldPrice] = $row;
@@ -87,6 +103,8 @@ class ProductSeeder extends Seeder
 
             $product = Product::updateOrCreate(['slug' => $this->slug($name)], [
                 'category_id' => $categories[$category],
+                'brand_id' => in_array($category, $travel, true) || in_array($name, $travelProducts, true) ? $brands['xerqo-travel'] : $brands['xerqo'],
+                'is_featured' => in_array($name, $featured, true),
                 'name' => $name,
                 'sku' => sprintf('XQ-%04d', $id),
                 'description' => $descriptions[$category],
@@ -110,6 +128,7 @@ class ProductSeeder extends Seeder
                 foreach ($variants[$name] as $i => [$variantName, $variantStock]) {
                     $product->variants()->create([
                         'name' => $variantName,
+                        'color_hex' => $hex[$variantName] ?? null,
                         'sku' => sprintf('XQ-%04d-%d', $id, $i + 1),
                         'price' => null,
                         'stock' => $variantStock,

@@ -53,7 +53,7 @@ class CheckoutService
                 ? $product->variants()->whereKey($line['variant_id'])->first()
                 : null;
 
-            $subtotal += ($variant?->price ?? $product->price) * (int) $line['qty'];
+            $subtotal += $product->priceFor($variant) * (int) $line['qty'];
         }
 
         return $subtotal;
@@ -126,7 +126,7 @@ class CheckoutService
                     ]);
                 }
 
-                $price = $variant?->price ?? $product->price;
+                $price = $product->priceFor($variant); // includes a live flash-sale price
                 $lineTotal = $price * $qty;
                 $subtotal += $lineTotal;
 

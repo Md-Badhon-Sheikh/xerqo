@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { ArrowUpRight } from 'lucide-react'
-import { useUI } from '../../components/store/StoreLayout'
+import { useUI } from '../../context/StoreUIContext'
 
 /* Index of every screen in the static design, numbered like the Figma frames */
 const STOREFRONT = [

@@ -15,12 +15,24 @@ const read = () => {
 const lineKey = (productId, variantId, engraving) => [productId, variantId || 0, engraving || ''].join(':')
 const clampQty = (qty, stock) => Math.max(1, Math.min(Number(qty) || 1, stock > 0 ? stock : 99))
 
+const COUPON_KEY = 'xq_coupon'
+const readCoupon = () => { try { return window.localStorage.getItem(COUPON_KEY) || '' } catch { return '' } }
+
 export function CartProvider({ children }) {
   const [items, setItems] = useState(read)
+  // coupon code entered on the cart page; validated against the API wherever it is shown
+  const [coupon, setCoupon] = useState(readCoupon)
 
   useEffect(() => {
     try { window.localStorage.setItem(KEY, JSON.stringify(items)) } catch { /* storage blocked */ }
   }, [items])
+
+  useEffect(() => {
+    try {
+      if (coupon) window.localStorage.setItem(COUPON_KEY, coupon)
+      else window.localStorage.removeItem(COUPON_KEY)
+    } catch { /* storage blocked */ }
+  }, [coupon])
 
   useEffect(() => {
     // keep several open tabs in sync
@@ -40,16 +52,18 @@ export function CartProvider({ children }) {
 
   const update = useCallback((key, qty) => setItems((list) => list.map((i) => (i.key === key ? { ...i, qty: clampQty(qty, i.stock) } : i))), [])
   const remove = useCallback((key) => setItems((list) => list.filter((i) => i.key !== key)), [])
-  const clear = useCallback(() => setItems([]), [])
+  const clear = useCallback(() => { setItems([]); setCoupon('') }, [])
 
   const value = useMemo(() => ({
     items,
+    coupon,
+    setCoupon,
     count: items.reduce((s, i) => s + i.qty, 0),
     subtotal: items.reduce((s, i) => s + i.price * i.qty, 0),
     // payload for POST /api/orders
     orderLines: items.map((i) => ({ product_id: i.product_id, variant_id: i.variant_id || null, qty: i.qty, engraving_text: i.engraving_text || null })),
     add, update, remove, clear,
-  }), [items, add, update, remove, clear])
+  }), [items, coupon, add, update, remove, clear])
 
   return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>
 }

@@ -14,6 +14,7 @@ const Home = S('Home'), Shop = S('Shop'), Product = S('Product'), Cart = S('Cart
 const Login = S('Login'), Register = S('Register'), ForgotPassword = S('ForgotPassword'), Account = S('Account'), WriteReview = S('WriteReview')
 const MyReviews = S('MyReviews'), Wishlist = S('Wishlist'), TrackOrder = S('TrackOrder'), Profile = S('Profile'), About = S('About')
 const Contact = S('Contact'), Faq = S('Faq'), Policy = S('Policy'), Search = S('Search'), NotFound = S('NotFound'), DesignIndex = S('DesignIndex')
+const Compare = S('Compare')
 
 // Admin
 const ALogin = A('Login'), AForgot = A('ForgotPassword'), Dashboard = A('Dashboard'), Orders = A('Orders'), OrderDetail = A('OrderDetail')
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="faq" element={<Faq />} />
           <Route path="policy" element={<Policy />} />
           <Route path="search" element={<Search />} />
+          <Route path="compare" element={<Compare />} />
           <Route path="design" element={<DesignIndex />} />
           <Route path="*" element={<NotFound />} />
         </Route>

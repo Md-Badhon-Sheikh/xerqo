@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Heart, ShoppingBag, ChevronRight, Minus, Plus } from 'lucide-react'
-import { tk, discount } from '../../data/store'
+import { tk } from '../../data/store'
+import { normalizeProduct } from '../../lib/product'
+import { useQuickAdd } from '../../context/StoreUIContext'
 
 const cx = (...c) => c.filter(Boolean).join(' ')
 export { cx }
@@ -26,18 +28,25 @@ export function Button({ as, to, variant = 'dark', size = 'md', className, child
 }
 
 /* ---------- Small atoms ---------- */
-export const Stars = ({ n = 5, count, className }) => (
-  <span className={cx('text-amber text-xs tracking-wider', className)}>
-    {'★'.repeat(n)}{'☆'.repeat(5 - n)}{count != null && <span className="ml-1 tracking-normal text-mute">({count})</span>}
-  </span>
-)
+export const Stars = ({ n = 5, count, className }) => {
+  const full = Math.max(0, Math.min(5, Math.round(n)))
+  return (
+    <span className={cx('text-amber text-xs tracking-wider', className)} aria-label={`${full} out of 5 stars`}>
+      {'★'.repeat(full)}{'☆'.repeat(5 - full)}{count != null && <span className="ml-1 tracking-normal text-mute">({count})</span>}
+    </span>
+  )
+}
 
-export const Price = ({ p, size = 'md' }) => (
-  <span className="flex flex-wrap items-baseline gap-x-2">
-    <span className={cx('font-bold text-tan', size === 'lg' ? 'text-2xl sm:text-3xl' : size === 'sm' ? 'text-[13px] sm:text-sm' : 'text-sm sm:text-[15px]')}>{tk(p.price)}</span>
-    {p.oldPrice && <span className={cx('text-mute line-through', size === 'lg' ? 'text-base' : 'text-[11px] sm:text-[13px]')}>{tk(p.oldPrice)}</span>}
-  </span>
-)
+// p: { price, oldPrice } — oldPrice (or API compare_price) is shown struck through when higher
+export const Price = ({ p, size = 'md' }) => {
+  const was = p.oldPrice ?? p.compare_price
+  return (
+    <span className="flex flex-wrap items-baseline gap-x-2">
+      <span className={cx('font-bold text-tan', size === 'lg' ? 'text-2xl sm:text-3xl' : size === 'sm' ? 'text-[13px] sm:text-sm' : 'text-sm sm:text-[15px]')}>{tk(p.price)}</span>
+      {was > p.price && <span className={cx('text-mute line-through', size === 'lg' ? 'text-base' : 'text-[11px] sm:text-[13px]')}>{tk(was)}</span>}
+    </span>
+  )
+}
 
 export const Pill = ({ children, tone = 'tan', className }) => {
   const tones = { tan: 'bg-tan text-white', dark: 'bg-ink text-white', white: 'bg-white text-ink', leaf: 'bg-leaf/12 text-leaf', soft: 'bg-sand text-ink', rust: 'bg-rust/10 text-rust', amber: 'bg-amber/12 text-amber' }
@@ -61,11 +70,12 @@ export const Dots = ({ n = 4, className }) => (
   </div>
 )
 
-export const Qty = ({ value = 1, small }) => (
+// Quantity stepper; pass onChange to make it interactive (max = available stock)
+export const Qty = ({ value = 1, small, onChange, min = 1, max = 99 }) => (
   <div className={cx('inline-flex items-center rounded border border-line bg-white', small ? 'h-9' : 'h-11')}>
-    <button className="grid h-full w-9 place-items-center text-mute hover:text-ink" aria-label="Decrease"><Minus className="size-3.5" /></button>
-    <span className="w-8 text-center text-sm font-semibold">{value}</span>
-    <button className="grid h-full w-9 place-items-center text-mute hover:text-ink" aria-label="Increase"><Plus className="size-3.5" /></button>
+    <button type="button" onClick={() => onChange?.(value - 1)} disabled={value <= min} className="grid h-full w-9 place-items-center text-mute hover:text-ink disabled:opacity-40" aria-label="Decrease"><Minus className="size-3.5" /></button>
+    <span className="w-8 text-center text-sm font-semibold" aria-live="polite">{value}</span>
+    <button type="button" onClick={() => onChange?.(value + 1)} disabled={max > 0 && value >= max} className="grid h-full w-9 place-items-center text-mute hover:text-ink disabled:opacity-40" aria-label="Increase"><Plus className="size-3.5" /></button>
   </div>
 )
 
@@ -118,50 +128,60 @@ export const PageHero = ({ crumbs, title, sub, image }) => (
 )
 
 /* ---------- Product cards ---------- */
+// Cards accept an API product (or legacy demo data) — normalizeProduct() gives them one shape.
+
+const offPercent = (q) => q.discount || (q.oldPrice > q.price ? Math.round(((q.oldPrice - q.price) / q.oldPrice) * 100) : 0)
 
 // Grid card used in Shop, Flash Sale, Wishlist, Search
 export function ProductCard({ p, badge, cta = 'Add to cart', fav }) {
-  const off = discount(p)
-  const b = badge ?? (p.stock === 0 ? 'Out of stock' : off ? `-${off}%` : p.badge)
+  const q = normalizeProduct(p)
+  const quickAdd = useQuickAdd()
+  const off = offPercent(q)
+  const sold = !q.inStock
+  const b = badge ?? (sold ? 'Out of stock' : off ? `-${off}%` : q.badge)
   return (
     <article className="group flex flex-col gap-2 sm:gap-3">
-      <Link to={`/product/${p.slug}`} className="relative block aspect-[10/11] overflow-hidden rounded-lg bg-tile sm:rounded">
-        <img src={p.image} alt={p.name} loading="lazy" className={cx('size-full object-cover transition duration-500 group-hover:scale-105', p.stock === 0 && 'opacity-60')} />
-        {b && <Pill tone={p.stock === 0 ? 'dark' : String(b).startsWith('-') ? 'tan' : 'white'} className="absolute left-2 top-2 sm:left-3 sm:top-3">{b}</Pill>}
+      <Link to={`/product/${q.slug}`} className="relative block aspect-[10/11] overflow-hidden rounded-lg bg-tile sm:rounded">
+        <img src={q.image} alt={q.name} loading="lazy" className={cx('size-full object-cover transition duration-500 group-hover:scale-105', sold && 'opacity-60')} />
+        {b && <Pill tone={sold ? 'dark' : String(b).startsWith('-') ? 'tan' : 'white'} className="absolute left-2 top-2 sm:left-3 sm:top-3">{b}</Pill>}
         <HeartBtn active={fav} className="absolute right-2 top-2 sm:right-3 sm:top-3" />
       </Link>
       <div className="flex flex-1 flex-col gap-1">
-        <p className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-mute sm:block">{p.category}</p>
-        <Link to={`/product/${p.slug}`} className="font-display text-base font-semibold leading-tight hover:text-tan sm:text-[21px]">{p.name}</Link>
-        <Price p={p} />
-        <Stars count={p.reviews} className="text-[10px] sm:text-[11px]" />
+        <p className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-mute sm:block">{q.category}</p>
+        <Link to={`/product/${q.slug}`} className="font-display text-base font-semibold leading-tight hover:text-tan sm:text-[21px]">{q.name}</Link>
+        <Price p={q} />
+        {q.reviews > 0 && <Stars n={Math.round(q.rating)} count={q.reviews} className="text-[10px] sm:text-[11px]" />}
       </div>
-      <Button variant={p.stock === 0 ? 'soft' : 'outlineTan'} size="sm" className="w-full sm:py-3">{p.stock === 0 ? 'Notify me' : cta}</Button>
+      <Button variant={sold ? 'soft' : 'outlineTan'} size="sm" className="w-full sm:py-3" disabled={sold} onClick={() => quickAdd(q)}>
+        {sold ? 'Sold out' : q.hasVariants ? 'Choose colour' : cta}
+      </Button>
     </article>
   )
 }
 
 // White card used in the per-category home sliders (urbaland style)
 export function CatProductCard({ p, className = 'w-[150px] shrink-0 snap-start sm:w-[218px] lg:w-auto' }) {
-  const off = discount(p)
-  const sold = p.stock === 0
+  const q = normalizeProduct(p)
+  const quickAdd = useQuickAdd()
+  const off = offPercent(q)
+  const sold = !q.inStock
   return (
     <article className={cx('flex flex-col overflow-hidden rounded-lg bg-white', className)}>
-      <Link to={`/product/${p.slug}`} className="relative block aspect-square overflow-hidden bg-tile">
-        <img src={p.image} alt={p.name} loading="lazy" className={cx('size-full object-cover transition duration-500 hover:scale-105', sold && 'opacity-50')} />
+      <Link to={`/product/${q.slug}`} className="relative block aspect-square overflow-hidden bg-tile">
+        <img src={q.image} alt={q.name} loading="lazy" className={cx('size-full object-cover transition duration-500 hover:scale-105', sold && 'opacity-50')} />
         <HeartBtn className="absolute left-2 top-2 !size-7 sm:left-2.5 sm:top-2.5 sm:!size-8" />
         {(sold || off > 0) && <span className={cx('absolute right-2 top-2 rounded-sm px-1.5 py-0.5 text-[9px] font-bold text-white sm:right-2.5 sm:top-2.5 sm:px-2 sm:py-1 sm:text-[11px]', sold ? 'bg-espresso' : 'bg-tan')}>{sold ? 'Sold out' : `Save ${off}%`}</span>}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:gap-2 sm:p-3.5">
-        <Link to={`/product/${p.slug}`} className="font-display text-[15px] font-semibold leading-tight hover:text-tan sm:text-lg">{p.name}</Link>
-        <Price p={p} size="sm" />
+        <Link to={`/product/${q.slug}`} className="font-display text-[15px] font-semibold leading-tight hover:text-tan sm:text-lg">{q.name}</Link>
+        <Price p={q} size="sm" />
         <div className="mt-auto flex gap-1.5 pt-1 sm:gap-2">
           {sold ? (
-            <Button variant="danger" size="sm" className="w-full">Notify me</Button>
+            <Button variant="danger" size="sm" className="w-full" disabled>Sold out</Button>
           ) : (
             <>
-              <Button size="sm" className="flex-1 !px-1.5">Buy now</Button>
-              <Button variant="outline" size="sm" className="!px-2 lg:flex-1 lg:!px-1.5"><ShoppingBag className="size-3.5 lg:hidden" /><span className="hidden lg:inline">Add to cart</span></Button>
+              <Button size="sm" className="flex-1 !px-1.5" onClick={() => quickAdd(q, { buyNow: true })}>Buy now</Button>
+              <Button variant="outline" size="sm" className="!px-2 lg:flex-1 lg:!px-1.5" aria-label={`Add ${q.name} to cart`} onClick={() => quickAdd(q)}><ShoppingBag className="size-3.5 lg:hidden" /><span className="hidden lg:inline">Add to cart</span></Button>
             </>
           )}
         </div>
@@ -172,29 +192,57 @@ export function CatProductCard({ p, className = 'w-[150px] shrink-0 snap-start s
 
 // Horizontal card used in "Top Selling Products"
 export function TopProductCard({ p, rank }) {
+  const q = normalizeProduct(p)
+  const quickAdd = useQuickAdd()
+  const sold = !q.inStock
   return (
     <article className="flex items-stretch overflow-hidden rounded-lg bg-cream">
-      <Link to={`/product/${p.slug}`} className="relative w-[124px] shrink-0 bg-tile sm:w-[300px] lg:w-[45%]">
-        <img src={p.image} alt={p.name} loading="lazy" className="absolute inset-0 size-full object-cover" />
+      <Link to={`/product/${q.slug}`} className="relative w-[124px] shrink-0 bg-tile sm:w-[300px] lg:w-[45%]">
+        <img src={q.image} alt={q.name} loading="lazy" className="absolute inset-0 size-full object-cover" />
         <Pill className="absolute left-2 top-2 sm:left-3 sm:top-3">#{rank} Best seller</Pill>
       </Link>
       <div className="flex min-h-[168px] flex-1 flex-col justify-center gap-1.5 p-3 sm:min-h-[250px] sm:gap-2.5 sm:p-7 lg:min-h-[280px]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mute sm:text-[11px]">{p.category.replace(/s$/, '')}</p>
-        <Link to={`/product/${p.slug}`} className="font-display text-[19px] font-semibold leading-tight hover:text-tan sm:text-[26px] lg:text-[28px]">{p.name}</Link>
-        <Stars count={`${p.reviews} reviews`} className="hidden sm:inline" />
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mute sm:text-[11px]">{q.category.replace(/s$/, '')}</p>
+        <Link to={`/product/${q.slug}`} className="font-display text-[19px] font-semibold leading-tight hover:text-tan sm:text-[26px] lg:text-[28px]">{q.name}</Link>
+        {q.reviews > 0 && <Stars n={Math.round(q.rating)} count={`${q.reviews} reviews`} className="hidden sm:inline" />}
         <div className="flex flex-wrap items-center gap-2">
-          <Price p={p} size="lg" />
-          {p.oldPrice && <span className="rounded-full bg-leaf/12 px-2.5 py-0.5 text-[10px] font-semibold text-leaf sm:text-[11px]">Save {tk(p.oldPrice - p.price)}</span>}
+          <Price p={q} size="lg" />
+          {q.oldPrice > q.price && <span className="rounded-full bg-leaf/12 px-2.5 py-0.5 text-[10px] font-semibold text-leaf sm:text-[11px]">Save {tk(q.oldPrice - q.price)}</span>}
         </div>
         <div className="flex gap-2 pt-1 sm:pt-2">
-          <Button variant="outline" className="max-sm:hidden"><ShoppingBag className="size-4" /> Add to cart</Button>
-          <Button className="flex-1 sm:flex-none"><ShoppingBag className="size-4 max-sm:hidden" /> Buy now</Button>
-          <Button variant="outline" className="!px-3 sm:!hidden" aria-label="Add to cart"><ShoppingBag className="size-4" /></Button>
+          {sold ? (
+            <Button variant="soft" className="flex-1 sm:flex-none" disabled>Sold out</Button>
+          ) : (
+            <>
+              <Button variant="outline" className="max-sm:hidden" onClick={() => quickAdd(q)}><ShoppingBag className="size-4" /> {q.hasVariants ? 'Choose colour' : 'Add to cart'}</Button>
+              <Button className="flex-1 sm:flex-none" onClick={() => quickAdd(q, { buyNow: true })}><ShoppingBag className="size-4 max-sm:hidden" /> Buy now</Button>
+              <Button variant="outline" className="!px-3 sm:!hidden" aria-label="Add to cart" onClick={() => quickAdd(q)}><ShoppingBag className="size-4" /></Button>
+            </>
+          )}
         </div>
       </div>
     </article>
   )
 }
+
+/* ---------- Loading placeholders ---------- */
+const Bone = ({ className }) => <span className={cx('block animate-pulse rounded bg-line/60', className)} />
+
+export const ProductCardSkeleton = () => (
+  <div className="flex flex-col gap-2 sm:gap-3" aria-hidden="true">
+    <Bone className="aspect-[10/11] rounded-lg" />
+    <Bone className="h-3 w-1/3" /><Bone className="h-5 w-4/5" /><Bone className="h-4 w-1/2" /><Bone className="h-9" />
+  </div>
+)
+
+export const CatCardSkeleton = () => (
+  <div className="flex flex-col overflow-hidden rounded-lg bg-white" aria-hidden="true">
+    <Bone className="aspect-square rounded-none" />
+    <div className="space-y-2 p-3"><Bone className="h-4 w-4/5" /><Bone className="h-4 w-1/2" /><Bone className="h-8" /></div>
+  </div>
+)
+
+export { Bone }
 
 export const EmptyState = ({ icon: Icon, title, text, action }) => (
   <div className="flex flex-col items-center gap-4 rounded-lg bg-white px-6 py-14 text-center sm:py-20">

@@ -14,6 +14,8 @@ class ProductVariant extends Model
         'price',
         'stock',
         'is_active',
+        'color_hex',
+        'image',
     ];
 
     protected function casts(): array
@@ -31,10 +33,10 @@ class ProductVariant extends Model
     }
 
     /**
-     * Variant price falls back to the product price.
+     * Price the customer pays for this option — see Product::priceFor().
      */
     public function effectivePrice(): float
     {
-        return $this->price ?? $this->product->price;
+        return $this->product->priceFor($this);
     }
 }

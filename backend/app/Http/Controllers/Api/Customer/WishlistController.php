@@ -17,8 +17,7 @@ class WishlistController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $products = $request->user()->wishlistProducts()
-            ->with(['category', 'primaryImage'])
-            ->withRating()
+            ->forCard()
             ->orderByPivot('created_at', 'desc')
             ->get();
 

@@ -23,11 +23,15 @@ class CategorySeeder extends Seeder
             ['slug' => 'belts', 'name' => 'Belts', 'image' => '/images/belt-tan.jpg', 'description' => 'Dress & braided leather belts'],
         ];
 
+        // categories that get a product slider on the home page
+        $onHome = ['wallets', 'long-wallets', 'passport-covers', 'key-holders', 'womens-purses', 'bags'];
+
         foreach ($categories as $index => $category) {
             Category::updateOrCreate(['slug' => $category['slug']], [
                 ...$category,
                 'sort_order' => $index + 1,
                 'is_active' => true,
+                'show_on_home' => in_array($category['slug'], $onHome, true),
             ]);
         }
     }

@@ -13,9 +13,15 @@ class ProductResource extends JsonResource
     public function toArray(Request $request): array
     {
         $isStaff = (bool) $request->user()?->isStaff();
+        // The admin panel edits the stored prices; the storefront shows what the customer pays now.
+        $admin = $request->is('api/admin/*');
         $image = $this->relationLoaded('primaryImage')
             ? $this->primaryImage?->path
             : ($this->relationLoaded('images') ? $this->images->first()?->path : null);
+        $flash = ! $admin && $this->relationLoaded('activeFlashItem') && $this->activeFlashItem
+            && $this->activeFlashItem->sale_price < $this->price
+            ? $this->activeFlashItem
+            : null;
 
         return [
             'id' => $this->id,
@@ -27,17 +33,35 @@ class ProductResource extends JsonResource
                 'name' => $this->category->name,
                 'slug' => $this->category->slug,
             ]),
+            'brand' => $this->whenLoaded('brand', fn () => $this->brand ? [
+                'id' => $this->brand->id,
+                'name' => $this->brand->name,
+                'slug' => $this->brand->slug,
+            ] : null),
             'description' => $this->description,
-            'price' => $this->price,
-            'compare_price' => $this->compare_price,
-            'discount_percent' => $this->discountPercent(),
+            'price' => $admin ? $this->price : $this->sellingPrice(),
+            'compare_price' => $admin ? $this->compare_price : $this->listPrice(),
+            'discount_percent' => $admin
+                ? ($this->compare_price > $this->price ? (int) round((($this->compare_price - $this->price) / $this->compare_price) * 100) : 0)
+                : $this->discountPercent(),
+            'flash_sale' => $flash ? [
+                'id' => $flash->flash_sale_id,
+                'title' => $flash->flashSale?->title,
+                'ends_at' => $flash->flashSale?->ends_at?->toIso8601String(),
+            ] : null,
             'stock' => $this->stock,
             'in_stock' => $this->stock > 0,
             'is_engravable' => $this->is_engravable,
+            'is_featured' => $this->is_featured,
             'badge' => $this->badge,
             'image' => Media::url($image),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
+            // cards use this to send shoppers to the product page to pick a colour first
+            'has_variants' => $this->when(
+                $this->relationLoaded('variants') || array_key_exists('variants_count', $this->getAttributes()),
+                fn () => $this->relationLoaded('variants') ? $this->variants->isNotEmpty() : $this->variants_count > 0,
+            ),
             'rating' => $this->when(
                 array_key_exists('rating', $this->getAttributes()),
                 fn () => $this->rating !== null ? round((float) $this->rating, 1) : null,

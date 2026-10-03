@@ -15,9 +15,12 @@ class BannerResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
+            'eyebrow' => $this->eyebrow,
             'subtitle' => $this->subtitle,
             'image' => Media::url($this->image),
             'link' => $this->link,
+            'button_text' => $this->button_text,
+            'show_text' => $this->show_text,
             'position' => $this->position,
             'sort_order' => $this->sort_order,
             'is_active' => $this->is_active,

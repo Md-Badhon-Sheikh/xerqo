@@ -6,6 +6,7 @@ import { queryClient } from './lib/queryClient'
 import { ToastProvider } from './context/ToastContext'
 import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
+import { CompareProvider } from './context/CompareContext'
 import '@fontsource/cormorant-garamond/500.css'
 import '@fontsource/cormorant-garamond/600.css'
 import '@fontsource/cormorant-garamond/700.css'
@@ -23,9 +24,11 @@ createRoot(document.getElementById('root')).render(
       <ToastProvider>
         <AuthProvider>
           <CartProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
+            <CompareProvider>
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </CompareProvider>
           </CartProvider>
         </AuthProvider>
       </ToastProvider>

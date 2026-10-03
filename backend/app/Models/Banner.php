@@ -9,9 +9,12 @@ class Banner extends Model
 {
     protected $fillable = [
         'title',
+        'eyebrow',
         'subtitle',
         'image',
         'link',
+        'button_text',
+        'show_text',
         'position',
         'sort_order',
         'is_active',
@@ -23,6 +26,7 @@ class Banner extends Model
     {
         return [
             'is_active' => 'boolean',
+            'show_text' => 'boolean',
             'sort_order' => 'integer',
             'starts_at' => 'datetime',
             'ends_at' => 'datetime',

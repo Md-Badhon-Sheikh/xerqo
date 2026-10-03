@@ -3,9 +3,11 @@
 use App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
+use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\Customer;
+use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SettingController;
@@ -18,7 +20,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 // ---------------------------------------------------------------- Public storefront
+Route::get('home', HomeController::class);
 Route::get('categories', [CategoryController::class, 'index']);
+Route::get('brands', [BrandController::class, 'index']);
 Route::get('products', [ProductController::class, 'index']);
 Route::get('products/{slug}', [ProductController::class, 'show']);
 Route::get('products/{slug}/reviews', [ProductController::class, 'reviews']);

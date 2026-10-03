@@ -1,16 +1,18 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { Search, Heart, User, ShoppingBag, Menu, X, ChevronUp, MessageCircle, Home, LayoutGrid, Plus, Trash2, Truck, ChevronDown } from 'lucide-react'
-import { cartItems, tk, categories } from '../../data/store'
+import { Search, Heart, User, ShoppingBag, Menu, X, ChevronUp, MessageCircle, Home, LayoutGrid, Plus, Trash2, Truck, ChevronDown, GitCompareArrows } from 'lucide-react'
+import { tk } from '../../data/store'
 import { Button, Qty, cx } from './ui'
 import { useAuth } from '../../context/AuthContext'
+import { useCart } from '../../context/CartContext'
+import { useCompare } from '../../context/CompareContext'
+import { StoreUI, useUI } from '../../context/StoreUIContext'
+import { useCategories, useSettings } from '../../lib/queries'
 
-const UI = createContext(null)
-export const useUI = () => useContext(UI)
+const NAV = [['Home', '/'], ['Shop', '/shop'], ['Wallets', '/shop?c=wallets'], ['Bags', '/shop?c=bags'], ['Women', '/shop?c=womens-purses'], ['Travel', '/shop?c=passport-covers'], ['About Us', '/about'], ['Contact', '/contact']]
 
-const NAV = [['Home', '/'], ['Shop', '/shop'], ['Wallets', '/shop?c=wallets'], ['Bags', '/shop?c=bags'], ['Women', '/shop?c=womens-purses'], ['Gift Sets', '/shop?c=gifts'], ['About Us', '/about'], ['Contact', '/contact']]
-const subtotal = cartItems.reduce((s, i) => s + i.product.price * i.qty, 0)
-const FREE_DELIVERY = 2000
+// Free-delivery threshold from the store settings (falls back to ৳2,000 while loading)
+const useFreeDelivery = () => useSettings().data?.delivery?.free_delivery_threshold ?? 2000
 
 export const Logo = ({ light, className }) => (
   <Link to="/" aria-label="XERQO home" className={cx('block shrink-0', className)}>
@@ -19,11 +21,24 @@ export const Logo = ({ light, className }) => (
 )
 
 function CartIcon({ onClick }) {
+  const { count } = useCart()
   return (
-    <button onClick={onClick} className="relative" aria-label="Open cart">
+    <button onClick={onClick} className="relative" aria-label={`Open cart (${count} items)`}>
       <ShoppingBag className="size-[22px]" strokeWidth={1.7} />
-      <span className="absolute -right-2 -top-1.5 grid size-4 place-items-center rounded-full bg-tan text-[9px] font-bold text-white">{cartItems.length}</span>
+      {count > 0 && <span className="absolute -right-2 -top-1.5 grid size-4 place-items-center rounded-full bg-tan text-[9px] font-bold text-white">{count > 9 ? '9+' : count}</span>}
     </button>
+  )
+}
+
+// Shown only while products are queued for comparison
+function CompareIcon() {
+  const { items } = useCompare()
+  if (!items.length) return null
+  return (
+    <Link to="/compare" aria-label={`Compare products (${items.length})`} title="Compare products" className="relative">
+      <GitCompareArrows className="size-5" strokeWidth={1.7} />
+      <span className="absolute -right-2 -top-1.5 grid size-4 place-items-center rounded-full bg-ink text-[9px] font-bold text-white">{items.length}</span>
+    </Link>
   )
 }
 
@@ -52,6 +67,7 @@ function Header() {
           <div className="flex items-center gap-4 sm:gap-5">
             <Link to="/search" className="hidden items-center gap-2 rounded-full bg-cream px-4 py-2.5 text-[13px] text-mute xl:flex"><Search className="size-4" /> Search products…</Link>
             <Link to="/search" aria-label="Search" className="sm:hidden xl:hidden lg:block"><Search className="size-5" /></Link>
+            <CompareIcon />
             <Link to="/account/wishlist" aria-label="Wishlist" className="hidden sm:block"><Heart className="size-5" strokeWidth={1.7} /></Link>
             <Link to="/account" aria-label="Account" className="hidden sm:block"><User className="size-5" strokeWidth={1.7} /></Link>
             <CartIcon onClick={() => setDrawer(true)} />
@@ -65,6 +81,7 @@ function Header() {
 function MobileMenu() {
   const { menu, setMenu } = useUI()
   const { user, logout } = useAuth()
+  const { data: categories = [] } = useCategories()
   const close = () => setMenu(false)
   return (
     <div className={cx('fixed inset-0 z-50 lg:hidden', menu ? 'visible' : 'invisible')}>
@@ -92,41 +109,53 @@ function MobileMenu() {
 
 export function CartDrawer({ forceOpen }) {
   const ctx = useUI()
+  const { items, count, subtotal, update, remove } = useCart()
+  const freeAt = useFreeDelivery()
   const open = forceOpen || ctx?.drawer
   const close = () => ctx?.setDrawer(false)
   return (
     <div className={cx(forceOpen ? 'relative' : 'fixed inset-0 z-50', open ? 'visible' : 'invisible')}>
       {!forceOpen && <div onClick={close} className={cx('absolute inset-0 bg-black/45 transition', open ? 'opacity-100' : 'opacity-0')} />}
-      <aside className={cx('flex flex-col bg-white', forceOpen ? 'ml-auto h-[760px] w-full max-w-[440px] shadow-xl' : 'absolute inset-y-0 right-0 w-full max-w-[440px] transition-transform', open ? 'translate-x-0' : 'translate-x-full')}>
+      <aside aria-label="Shopping cart" className={cx('flex flex-col bg-white', forceOpen ? 'ml-auto h-[760px] w-full max-w-[440px] shadow-xl' : 'absolute inset-y-0 right-0 w-full max-w-[440px] transition-transform', open ? 'translate-x-0' : 'translate-x-full')}>
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
-          <h3 className="h-display text-2xl">Your Cart <span className="font-sans text-sm font-normal text-mute">({cartItems.length} items)</span></h3>
+          <h3 className="h-display text-2xl">Your Cart <span className="font-sans text-sm font-normal text-mute">({count} {count === 1 ? 'item' : 'items'})</span></h3>
           <button onClick={close} aria-label="Close cart" className="text-2xl leading-none">×</button>
         </div>
-        <div className="space-y-2 bg-leaf/8 px-5 py-3 text-[13px]">
-          <p className="flex items-center gap-2 text-leaf"><Truck className="size-4" />{subtotal >= FREE_DELIVERY ? <span>Free delivery unlocked 🎉</span> : <span>You're <b>{tk(FREE_DELIVERY - subtotal)}</b> away from free delivery</span>}</p>
-          <div className="h-1.5 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-leaf" style={{ width: `${Math.min(100, (subtotal / FREE_DELIVERY) * 100)}%` }} /></div>
-        </div>
-        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
-          {cartItems.map(({ product: p, qty, variant }) => (
-            <div key={p.id} className="flex gap-3 border-b border-line pb-4">
-              <img src={p.image} alt="" className="size-20 rounded object-cover" />
-              <div className="flex flex-1 flex-col gap-1">
-                <div className="flex justify-between gap-2"><p className="font-display text-lg font-semibold leading-tight">{p.name}</p><button aria-label="Remove"><Trash2 className="size-4 text-mute" /></button></div>
-                <p className="text-xs text-mute">{variant}</p>
-                <div className="mt-auto flex items-center justify-between"><Qty value={qty} small /><span className="font-bold text-tan">{tk(p.price * qty)}</span></div>
-              </div>
-            </div>
-          ))}
-          <div className="rounded bg-cream p-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-mute">Pairs well with</p>
-            <div className="flex items-center gap-3"><img src="/images/keys-red.jpg" alt="" className="size-12 rounded object-cover" /><div className="flex-1 text-sm"><p className="font-medium">Key Holder — Red</p><p className="text-tan font-semibold">৳450</p></div><button className="grid size-8 place-items-center rounded-full border border-ink"><Plus className="size-4" /></button></div>
+        {items.length === 0 ? (
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
+            <span className="grid size-16 place-items-center rounded-full bg-sand"><ShoppingBag className="size-7 text-tan" strokeWidth={1.5} /></span>
+            <p className="h-display text-2xl">Your cart is empty</p>
+            <p className="text-sm text-mute">Browse our handcrafted wallets, bags and travel goods.</p>
+            <Button to="/shop" onClick={close}>Start shopping</Button>
           </div>
-        </div>
-        <div className="space-y-3 border-t border-line px-5 py-4">
-          <div className="flex justify-between text-sm"><span className="text-mute">Subtotal</span><b>{tk(subtotal)}</b></div>
-          <p className="text-xs text-mute">Delivery &amp; discounts calculated at checkout.</p>
-          <div className="grid grid-cols-2 gap-2"><Button to="/cart" variant="outline" onClick={close}>View cart</Button><Button to="/checkout" onClick={close}>Checkout</Button></div>
-        </div>
+        ) : (
+          <>
+            <div className="space-y-2 bg-leaf/8 px-5 py-3 text-[13px]">
+              <p className="flex items-center gap-2 text-leaf"><Truck className="size-4" />{subtotal >= freeAt ? <span>Free delivery unlocked 🎉</span> : <span>You're <b>{tk(freeAt - subtotal)}</b> away from free delivery</span>}</p>
+              <div className="h-1.5 overflow-hidden rounded-full bg-white"><div className="h-full rounded-full bg-leaf" style={{ width: `${Math.min(100, (subtotal / freeAt) * 100)}%` }} /></div>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+              {items.map((i) => (
+                <div key={i.key} className="flex gap-3 border-b border-line pb-4">
+                  <Link to={`/product/${i.slug}`} onClick={close} className="shrink-0"><img src={i.image} alt="" className="size-20 rounded object-cover" /></Link>
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
+                    <div className="flex justify-between gap-2">
+                      <Link to={`/product/${i.slug}`} onClick={close} className="font-display text-lg font-semibold leading-tight hover:text-tan">{i.name}</Link>
+                      <button onClick={() => remove(i.key)} aria-label={`Remove ${i.name}`}><Trash2 className="size-4 text-mute hover:text-rust" /></button>
+                    </div>
+                    <p className="text-xs text-mute">{[i.color, i.engraving_text && `Engraving: “${i.engraving_text}”`].filter(Boolean).join(' · ')}</p>
+                    <div className="mt-auto flex items-center justify-between"><Qty value={i.qty} max={i.stock} onChange={(q) => update(i.key, q)} small /><span className="font-bold text-tan">{tk(i.price * i.qty)}</span></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3 border-t border-line px-5 py-4">
+              <div className="flex justify-between text-sm"><span className="text-mute">Subtotal</span><b>{tk(subtotal)}</b></div>
+              <p className="text-xs text-mute">Delivery &amp; discounts calculated at checkout.</p>
+              <div className="grid grid-cols-2 gap-2"><Button to="/cart" variant="outline" onClick={close}>View cart</Button><Button to="/checkout" onClick={close}>Checkout</Button></div>
+            </div>
+          </>
+        )}
       </aside>
     </div>
   )
@@ -182,18 +211,20 @@ function BottomNav() {
 /* Right-side fixed widgets: mini cart, scroll-to-top, live chat */
 function FloatingWidgets({ showCart, sticky }) {
   const { setDrawer } = useUI()
+  const { count, subtotal } = useCart()
+  const whatsapp = (useSettings().data?.store?.whatsapp || '').replace(/\D/g, '')
   return (
     <>
-      {showCart && (
+      {showCart && count > 0 && (
         <button onClick={() => setDrawer(true)} className="fixed right-0 top-[40%] z-30 w-[62px] overflow-hidden rounded-l-xl shadow-[-4px_6px_18px_rgba(0,0,0,0.18)] sm:top-[44%] sm:w-[84px]" aria-label="Open mini cart">
-          <span className="flex flex-col items-center gap-1 bg-tan px-2 py-2.5 text-white sm:py-3"><ShoppingBag className="size-5 sm:size-6" /><span className="text-[10px] font-semibold sm:text-xs">{cartItems.length} Items</span></span>
+          <span className="flex flex-col items-center gap-1 bg-tan px-2 py-2.5 text-white sm:py-3"><ShoppingBag className="size-5 sm:size-6" /><span className="text-[10px] font-semibold sm:text-xs">{count} {count === 1 ? 'Item' : 'Items'}</span></span>
           <span className="block bg-white py-1.5 text-center text-[11px] font-bold text-tan sm:py-2 sm:text-[13px]">{tk(subtotal)}</span>
         </button>
       )}
       <button onClick={() => window.scrollTo({ top: 0 })} aria-label="Scroll to top" className={cx('fixed right-3.5 z-30 grid size-10', sticky ? 'bottom-[214px]' : 'bottom-[150px]', ' place-items-center rounded-full border-[1.5px] border-tan bg-white/90 p-[3px] sm:bottom-[120px] sm:right-[22px] sm:size-12')}>
         <span className="grid size-full place-items-center rounded-full bg-tan text-white"><ChevronUp className="size-5" /></span>
       </button>
-      <a href="https://wa.me/8801000000000" target="_blank" rel="noreferrer" aria-label="Live chat on WhatsApp" className={cx('fixed right-3 z-30 grid size-12', sticky ? 'bottom-[156px]' : 'bottom-[92px]', ' place-items-center rounded-full rounded-tr-xl bg-tan text-white shadow-[0_6px_16px_rgba(77,38,13,0.35)] sm:bottom-11 sm:right-[18px] sm:size-14')}>
+      <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" aria-label="Live chat on WhatsApp" className={cx('fixed right-3 z-30 grid size-12', sticky ? 'bottom-[156px]' : 'bottom-[92px]', ' place-items-center rounded-full rounded-tr-xl bg-tan text-white shadow-[0_6px_16px_rgba(77,38,13,0.35)] sm:bottom-11 sm:right-[18px] sm:size-14')}>
         <MessageCircle className="size-6" />
       </a>
     </>
@@ -209,8 +240,9 @@ export default function StoreLayout() {
   useEffect(() => { window.scrollTo(0, 0); setDrawer(false); setMenu(false) }, [pathname])
   // pages with a sticky mobile action bar above the bottom nav
   const sticky = pathname.startsWith('/product/') || pathname === '/cart' || pathname === '/checkout'
+  const ui = useMemo(() => ({ drawer, setDrawer, menu, setMenu }), [drawer, menu])
   return (
-    <UI.Provider value={{ drawer, setDrawer, menu, setMenu }}>
+    <StoreUI.Provider value={ui}>
       <Header />
       <main className="min-h-[60vh]"><Outlet /></main>
       <Footer sticky={sticky} />
@@ -218,6 +250,6 @@ export default function StoreLayout() {
       <FloatingWidgets showCart={!NO_MINI_CART.includes(pathname)} sticky={sticky} />
       <CartDrawer />
       <MobileMenu />
-    </UI.Provider>
+    </StoreUI.Provider>
   )
 }
