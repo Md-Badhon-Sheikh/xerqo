@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Check, Printer, Truck } from 'lucide-react'
 import { Btn, Card, KPIs, PageHead, PayChip, Select, Tabs, cx } from '../../components/admin/ui'
 import { EmptyBlock, LoadingBlock, Paginator, SearchBox, Spin } from '../../components/admin/form'
-import { COURIERS, OrderBadge, Tk, ago, shortTk } from '../../components/admin/orderUi'
+import { OrderBadge, useCouriers, Tk, ago, shortTk } from '../../components/admin/orderUi'
 import { useAdminAuth } from '../../context/AuthContext'
 import { adminApi } from '../../lib/api'
 import { confirm, toast } from '../../lib/alert'
@@ -16,6 +16,7 @@ const PARAMS = { ship: { statuses: ['confirmed', 'processing'] }, transit: { sta
 // one order: courier + tracking + the next step
 function ShipRow({ o, tab, canEdit, onDone }) {
   const [courier, setCourier] = useState(o.courier ?? '')
+  const couriers = useCouriers(o.courier)
   const [tracking, setTracking] = useState(o.tracking_code ?? '')
   const [busy, setBusy] = useState(false)
   const cod = o.payment_method === 'cod' && o.payment_status !== 'paid'
@@ -49,7 +50,7 @@ function ShipRow({ o, tab, canEdit, onDone }) {
         <p className="text-[13px] text-amute">{o.courier ? `${o.courier}${o.tracking_code ? ` · ${o.tracking_code}` : ''}` : 'No courier recorded'}</p>
       ) : (
         <div className="grid grid-cols-2 gap-2">
-          <Select search={false} placeholder="Courier" options={COURIERS} value={courier} onChange={setCourier} disabled={!canEdit} />
+          <Select search={false} placeholder="Courier" options={couriers} value={courier} onChange={setCourier} disabled={!canEdit} />
           <input className="ainput" value={tracking} onChange={(e) => setTracking(e.target.value.trim())} placeholder="Tracking no." disabled={!canEdit} aria-label="Tracking number" />
         </div>
       )}

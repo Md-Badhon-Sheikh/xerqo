@@ -54,6 +54,9 @@ class ReturnController extends Controller
         }
 
         $windowDays = (int) Setting::getValue('returns.window_days', 7);
+        if ($windowDays <= 0) {
+            throw ValidationException::withMessages(['order_number' => 'Returns can’t be requested online right now — please call or WhatsApp us.']);
+        }
         if ($order->delivered_at && $order->delivered_at->copy()->addDays($windowDays)->isPast()) {
             throw ValidationException::withMessages(['order_number' => "The {$windowDays}-day return window for this order has closed."]);
         }

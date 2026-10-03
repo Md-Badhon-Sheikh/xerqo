@@ -62,13 +62,11 @@ class SettingController extends Controller
                 $setting = Setting::firstOrNew(['key' => $key]);
                 $current = $setting->exists ? $setting->value : null;
 
-                $setting->value = is_array($current) && is_array($value) && ! array_is_list($value)
-                    ? array_replace_recursive($current, $value)
-                    : $value;
+                $setting->value = is_array($current) && is_array($value) ? self::merge($current, $value) : $value;
 
                 if (! $setting->exists) {
                     $setting->group = 'general';
-                    $setting->is_public = false;
+                    $setting->is_public = in_array($key, self::PUBLIC_KEYS, true);
                 }
 
                 $setting->save();
@@ -76,5 +74,28 @@ class SettingController extends Controller
         });
 
         return $this->index();
+    }
+
+    // settings the storefront reads through GET /api/settings
+    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'seo', 'maintenance'];
+
+    /**
+     * Objects merge key by key; lists (e.g. the courier names) are replaced as a whole.
+     *
+     * @param  array<mixed>  $current
+     * @param  array<mixed>  $incoming
+     * @return array<mixed>
+     */
+    private static function merge(array $current, array $incoming): array
+    {
+        if (array_is_list($incoming) || array_is_list($current) && $current !== []) {
+            return $incoming;
+        }
+
+        foreach ($incoming as $k => $v) {
+            $current[$k] = is_array($v) && is_array($current[$k] ?? null) ? self::merge($current[$k], $v) : $v;
+        }
+
+        return $current;
     }
 }

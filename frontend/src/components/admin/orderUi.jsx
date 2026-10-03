@@ -1,4 +1,5 @@
 import { Badge } from './ui'
+import { useSettings } from '../../lib/queries'
 
 /* Shared labels, colours and formatters for orders, payments and returns in the admin panel */
 
@@ -20,6 +21,12 @@ export const PAYMENT_STATUS = { pending: ['To verify', 'amber'], verified: ['Ver
 export const METHOD_LABEL = { cod: 'COD', bkash: 'bKash', rocket: 'Rocket', nagad: 'Nagad', bank: 'Bank', card: 'Card' }
 export const RETURN_STATUS = { pending: ['Requested', 'amber'], approved: ['Approved', 'blue'], rejected: ['Rejected', 'red'], received: ['Received', 'purple'], completed: ['Completed', 'green'] }
 export const COURIERS = ['Steadfast', 'Pathao', 'RedX', 'Sundarban', 'SA Paribahan', 'eCourier', 'Own rider']
+// courier names from Settings → Couriers (plus the current one, so older orders still show theirs)
+export function useCouriers(current) {
+  const list = useSettings().data?.delivery?.couriers
+  const names = list?.length ? list : COURIERS
+  return current && !names.includes(current) ? [...names, current] : names
+}
 
 export const OrderBadge = ({ s }) => { const [l, t] = ORDER_STATUS[s] ?? [s, 'gray']; return <Badge tone={t}>{l}</Badge> }
 export const PayBadge = ({ s }) => { const [l, t] = PAY_STATUS[s] ?? [s, 'gray']; return <Badge tone={t}>{l}</Badge> }

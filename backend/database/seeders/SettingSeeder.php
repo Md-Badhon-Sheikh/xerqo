@@ -21,6 +21,10 @@ class SettingSeeder extends Seeder
                 'address' => 'Hazaribagh, Dhaka 1209, Bangladesh',
                 'facebook' => 'https://facebook.com/xerqo.bd',
                 'instagram' => 'https://instagram.com/xerqo.bd',
+                'messenger' => 'https://m.me/xerqo.bd',
+                'show_chat_button' => true,
+                'trade_license' => null,
+                'bin' => null,
                 'currency' => 'BDT',
                 'currency_symbol' => '৳',
             ], 'general', true],
@@ -75,10 +79,19 @@ class SettingSeeder extends Seeder
             ], 'content', true],
 
             'reviews' => [[
-                'auto_approve' => false,
-                'review_request_delay_hours' => 2,
-                'reward_points_photo_review' => 50,
+                'auto_approve' => false, // true = reviews go live without moderation
             ], 'reviews', false],
+
+            'seo' => [[
+                'meta_title' => 'XERQO — Premium Leather Wallets, Bags & Accessories in Bangladesh',
+                'meta_description' => 'Handcrafted genuine leather wallets, long wallets, passport covers, key holders and bags. Cash on delivery all over Bangladesh.',
+            ], 'general', true],
+
+            // "We'll be back soon" page for visitors; staff signed in to the admin still see the shop
+            'maintenance' => [[
+                'enabled' => false,
+                'message' => 'We are polishing a few things and will be back very soon. For orders, call or WhatsApp us.',
+            ], 'general', true],
 
             // Placeholders: {name} {order_id} {total} {courier} {tracking_link} {cod_amount} {product}
             //               {review_link} {return_id} {date} {cart_link} {otp} {minutes}

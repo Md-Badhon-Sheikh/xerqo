@@ -5,7 +5,7 @@ import Swal from 'sweetalert2'
 import { ArrowLeft, Check, ExternalLink, MessageCircle, Pencil, Phone, Printer, Truck, X } from 'lucide-react'
 import { Badge, Btn, Card, Col, KV, Avatar, PayChip, Select, Textarea, Thumb, Two, cx } from '../../components/admin/ui'
 import { FormField, LoadingBlock, Spin, TextInput } from '../../components/admin/form'
-import { COURIERS, ORDER_STATUS, OrderBadge, PayBadge, PaymentBadge, STATUS_ACTION, Tk, fmtDateTime } from '../../components/admin/orderUi'
+import { ORDER_STATUS, useCouriers, OrderBadge, PayBadge, PaymentBadge, STATUS_ACTION, Tk, fmtDateTime } from '../../components/admin/orderUi'
 import { useAdminAuth } from '../../context/AuthContext'
 import { adminApi } from '../../lib/api'
 import { confirm, toast } from '../../lib/alert'
@@ -122,6 +122,7 @@ export default function OrderDetail() {
   const [statusTo, setStatusTo] = useState('')
   const [note, setNote] = useState('')
   const [courier, setCourier] = useState(null)
+  const couriers = useCouriers(o?.courier)
   const [internal, setInternal] = useState('')
   const refresh = () => { qc.invalidateQueries({ queryKey: ['admin'] }); refetch() }
 
@@ -234,7 +235,7 @@ export default function OrderDetail() {
           <AddressCard key={`${o.id}-${o.updated_at}`} order={o} canEdit={canEdit} save={save} />
 
           <Card title="Courier" sub="Courier API booking comes later — add the courier and tracking number by hand">
-            <FormField label="Courier"><Select search={false} placeholder="Choose courier" options={COURIERS} value={c.courier} onChange={(v) => setCourier({ ...c, courier: v })} /></FormField>
+            <FormField label="Courier"><Select search={false} placeholder="Choose courier" options={couriers} value={c.courier} onChange={(v) => setCourier({ ...c, courier: v })} /></FormField>
             <FormField label="Tracking / consignment number"><TextInput value={c.tracking_code} onChange={(e) => setCourier({ ...c, tracking_code: e.target.value.trim() })} placeholder="e.g. SF-88213457" /></FormField>
             {canEdit && <Btn icon={Truck} className="w-full" disabled={save.isPending || (!courier)} onClick={() => save.mutate({ courier: c.courier || null, tracking_code: c.tracking_code || null }, { onSuccess: () => setCourier(null) })}>Save courier details</Btn>}
           </Card>

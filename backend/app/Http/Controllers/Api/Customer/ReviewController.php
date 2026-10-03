@@ -8,6 +8,7 @@ use App\Http\Resources\ReviewResource;
 use App\Models\Order;
 use App\Models\OrderFeedback;
 use App\Models\Review;
+use App\Models\Setting;
 use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -146,14 +147,15 @@ class ReviewController extends Controller
             'tags' => array_values(array_intersect(Review::TAGS, $data['tags'] ?? [])) ?: null,
             'is_anonymous' => (bool) ($data['is_anonymous'] ?? false),
             'photos' => $photos ?: null,
-            'status' => Review::STATUS_PENDING, // published after admin approval
+            // published after admin approval, unless the store switched on auto-publish
+            'status' => Setting::getValue('reviews.auto_approve') ? Review::STATUS_APPROVED : Review::STATUS_PENDING,
             'delivery_rating' => $data['delivery_rating'] ?? null,
             'courier_rating' => $data['courier_rating'] ?? null,
             'packaging_rating' => $data['packaging_rating'] ?? null,
         ]);
 
         return (new ReviewResource($review->load(self::WITH)))
-            ->additional(['message' => 'Thanks! Your review will appear after moderation.'])
+            ->additional(['message' => $review->status === Review::STATUS_APPROVED ? 'Thanks! Your review is live.' : 'Thanks! Your review will appear after moderation.'])
             ->response()
             ->setStatusCode(201);
     }

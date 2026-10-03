@@ -9,6 +9,7 @@ import { useCompare } from '../../context/CompareContext'
 import { StoreUI, useUI } from '../../context/StoreUIContext'
 import { WishlistProvider } from '../../context/WishlistContext'
 import { useCategories, useSettings } from '../../lib/queries'
+import { tokens } from '../../lib/api'
 
 const NAV = [['Home', '/'], ['Shop', '/shop'], ['Wallets', '/shop?c=wallets'], ['Bags', '/shop?c=bags'], ['Women', '/shop?c=womens-purses'], ['Travel', '/shop?c=passport-covers'], ['About Us', '/about'], ['Contact', '/contact']]
 
@@ -226,7 +227,9 @@ function BottomNav() {
 function FloatingWidgets({ showCart, sticky }) {
   const { setDrawer } = useUI()
   const { count, subtotal } = useCart()
-  const whatsapp = (useSettings().data?.store?.whatsapp || '').replace(/\D/g, '')
+  const store = useSettings().data?.store
+  const whatsapp = (store?.whatsapp || '').replace(/\D/g, '')
+  const chat = store?.show_chat_button !== false && whatsapp
   return (
     <>
       {showCart && count > 0 && (
@@ -238,23 +241,57 @@ function FloatingWidgets({ showCart, sticky }) {
       <button onClick={() => window.scrollTo({ top: 0 })} aria-label="Scroll to top" className={cx('fixed right-3.5 z-30 grid size-10', sticky ? 'bottom-[214px]' : 'bottom-[150px]', ' place-items-center rounded-full border-[1.5px] border-tan bg-white/90 p-[3px] sm:bottom-[120px] sm:right-[22px] sm:size-12')}>
         <span className="grid size-full place-items-center rounded-full bg-tan text-white"><ChevronUp className="size-5" /></span>
       </button>
-      <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" aria-label="Live chat on WhatsApp" className={cx('fixed right-3 z-30 grid size-12', sticky ? 'bottom-[156px]' : 'bottom-[92px]', ' place-items-center rounded-full rounded-tr-xl bg-tan text-white shadow-[0_6px_16px_rgba(77,38,13,0.35)] sm:bottom-11 sm:right-[18px] sm:size-14')}>
-        <MessageCircle className="size-6" />
-      </a>
+      {chat && (
+        <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" aria-label="Live chat on WhatsApp" className={cx('fixed right-3 z-30 grid size-12', sticky ? 'bottom-[156px]' : 'bottom-[92px]', ' place-items-center rounded-full rounded-tr-xl bg-tan text-white shadow-[0_6px_16px_rgba(77,38,13,0.35)] sm:bottom-11 sm:right-[18px] sm:size-14')}>
+          <MessageCircle className="size-6" />
+        </a>
+      )}
     </>
   )
 }
 
 const NO_MINI_CART = ['/cart', '/checkout', '/order-success', '/login', '/register', '/forgot-password']
 
+/* Shown to visitors while Settings → General → Maintenance mode is on */
+function Maintenance({ settings }) {
+  const store = settings?.store ?? {}
+  const whatsapp = (store.whatsapp || '').replace(/\D/g, '')
+  return (
+    <main className="grid min-h-screen place-items-center bg-cream px-6 py-16 text-center">
+      <div className="max-w-md space-y-5">
+        <img src="/images/logo.png" alt={store.name || 'XERQO'} className="mx-auto h-14" />
+        <h1 className="h-display text-[34px] sm:text-[44px]">We’ll be back soon</h1>
+        <p className="text-sm leading-relaxed text-mute">{settings?.maintenance?.message || 'We are making a few improvements. Please check back shortly.'}</p>
+        <div className="flex flex-wrap justify-center gap-3">
+          {store.phone && <Button as="a" href={`tel:${store.phone.replace(/[^\d+]/g, '')}`} variant="outline">Call {store.phone}</Button>}
+          {whatsapp && <Button as="a" href={`https://wa.me/${whatsapp}`} target="_blank" rel="noreferrer" variant="tan">WhatsApp us</Button>}
+        </div>
+      </div>
+    </main>
+  )
+}
+
+const DEFAULT_DESCRIPTION = typeof document !== 'undefined' ? document.querySelector('meta[name=description]')?.getAttribute('content') : ''
+
 export default function StoreLayout() {
   const [drawer, setDrawer] = useState(false)
   const [menu, setMenu] = useState(false)
   const { pathname } = useLocation()
+  const settings = useSettings().data
+  const seo = settings?.seo
   useEffect(() => { window.scrollTo(0, 0); setDrawer(false); setMenu(false) }, [pathname])
+  // page title + description from Settings → SEO (product pages set their own title)
+  useEffect(() => {
+    if (!pathname.startsWith('/product/')) document.title = seo?.meta_title || 'XERQO'
+    document.querySelector('meta[name=description]')?.setAttribute('content', seo?.meta_description || DEFAULT_DESCRIPTION || '')
+  }, [pathname, seo?.meta_title, seo?.meta_description])
+
   // pages with a sticky mobile action bar above the bottom nav
   const sticky = pathname.startsWith('/product/') || pathname === '/cart' || pathname === '/checkout'
   const ui = useMemo(() => ({ drawer, setDrawer, menu, setMenu }), [drawer, menu])
+
+  // staff signed in to the admin can still look around while the shop is closed
+  if (settings?.maintenance?.enabled && !tokens.get('admin')) return <Maintenance settings={settings} />
   return (
     <StoreUI.Provider value={ui}>
       <WishlistProvider>
