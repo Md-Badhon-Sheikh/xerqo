@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SettingController;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +29,23 @@ Route::get('products/{slug}', [ProductController::class, 'show']);
 Route::get('products/{slug}/reviews', [ProductController::class, 'reviews']);
 Route::get('banners', [BannerController::class, 'index']);
 Route::get('settings', [SettingController::class, 'index']);
+
+// uptime / deploy check: database reachable, queue backlog, scheduler alive
+Route::get('health', function () {
+    try {
+        DB::select('select 1');
+        $db = true;
+    } catch (Throwable) {
+        $db = false;
+    }
+
+    return response()->json([
+        'status' => $db ? 'ok' : 'degraded',
+        'database' => $db,
+        'queued_jobs' => $db ? DB::table('jobs')->count() : null,
+        'time' => now()->toIso8601String(),
+    ], $db ? 200 : 503);
+})->middleware('throttle:30,1');
 
 Route::get('orders/track', [OrderController::class, 'track'])->middleware('throttle:30,1');
 Route::post('coupons/validate', [CouponController::class, 'check'])->middleware('throttle:30,1');

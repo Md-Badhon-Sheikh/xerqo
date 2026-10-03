@@ -1,55 +1,71 @@
 # XERQO — Leather Goods E-commerce
 
-Responsive static design (React + Tailwind CSS) and a Laravel REST API backend.
+A single-brand online shop for Bangladesh: React storefront + admin panel on a Laravel REST API.
 
 ```
 xerqo/
-├── frontend/   React 19 + Vite + Tailwind CSS v4 + React Router  (storefront + admin panel UI)
-└── backend/    Laravel 13 REST API + MySQL + Sanctum tokens (bcrypt passwords)
+├── frontend/   React 19 + Vite + Tailwind CSS v4 + React Router + TanStack Query (storefront + admin)
+├── backend/    Laravel 13 REST API + MySQL + Sanctum tokens
+└── deploy/     files for cPanel's public_html (see DEPLOYMENT.md)
 ```
+
+**What's in it:** catalogue with colour variants, flash sales, coupons and banners · customer accounts
+with SMS-code sign-in · checkout with COD, bKash, Nagad, Rocket and bank transfer (manual verification)
+· order, shipping, payment and return management · reviews with replies and delivery feedback ·
+Reve SMS with a prepaid SMS wallet and SMS log · order emails over SMTP · staff roles and permissions,
+activity log, staff alerts · accounts (income, refunds, expenses, profit) and sales reports.
 
 ## Requirements
-- Node.js 20+ (for the frontend)
+- Node.js 20+
 - PHP 8.3+ with pdo_mysql, mbstring, openssl, fileinfo, zip; Composer 2; MySQL 8 / MariaDB 10.6+
-  (Laragon, Herd or XAMPP with PHP 8.3+. Older XAMPP builds ship PHP 8.2, which Laravel 13 does not support.)
 
-## 1. Frontend (static design)
-```bash
-cd frontend
-npm install
-npm run dev          # http://localhost:5173
-```
-- Storefront: `/`  ·  Admin panel: `/admin` (login screen: `/admin/login`)
-- **All pages index: `/design`** — links to every storefront and admin page.
-- Production build: `npm run build` (output in `frontend/dist`).
-- Pages use mock data from `src/data/store.js` and `src/data/admin.js`. `src/lib/api.js` has the REST client to swap in live data.
-- `/api` requests are proxied to `http://127.0.0.1:8000` by Vite in development.
+## Run it locally
 
-## 2. Backend (Laravel API)
 ```bash
+# API
 cd backend
 composer install
 copy .env.example .env        # macOS/Linux: cp .env.example .env
 php artisan key:generate
-# create an empty MySQL database named "xerqo" (user root, no password by default — edit .env if different)
-php artisan migrate --seed
+# create an empty MySQL database named "xerqo" (edit DB_* in .env if needed)
+php artisan migrate --seed    # demo catalogue, orders, staff and customers
 php artisan storage:link
 php artisan serve             # http://127.0.0.1:8000/api
+
+# Shop + admin (second terminal)
+cd frontend
+npm install
+npm run dev                   # http://localhost:5173 — /api is proxied to :8000
 ```
-Default logins after seeding (change before going live):
-- Admin: `dip@xerqo.com` / `password`
-- Customer: `rahim@example.com` / `password`
 
-See `backend/README.md` for the full endpoint list.
+Demo logins after seeding (password `password` for all):
 
-## Structure (frontend)
+| | |
+|---|---|
+| Super Admin | `dip@xerqo.com` |
+| Admin | `admin@xerqo.com` |
+| Customer | `rahim@example.com` or `01712345678` |
+
+Locally `SMS_DRIVER=log` and `MAIL_MAILER=log`: SMS and emails are written to
+`backend/storage/logs/laravel.log` instead of being sent (SMS still use the demo SMS balance),
+and sign-in codes are also shown on screen while `APP_DEBUG=true`.
+
+Tests: `cd backend && php artisan test`.
+
+## Going live
+
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** — cPanel shared hosting, step by step.
+
+## Frontend structure
 ```
 src/
-├── components/store/   StoreLayout (header, footer, bottom nav, mini cart, scroll-top, chat), ui kit, AccountShell
-├── components/admin/   AdminLayout (sidebar / rail / mobile tabs, SettingsShell), admin ui kit
-├── pages/store/        21 storefront pages
-├── pages/admin/        27 admin pages
-├── data/               mock data
-└── lib/api.js          REST client for the Laravel API
+├── components/store/   StoreLayout (header, footer, bottom nav, mini cart, chat), ui kit, AccountShell
+├── components/admin/   AdminLayout (sidebar, badges, SettingsShell), form + ui kit, DateRange
+├── components/common/  Select2 wrapper, guards, password reset hook
+├── pages/store/        storefront pages
+├── pages/admin/        admin pages
+├── context/            auth (customer + admin), cart, wishlist, compare
+└── lib/                api client, queries, SweetAlert helpers, SMS counter
 ```
+Every dropdown uses Select2 and every alert/confirmation uses SweetAlert2.
 Breakpoints: mobile < 640px, tablet 640–1023px, laptop 1024–1279px, desktop 1280px+.

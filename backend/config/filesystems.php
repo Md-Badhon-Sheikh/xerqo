@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // off: its signed /storage/{path} route would clash with public uploads (served from /storage)
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],
@@ -73,8 +74,10 @@ return [
     |
     */
 
-    'links' => [
+    'links' => array_filter([
         public_path('storage') => storage_path('app/public'),
-    ],
+        // cPanel: the site is served from public_html (PUBLIC_HTML_PATH=/home/USER/public_html)
+        env('PUBLIC_HTML_PATH') ? rtrim(env('PUBLIC_HTML_PATH'), '/').'/storage' : '' => env('PUBLIC_HTML_PATH') ? storage_path('app/public') : null,
+    ]),
 
 ];
