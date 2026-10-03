@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Setting;
+use App\Models\SmsGateway;
 use Illuminate\Database\Seeder;
 
 class SettingSeeder extends Seeder
@@ -85,27 +86,27 @@ class SettingSeeder extends Seeder
                 'order_placed' => [
                     'name' => 'Order placed',
                     'enabled' => true,
-                    'body' => 'Hi {name}, thanks for shopping at XERQO! Your order {order_id} (৳{total}) has been received. We will call you to confirm.',
+                    'body' => 'Hi {name}, thanks for shopping at XERQO! Your order {order_id} (Tk {total}) has been received. We will call you to confirm.',
                 ],
                 'order_confirmed' => [
                     'name' => 'Order confirmed',
                     'enabled' => true,
-                    'body' => 'Hi {name}, your XERQO order {order_id} (৳{total}) is confirmed. We’ll call before dispatch. Thank you!',
+                    'body' => 'Hi {name}, your XERQO order {order_id} (Tk {total}) is confirmed. We will call before dispatch. Thank you!',
                 ],
                 'order_processing' => [
                     'name' => 'Processing',
                     'enabled' => true,
-                    'body' => 'Hi {name}, your XERQO order {order_id} is being prepared in our workshop. We’ll text you when it ships.',
+                    'body' => 'Hi {name}, your XERQO order {order_id} is being prepared in our workshop. We will text you when it ships.',
                 ],
                 'payment_verified' => [
                     'name' => 'Payment verified',
                     'enabled' => true,
-                    'body' => 'Hi {name}, we received your payment of ৳{amount} for order {order_id}. Thank you!',
+                    'body' => 'Hi {name}, we received your payment of Tk {amount} for order {order_id}. Thank you!',
                 ],
                 'payment_rejected' => [
                     'name' => 'Payment not verified',
                     'enabled' => true,
-                    'body' => 'Hi {name}, we couldn’t verify the payment for order {order_id}: {reason}. Please resend it: {tracking_link}',
+                    'body' => 'Hi {name}, we could not verify the payment for order {order_id}: {reason}. Please resend it: {tracking_link}',
                 ],
                 'order_shipped' => [
                     'name' => 'Shipped',
@@ -115,7 +116,7 @@ class SettingSeeder extends Seeder
                 'out_for_delivery' => [
                     'name' => 'Out for delivery',
                     'enabled' => true,
-                    'body' => 'Your XERQO parcel {order_id} will arrive today. Please keep ৳{cod_amount} ready.',
+                    'body' => 'Your XERQO parcel {order_id} will arrive today. Please keep Tk {cod_amount} ready.',
                 ],
                 'order_delivered_review' => [
                     'name' => 'Delivered + review request',
@@ -144,10 +145,23 @@ class SettingSeeder extends Seeder
                     'body' => 'Your XERQO password reset code is {otp}. It expires in {minutes} minutes. Do not share it with anyone.',
                 ],
             ], 'sms', false],
+
+            'email_notifications' => [[
+                'customer_order' => true,
+                'customer_status' => true,
+                'admin_new_order' => true,
+                'admin_email' => 'orders@xerqo.com',
+            ], 'notifications', false],
         ];
 
         foreach ($settings as $key => [$value, $group, $isPublic]) {
             Setting::setValue($key, $value, $group, $isPublic);
+        }
+
+        // SMS wallet: a little demo balance locally; production starts at ৳0 until the Super Admin tops up
+        $gateway = SmsGateway::current();
+        if (! app()->isProduction() && $gateway->balance_paisa === 0) {
+            $gateway->update(['balance_paisa' => 50000, 'sender_id' => $gateway->sender_id ?? 'XERQO']);
         }
     }
 }

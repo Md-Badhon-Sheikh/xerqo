@@ -140,6 +140,25 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     Route::middleware('admin:settings')->group(function () {
         Route::get('settings', [Admin\SettingController::class, 'index']);
         Route::put('settings', [Admin\SettingController::class, 'update']);
+
+        Route::get('sms', [Admin\SmsController::class, 'index']);
+        Route::get('sms/logs', [Admin\SmsController::class, 'logs']);
+    });
+
+    Route::middleware('admin:settings,edit')->group(function () {
+        Route::put('sms/templates/{key}', [Admin\SmsController::class, 'updateTemplate']);
+        Route::post('sms/test', [Admin\SmsController::class, 'test'])->middleware('throttle:10,1');
+        Route::put('sms/email', [Admin\SmsController::class, 'updateEmail']);
+        Route::post('sms/email/test', [Admin\SmsController::class, 'testEmail'])->middleware('throttle:5,1');
+    });
+
+    // the SMS account and wallet: no role can be granted these, only the Super Admin has them
+    Route::middleware('super-admin')->group(function () {
+        Route::get('sms/gateway', [Admin\SmsGatewayController::class, 'show']);
+        Route::put('sms/gateway', [Admin\SmsGatewayController::class, 'update']);
+        Route::get('sms/gateway/remote-balance', [Admin\SmsGatewayController::class, 'remoteBalance']);
+        Route::get('sms/recharges', [Admin\SmsGatewayController::class, 'recharges']);
+        Route::post('sms/recharges', [Admin\SmsGatewayController::class, 'recharge']);
     });
 
     Route::apiResource('banners', Admin\BannerController::class)->middleware('admin:content');

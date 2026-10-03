@@ -71,3 +71,30 @@ export async function confirmAndRun({ title, text, confirmText = 'Yes, continue'
   })
   return res.isConfirmed ? res.value : null
 }
+
+/**
+ * Ask for one value (phone, email, reason…), then run an async action with it inside the dialog.
+ * Resolves the action's result, or null when cancelled. Errors are shown under the input.
+ */
+export async function promptAndRun({ title, text, input = 'text', inputLabel, placeholder, value = '', confirmText = 'Continue', inputAttributes }, action) {
+  const res = await base.fire({
+    icon: 'question',
+    title,
+    text,
+    input,
+    inputLabel,
+    inputPlaceholder: placeholder,
+    inputValue: value,
+    inputAttributes,
+    showCancelButton: true,
+    confirmButtonText: confirmText,
+    cancelButtonText: 'Cancel',
+    showLoaderOnConfirm: true,
+    allowOutsideClick: () => !Swal.isLoading(),
+    preConfirm: async (val) => {
+      if (!String(val ?? '').trim()) { Swal.showValidationMessage('Please fill this in.'); return false }
+      try { return await action(String(val).trim()) } catch (e) { Swal.showValidationMessage(e?.message || 'Something went wrong.'); return false }
+    },
+  })
+  return res.isConfirmed ? res.value : null
+}

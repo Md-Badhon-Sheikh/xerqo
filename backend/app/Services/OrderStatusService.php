@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class OrderStatusService
 {
-    public function __construct(private SmsService $sms) {}
+    public function __construct(private SmsService $sms, private MailNotifier $mail) {}
 
     /**
      * Move an order to a new status, write the status history, and apply side effects:
@@ -87,6 +87,8 @@ class OrderStatusService
 
     private function notify(Order $order, string $status): void
     {
+        $this->mail->statusChanged($order, $status);
+
         $template = match ($status) {
             'confirmed' => 'order_confirmed',
             'processing' => 'order_processing',

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Setting;
+use App\Models\SmsGateway;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,7 @@ class CustomerAccountTest extends TestCase
         parent::setUp();
         config(['app.debug' => true, 'services.sms.driver' => 'log']); // codes come back as debug_otp
         Setting::setValue('auth', ['otp_login' => true, 'register_otp' => true], 'general', true);
+        SmsGateway::current()->update(['balance_paisa' => 10000]); // OTPs are paid from the SMS wallet
     }
 
     private function sendOtp(string $phone, string $purpose): string

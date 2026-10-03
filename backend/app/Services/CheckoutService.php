@@ -16,6 +16,7 @@ class CheckoutService
     public function __construct(
         private CouponService $coupons,
         private SmsService $sms,
+        private MailNotifier $mail,
     ) {}
 
     /**
@@ -217,6 +218,7 @@ class CheckoutService
             'order_id' => $order->order_number,
             'total' => number_format($order->total),
         ]);
+        $this->mail->orderPlaced($order);
 
         return $order->load(['items', 'statusHistories', 'latestPayment']);
     }

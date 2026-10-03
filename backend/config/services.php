@@ -35,12 +35,10 @@ return [
         ],
     ],
 
-    // SMS gateway used for OTPs and order notifications (bulk SMS BD, SSL Wireless, etc.).
+    // SMS for OTPs and order notifications (Reve SMS, paid from the prepaid SMS wallet).
     'sms' => [
+        // log | reve — credentials live in the sms_gateway table (Admin → Settings → SMS)
         'driver' => env('SMS_DRIVER', 'log'),
-        'url' => env('SMS_API_URL'),
-        'api_key' => env('SMS_API_KEY'),
-        'sender_id' => env('SMS_SENDER_ID', 'XERQO'),
     ],
 
 ];
