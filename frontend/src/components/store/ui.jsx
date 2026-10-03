@@ -3,6 +3,7 @@ import { Heart, ShoppingBag, ChevronRight, Minus, Plus } from 'lucide-react'
 import { tk } from '../../data/store'
 import { normalizeProduct } from '../../lib/product'
 import { useQuickAdd } from '../../context/StoreUIContext'
+import { useWishlist } from '../../context/WishlistContext'
 
 const cx = (...c) => c.filter(Boolean).join(' ')
 export { cx }
@@ -54,15 +55,22 @@ export const Pill = ({ children, tone = 'tan', className }) => {
 }
 
 export const StatusBadge = ({ status }) => {
-  const map = { Delivered: 'bg-leaf/12 text-leaf', Processing: 'bg-amber/12 text-amber', Shipped: 'bg-[#2C5AA0]/12 text-[#2C5AA0]', Cancelled: 'bg-rust/10 text-rust', Pending: 'bg-amber/12 text-amber' }
+  const map = { Delivered: 'bg-leaf/12 text-leaf', Processing: 'bg-amber/12 text-amber', Confirmed: 'bg-[#2C5AA0]/12 text-[#2C5AA0]', Shipped: 'bg-[#2C5AA0]/12 text-[#2C5AA0]', Cancelled: 'bg-rust/10 text-rust', Returned: 'bg-rust/10 text-rust', Pending: 'bg-amber/12 text-amber' }
   return <span className={cx('inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold', map[status] || 'bg-sand text-ink')}>{status}</span>
 }
 
-export const HeartBtn = ({ active, className }) => (
-  <button aria-label="Add to wishlist" className={cx('grid size-8 sm:size-9 place-items-center rounded-full bg-white/95 shadow-sm transition hover:scale-105', className)}>
-    <Heart className={cx('size-4', active ? 'fill-rust text-rust' : 'text-ink')} strokeWidth={1.8} />
-  </button>
-)
+// Wishlist heart; pass the (API) product as `p` to make it live
+export function HeartBtn({ p, active, className }) {
+  const wish = useWishlist()
+  const on = p && wish ? wish.has(p.id) : !!active
+  return (
+    <button type="button" aria-pressed={on} aria-label={on ? 'Remove from wishlist' : 'Add to wishlist'}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (p && wish) wish.toggle(p) }}
+      className={cx('grid size-8 sm:size-9 place-items-center rounded-full bg-white/95 shadow-sm transition hover:scale-105', className)}>
+      <Heart className={cx('size-4 transition', on ? 'fill-rust text-rust' : 'text-ink')} strokeWidth={1.8} />
+    </button>
+  )
+}
 
 export const Dots = ({ n = 4, className }) => (
   <div className={cx('flex items-center justify-center gap-1.5', className)}>
@@ -144,7 +152,7 @@ export function ProductCard({ p, badge, cta = 'Add to cart', fav }) {
       <Link to={`/product/${q.slug}`} className="relative block aspect-[10/11] overflow-hidden rounded-lg bg-tile sm:rounded">
         <img src={q.image} alt={q.name} loading="lazy" className={cx('size-full object-cover transition duration-500 group-hover:scale-105', sold && 'opacity-60')} />
         {b && <Pill tone={sold ? 'dark' : String(b).startsWith('-') ? 'tan' : 'white'} className="absolute left-2 top-2 sm:left-3 sm:top-3">{b}</Pill>}
-        <HeartBtn active={fav} className="absolute right-2 top-2 sm:right-3 sm:top-3" />
+        <HeartBtn p={p} active={fav} className="absolute right-2 top-2 sm:right-3 sm:top-3" />
       </Link>
       <div className="flex flex-1 flex-col gap-1">
         <p className="hidden text-[10px] font-semibold uppercase tracking-[0.14em] text-mute sm:block">{q.category}</p>
@@ -169,7 +177,7 @@ export function CatProductCard({ p, className = 'w-[150px] shrink-0 snap-start s
     <article className={cx('flex flex-col overflow-hidden rounded-lg bg-white', className)}>
       <Link to={`/product/${q.slug}`} className="relative block aspect-square overflow-hidden bg-tile">
         <img src={q.image} alt={q.name} loading="lazy" className={cx('size-full object-cover transition duration-500 hover:scale-105', sold && 'opacity-50')} />
-        <HeartBtn className="absolute left-2 top-2 !size-7 sm:left-2.5 sm:top-2.5 sm:!size-8" />
+        <HeartBtn p={p} className="absolute left-2 top-2 !size-7 sm:left-2.5 sm:top-2.5 sm:!size-8" />
         {(sold || off > 0) && <span className={cx('absolute right-2 top-2 rounded-sm px-1.5 py-0.5 text-[9px] font-bold text-white sm:right-2.5 sm:top-2.5 sm:px-2 sm:py-1 sm:text-[11px]', sold ? 'bg-espresso' : 'bg-tan')}>{sold ? 'Sold out' : `Save ${off}%`}</span>}
       </Link>
       <div className="flex flex-1 flex-col gap-1.5 p-2.5 sm:gap-2 sm:p-3.5">

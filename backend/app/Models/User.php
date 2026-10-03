@@ -27,6 +27,10 @@ class User extends Authenticatable
         'is_active',
         'avatar',
         'last_login_at',
+        'date_of_birth',
+        'notify_order_sms',
+        'marketing_sms',
+        'marketing_email',
     ];
 
     protected $hidden = [
@@ -46,6 +50,11 @@ class User extends Authenticatable
             'last_login_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'phone_verified_at' => 'datetime',
+            'date_of_birth' => 'date',
+            'notify_order_sms' => 'boolean',
+            'marketing_sms' => 'boolean',
+            'marketing_email' => 'boolean',
         ];
     }
 

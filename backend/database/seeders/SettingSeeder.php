@@ -51,6 +51,12 @@ class SettingSeeder extends Seeder
                 'fee' => 0,
             ], 'general', true],
 
+            // customer sign-in options (public so the storefront knows which forms to show)
+            'auth' => [[
+                'otp_login' => true,      // "sign in with a code" by SMS
+                'register_otp' => true,   // new accounts must confirm their phone by SMS
+            ], 'general', true],
+
             // the strip above the storefront header
             'announcement' => [[
                 'enabled' => true,

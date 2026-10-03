@@ -37,6 +37,8 @@ Route::post('coupons/validate', [CouponController::class, 'check'])->middleware(
 Route::prefix('auth')->group(function () {
     Route::post('register', [AuthController::class, 'register'])->middleware('throttle:10,1');
     Route::post('login', [AuthController::class, 'login'])->middleware('throttle:10,1');
+    Route::post('otp/send', [AuthController::class, 'sendOtp'])->middleware('throttle:6,1');
+    Route::post('otp/login', [AuthController::class, 'otpLogin'])->middleware('throttle:10,1');
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:5,1');
     Route::post('reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:10,1');
     Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
@@ -47,6 +49,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('me', [Customer\ProfileController::class, 'show']);
     Route::put('me', [Customer\ProfileController::class, 'update']);
     Route::put('me/password', [Customer\ProfileController::class, 'password']);
+    Route::post('me/phone/otp', [Customer\ProfileController::class, 'phoneOtp'])->middleware('throttle:6,1');
+    Route::delete('me', [Customer\ProfileController::class, 'destroy'])->middleware('throttle:5,1');
 
     Route::get('me/orders', [Customer\OrderController::class, 'index']);
     Route::get('me/orders/{orderNumber}', [Customer\OrderController::class, 'show']);

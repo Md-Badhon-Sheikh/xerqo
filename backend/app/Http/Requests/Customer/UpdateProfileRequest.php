@@ -38,6 +38,12 @@ class UpdateProfileRequest extends FormRequest
             'email' => ['sometimes', 'nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
             // Send as multipart/form-data with _method=PUT when uploading an avatar.
             'avatar' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            // a new phone number must be confirmed with the code sent to it (POST /me/phone/otp)
+            'phone_otp' => ['nullable', 'string', 'digits:6'],
+            'date_of_birth' => ['sometimes', 'nullable', 'date', 'before:today', 'after:1900-01-01'],
+            'notify_order_sms' => ['sometimes', 'boolean'],
+            'marketing_sms' => ['sometimes', 'boolean'],
+            'marketing_email' => ['sometimes', 'boolean'],
         ];
     }
 }

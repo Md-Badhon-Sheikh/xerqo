@@ -229,7 +229,7 @@ function ListCard({ p }) {
         {q.description && <p className="line-clamp-2 hidden max-w-xl text-[13px] text-mute sm:block">{q.description}</p>}
         <div className="mt-auto flex items-center gap-2 pt-2">
           <Button variant={sold ? 'soft' : 'outlineTan'} size="sm" className="sm:px-6" disabled={sold} onClick={() => quickAdd(q)}>{sold ? 'Sold out' : q.hasVariants ? 'Choose colour' : 'Add to cart'}</Button>
-          <HeartBtn className="!shadow-none ring-1 ring-line" />
+          <HeartBtn p={p} className="!shadow-none ring-1 ring-line" />
           <button onClick={toggleCompare} aria-pressed={compare.has(q.slug)} title="Compare" className={cx('grid size-8 place-items-center rounded-full ring-1 transition sm:size-9', compare.has(q.slug) ? 'bg-ink text-white ring-ink' : 'bg-white ring-line hover:ring-ink')}>
             <GitCompareArrows className="size-4" /><span className="sr-only">Compare</span>
           </button>

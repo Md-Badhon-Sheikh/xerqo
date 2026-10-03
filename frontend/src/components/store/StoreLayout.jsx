@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { useCompare } from '../../context/CompareContext'
 import { StoreUI, useUI } from '../../context/StoreUIContext'
+import { WishlistProvider } from '../../context/WishlistContext'
 import { useCategories, useSettings } from '../../lib/queries'
 
 const NAV = [['Home', '/'], ['Shop', '/shop'], ['Wallets', '/shop?c=wallets'], ['Bags', '/shop?c=bags'], ['Women', '/shop?c=womens-purses'], ['Travel', '/shop?c=passport-covers'], ['About Us', '/about'], ['Contact', '/contact']]
@@ -256,6 +257,7 @@ export default function StoreLayout() {
   const ui = useMemo(() => ({ drawer, setDrawer, menu, setMenu }), [drawer, menu])
   return (
     <StoreUI.Provider value={ui}>
+      <WishlistProvider>
       <Header />
       <main className="min-h-[60vh]"><Outlet /></main>
       <Footer sticky={sticky} />
@@ -263,6 +265,7 @@ export default function StoreLayout() {
       <FloatingWidgets showCart={!NO_MINI_CART.includes(pathname)} sticky={sticky} />
       <CartDrawer />
       <MobileMenu />
+      </WishlistProvider>
     </StoreUI.Provider>
   )
 }

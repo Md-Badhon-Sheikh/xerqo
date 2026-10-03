@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Check, GitCompareArrows, Maximize2, MessageCircle, Minus, PackageX, Plus, Timer } from 'lucide-react'
+import { ArrowRight, Check, GitCompareArrows, Heart, Maximize2, MessageCircle, Minus, PackageX, Plus, Timer } from 'lucide-react'
+import { useWishlist } from '../../context/WishlistContext'
 import { tk } from '../../data/store'
 import { cartLine } from '../../lib/product'
 import { useProduct, useProductReviews, useSettings } from '../../lib/queries'
@@ -65,6 +66,7 @@ function Accordion({ title, defaultOpen, children }) {
 function BuyBox({ p, buy, settings }) {
   const { variant, setVariant, qty, setQty, engrave, setEngrave, engraving, setEngraving, stock, price, add, buyNow } = buy
   const compare = useCompare()
+  const wish = useWishlist()
   const toast = useToast()
   const delivery = settings?.delivery
   const engravingCfg = settings?.engraving
@@ -136,6 +138,9 @@ function BuyBox({ p, buy, settings }) {
         <Button variant="tan" className="w-full" disabled={soldOut} onClick={buyNow}>Buy now · Cash on delivery</Button>
       </div>
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+        <button type="button" onClick={() => wish?.toggle(p)} aria-pressed={!!wish?.has(p.id)} className={cx('flex items-center gap-1.5 text-[13px] font-semibold hover:underline', wish?.has(p.id) ? 'text-rust' : 'text-ink')}>
+          <Heart className={cx('size-4', wish?.has(p.id) && 'fill-rust')} /> {wish?.has(p.id) ? 'Saved' : 'Save'}
+        </button>
         <button onClick={toggleCompare} className={cx('flex items-center gap-1.5 text-[13px] font-semibold hover:underline', compare.has(p.slug) ? 'text-tan' : 'text-ink')}>
           <GitCompareArrows className="size-4" /> {compare.has(p.slug) ? 'Added to compare' : 'Compare'}
         </button>

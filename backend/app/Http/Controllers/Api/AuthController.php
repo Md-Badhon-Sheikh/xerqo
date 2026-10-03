@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Models\PasswordResetOtp;
 use App\Models\User;
+use App\Services\OtpService;
 use App\Services\SmsService;
 use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
@@ -27,9 +28,13 @@ class AuthController extends Controller
     /**
      * POST /api/auth/register
      */
-    public function register(RegisterRequest $request): JsonResponse
+    public function register(RegisterRequest $request, OtpService $otp): JsonResponse
     {
         $data = $request->validated();
+
+        if (! empty($data['otp'])) {
+            $otp->verify($data['phone'], 'register', $data['otp']);
+        }
 
         $user = User::create([
             'name' => $data['name'],
@@ -37,7 +42,13 @@ class AuthController extends Controller
             'email' => $data['email'] ?? null,
             'password' => Hash::make($data['password']), // bcrypt (config/hashing.php)
             'is_active' => true,
+            'marketing_sms' => (bool) ($data['marketing_sms'] ?? false),
         ]);
+
+        if (! empty($data['otp'])) {
+            $user->forceFill(['phone_verified_at' => now()])->save();
+        }
+        $user->refresh(); // load column defaults (notification preferences)
 
         $token = $user->createToken($data['device_name'] ?? 'xerqo-spa')->plainTextToken;
 
@@ -74,6 +85,63 @@ class AuthController extends Controller
         $token = $user->createToken($request->validated('device_name') ?? 'xerqo-spa')->plainTextToken;
 
         return $this->tokenResponse($user, $token);
+    }
+
+    /**
+     * POST /api/auth/otp/send {"phone": "01712345678", "purpose": "login|register"}
+     * Login needs an existing active account; registration needs an unused number.
+     */
+    public function sendOtp(Request $request, OtpService $otp): JsonResponse
+    {
+        $request->merge(['phone' => Phone::normalize((string) $request->input('phone'))]);
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'regex:'.Phone::REGEX],
+            'purpose' => ['required', 'in:login,register'],
+        ], ['phone.regex' => 'Enter a valid Bangladeshi mobile number (01XXXXXXXXX).']);
+
+        $user = User::where('phone', $data['phone'])->first();
+
+        if ($data['purpose'] === 'login' && (! $user || ! $user->is_active)) {
+            throw ValidationException::withMessages(['phone' => $user
+                ? 'This account has been disabled. Please contact support.'
+                : 'No account uses this number yet. Create an account instead.']);
+        }
+
+        if ($data['purpose'] === 'register' && $user) {
+            throw ValidationException::withMessages(['phone' => 'An account with this mobile number already exists. Sign in instead.']);
+        }
+
+        return response()->json([
+            'message' => 'We sent a 6-digit code to '.$data['phone'].'.',
+            ...$otp->send($data['phone'], $data['purpose'], $request->ip()),
+        ]);
+    }
+
+    /**
+     * POST /api/auth/otp/login {"phone": "01712345678", "otp": "123456"}
+     */
+    public function otpLogin(Request $request, OtpService $otp): JsonResponse
+    {
+        $request->merge(['phone' => Phone::normalize((string) $request->input('phone'))]);
+        $data = $request->validate([
+            'phone' => ['required', 'string', 'regex:'.Phone::REGEX],
+            'otp' => ['required', 'string', 'digits:6'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $otp->verify($data['phone'], 'login', $data['otp']);
+
+        $user = User::where('phone', $data['phone'])->first();
+        if (! $user || ! $user->is_active) {
+            throw ValidationException::withMessages(['phone' => 'This account is not available.']);
+        }
+
+        $user->forceFill([
+            'last_login_at' => now(),
+            'phone_verified_at' => $user->phone_verified_at ?? now(),
+        ])->save();
+
+        return $this->tokenResponse($user, $user->createToken($data['device_name'] ?? 'xerqo-spa')->plainTextToken);
     }
 
     /**
