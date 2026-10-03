@@ -33,7 +33,7 @@ function ReviewCard({ r, name, onDeleted }) {
     rejected: <Pill tone="rust">Not published</Pill>,
   }[r.status]
   const remove = async () => {
-    const done = await confirmAndRun({ title: 'Delete this review?', text: 'This cannot be undone.', confirmText: 'Delete', danger: true }, () => api.delete(`/reviews/${r.id}`))
+    const done = await confirmAndRun({ title: 'Delete this review?', text: 'This cannot be undone.', confirmText: 'Delete', danger: true }, () => api.del(`/reviews/${r.id}`))
     if (done) { toast.success('Review deleted'); onDeleted() }
   }
   return (

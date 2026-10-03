@@ -1,146 +1,182 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Shield, ArrowRight, Check, MoreHorizontal } from 'lucide-react'
-import { Btn, Badge, Card, PageHead, Field, Select, Toggle, Avatar, cx } from '../../components/admin/ui'
+import { ArrowRight, Lock, Mail, Plus, Shield, Trash2 } from 'lucide-react'
+import { Avatar, Badge, Btn, Card, Col, PageHead, Select, Two, cx } from '../../components/admin/ui'
+import { EmptyBlock, FormField, LoadingBlock, Spin, SwitchRow, TextInput } from '../../components/admin/form'
+import { ago } from '../../components/admin/orderUi'
+import { useAdminAuth } from '../../context/AuthContext'
+import { adminApi } from '../../lib/api'
+import { confirmAndRun, toast } from '../../lib/alert'
+import { useAdminList, useAdminMutation } from '../../lib/adminQueries'
 
-// Role + team demo data (shared with RoleEdit)
-export const ROLES = [
-  { id: 'super-admin', name: 'Super Admin', desc: 'Full access to everything', members: ['Dip Hossain'], tone: 'tan', locked: true },
-  { id: 'store-manager', name: 'Store Manager', desc: 'All except staff & billing', members: ['Arif Chowdhury', 'Nasir Ahmed'], tone: 'blue' },
-  { id: 'order-manager', name: 'Order Manager', desc: 'Orders, returns, shipping', members: ['Sabbir Rahman', 'Jamal Uddin', 'Rakib Hasan'], tone: 'green', avatars: 2 },
-  { id: 'customer-support', name: 'Customer Support', desc: 'Orders (view), customers, reviews', members: ['Nabila Akter', 'Sumaiya Khan'], tone: 'purple', avatars: 1 },
-  { id: 'content-editor', name: 'Content Editor', desc: 'Products, banners, blog', members: ['Mitu Das'], tone: 'teal' },
-  { id: 'warehouse', name: 'Warehouse / Packer', desc: 'Packing list, stock, labels', members: ['Rakib Hasan', 'Selim Mia'], tone: 'amber', avatars: 1 },
-]
-export const roleById = (id) => ROLES.find((r) => r.id === id)
-
-export const TEAM = [
-  { name: 'Dip Hossain', email: 'dip@xerqo.com', role: 'super-admin', status: 'Active', tfa: true, last: 'Now' },
-  { name: 'Nabila Akter', email: 'nabila@xerqo.com', role: 'customer-support', status: 'Active', tfa: true, last: '5 min ago' },
-  { name: 'Sabbir Rahman', email: 'sabbir@xerqo.com', role: 'order-manager', status: 'Active', tfa: true, last: '1 h ago' },
-  { name: 'Mitu Das', email: 'mitu@xerqo.com', role: 'content-editor', status: 'Active', tfa: false, last: 'Yesterday' },
-  { name: 'Rakib Hasan', email: 'rakib@xerqo.com', role: 'warehouse', status: 'Invited', tfa: false, last: '—' },
-  { name: 'Jamal Uddin', email: 'jamal@xerqo.com', role: 'order-manager', status: 'Suspended', tfa: false, last: '12 Sep' },
-]
-export const STATUS = { Active: 'green', Invited: 'blue', Suspended: 'red' }
-
+const TONES = ['tan', 'blue', 'green', 'purple', 'teal', 'amber']
 const TILE = { tan: 'bg-tan/12 text-tan', blue: 'bg-info/12 text-info', green: 'bg-ok/12 text-ok', purple: 'bg-violet/12 text-violet', teal: 'bg-teal/12 text-teal', amber: 'bg-amber/12 text-amber' }
+export const roleTone = (role) => (role?.slug === 'super-admin' ? 'tan' : TONES[((role?.id ?? 0) % (TONES.length - 1)) + 1])
 
-export const RoleBadge = ({ id }) => {
-  const r = roleById(id)
-  return <Badge tone={r.tone}>{r.name}</Badge>
-}
+// Active / Invited (never signed in) / Disabled
+export const memberStatus = (m) => (!m.is_active ? ['Disabled', 'red'] : !m.last_login_at ? ['Invited', 'blue'] : ['Active', 'green'])
 
-function RoleCard({ r }) {
-  const n = r.members.length
+function RoleCard({ r, members }) {
+  const tone = roleTone(r)
+  const locked = r.slug === 'super-admin'
   return (
     <div className="flex flex-col rounded-xl border border-aline bg-white p-4 sm:p-[18px]">
       <div className="flex items-center gap-3">
-        <span className={cx('grid size-8 shrink-0 place-items-center rounded-lg', TILE[r.tone])}><Shield className="size-4" /></span>
+        <span className={cx('grid size-8 shrink-0 place-items-center rounded-lg', TILE[tone])}><Shield className="size-4" /></span>
         <p className="flex-1 text-[15px] font-bold">{r.name}</p>
-        <span className="text-xs text-amute">{n} member{n > 1 && 's'}</span>
+        <span className="text-xs text-amute">{r.users_count} member{r.users_count === 1 ? '' : 's'}</span>
       </div>
-      <p className="mt-2.5 text-xs text-amute">{r.desc}</p>
+      <p className="mt-2.5 text-xs text-amute">{r.description || (locked ? 'Full access, including the SMS gateway and wallet' : 'Custom role')}</p>
       <div className="mt-auto flex items-center justify-between gap-3 pt-4">
         <div className="flex -space-x-1.5">
-          {r.members.slice(0, r.avatars ?? 1).map((m) => <span key={m} className="rounded-full ring-2 ring-white"><Avatar name={m} size={22} tone={r.tone} /></span>)}
+          {members.slice(0, 4).map((m) => <span key={m.id} title={m.name} className="rounded-full ring-2 ring-white"><Avatar name={m.name} size={22} tone={tone} /></span>)}
         </div>
-        {r.locked
-          ? <span className="text-xs font-semibold text-amute">Locked</span>
+        {locked
+          ? <span className="inline-flex items-center gap-1 text-xs font-semibold text-amute"><Lock className="size-3" />Locked</span>
           : <Link to={`/admin/staff/roles/${r.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-tan">Edit permissions <ArrowRight className="size-3.5" /></Link>}
       </div>
     </div>
   )
 }
 
-const th = 'whitespace-nowrap px-4 py-3 font-semibold'
-
-function TeamTable() {
-  return (
-    <div className="overflow-hidden rounded-xl border border-aline bg-white max-sm:hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead className="bg-asoft text-left text-[11px] uppercase tracking-wider text-amute">
-            <tr>
-              <th className={th}>Member</th><th className={th}>Role</th><th className={th}>Status</th>
-              <th className={`${th} max-lg:hidden`}>2FA</th><th className={`${th} max-md:hidden`}>Last active</th><th className="w-10" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-aline">
-            {TEAM.map((m) => (
-              <tr key={m.email} className="hover:bg-abg/60">
-                <td className="px-4 py-3"><div className="flex items-center gap-2.5"><Avatar name={m.name} /><div className="min-w-0"><p className="font-semibold">{m.name}</p><p className="text-[11px] text-amute">{m.email}</p></div></div></td>
-                <td className="px-4 py-3"><RoleBadge id={m.role} /></td>
-                <td className="px-4 py-3"><Badge tone={STATUS[m.status]}>{m.status}</Badge></td>
-                <td className="px-4 py-3 max-lg:hidden">{m.tfa ? <span className="inline-flex items-center gap-1 font-semibold text-ok"><Check className="size-3.5" />On</span> : <span className="text-amute">Off</span>}</td>
-                <td className="whitespace-nowrap px-4 py-3 text-amute max-md:hidden">{m.last}</td>
-                <td className="pr-4 text-right"><button aria-label="More"><MoreHorizontal className="size-4 text-amute" /></button></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
+function roleOptions(roles, isSuperAdmin) {
+  return roles.filter((r) => isSuperAdmin || r.slug !== 'super-admin').map((r) => ({ value: String(r.id), label: r.name }))
 }
 
-function TeamCards() {
+function InviteCard({ roles }) {
+  const { isSuperAdmin } = useAdminAuth()
+  const empty = { name: '', email: '', phone: '', role_id: '', password: '' }
+  const [f, setF] = useState(empty)
+  const set = (patch) => setF((x) => ({ ...x, ...patch }))
+  const save = useAdminMutation((body) => adminApi.post('/admin/staff', body), {
+    invalidate: ['staff', 'roles'], success: (res) => res.message, onSuccess: () => setF(empty),
+  })
+  const err = save.error?.fields ?? {}
   return (
-    <div className="space-y-2.5 sm:hidden">
-      {TEAM.map((m) => (
-        <div key={m.email} className="space-y-2.5 rounded-xl border border-aline bg-white p-3.5">
-          <div className="flex items-center gap-2.5">
-            <Avatar name={m.name} />
-            <div className="min-w-0 flex-1"><p className="truncate text-[13px] font-semibold">{m.name}</p><p className="truncate text-[11px] text-amute">{m.email}</p></div>
-            <Badge tone={STATUS[m.status]}>{m.status}</Badge>
-          </div>
-          <div className="flex items-center justify-between gap-2"><RoleBadge id={m.role} /><span className="text-[11px] text-amute">Last active: {m.last}</span></div>
+    <Card title="Invite a team member" sub="Leave the password empty and they get an email to set their own">
+      <form className="space-y-3.5" onSubmit={(e) => { e.preventDefault(); save.mutate({ ...f, role_id: f.role_id ? Number(f.role_id) : null, phone: f.phone || null, password: f.password || null }) }}>
+        <div className="grid gap-3.5 md:grid-cols-3">
+          <FormField label="Full name" error={err.name}><TextInput value={f.name} onChange={(e) => set({ name: e.target.value })} placeholder="e.g. Rakib Hasan" maxLength={100} /></FormField>
+          <FormField label="Email" error={err.email}><TextInput type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@xerqo.com" /></FormField>
+          <FormField label="Mobile (optional)" error={err.phone}><TextInput value={f.phone} onChange={(e) => set({ phone: e.target.value })} placeholder="01XXXXXXXXX" inputMode="tel" /></FormField>
         </div>
-      ))}
-    </div>
-  )
-}
-
-function Invite() {
-  const [tfa, setTfa] = useState(true)
-  return (
-    <Card title="Invite a team member" sub="They get an email + SMS to set a password">
-      <div className="grid gap-3.5 md:grid-cols-3">
-        <Field label="Full name" placeholder="e.g. Rakib Hasan" />
-        <Field label="Email" type="email" placeholder="name@xerqo.com" />
-        <Field label="Mobile" placeholder="01XXXXXXXXX" />
-      </div>
-      <div className="grid gap-3.5 md:grid-cols-2">
-        <Field label="Role"><Select defaultValue="Order Manager" options={ROLES.map((r) => r.name)} /></Field>
-        <Field label="Branch / warehouse"><Select options={['Dhanmondi HQ', 'Mirpur warehouse', 'Chattogram hub']} /></Field>
-      </div>
-      <button type="button" onClick={() => setTfa(!tfa)} className="flex items-center gap-2.5 text-[13px]"><Toggle on={tfa} />Require 2-step verification</button>
-      <Btn className="max-sm:w-full">Send invite</Btn>
+        <div className="grid gap-3.5 md:grid-cols-2">
+          <FormField label="Role" error={err.role_id}><Select value={f.role_id} onChange={(role_id) => set({ role_id })} options={roleOptions(roles, isSuperAdmin)} placeholder="Choose a role" search={false} /></FormField>
+          <FormField label="Password (optional)" error={err.password} help="Only if you want to hand it over yourself — at least 8 characters">
+            <TextInput type="password" autoComplete="new-password" value={f.password} onChange={(e) => set({ password: e.target.value })} />
+          </FormField>
+        </div>
+        <Btn type="submit" icon={f.password ? Plus : Mail} disabled={save.isPending} className="max-sm:w-full">{save.isPending && <Spin />}{f.password ? 'Add member' : 'Send invite'}</Btn>
+      </form>
     </Card>
   )
 }
 
+function MemberCard({ m, roles, onClose }) {
+  const { user, isSuperAdmin, can } = useAdminAuth()
+  const self = user?.id === m.id
+  const protectedSuper = m.role?.slug === 'super-admin' && !isSuperAdmin
+  const canEdit = can('staff', 'edit') && !protectedSuper
+  const [f, setF] = useState({ name: m.name, email: m.email, phone: m.phone ?? '', role_id: String(m.role?.id ?? ''), is_active: m.is_active, password: '' })
+  const set = (patch) => setF((x) => ({ ...x, ...patch }))
+  const save = useAdminMutation((body) => adminApi.put(`/admin/staff/${m.id}`, body), { invalidate: ['staff', 'roles'], success: 'Member updated', onSuccess: () => set({ password: '' }) })
+  const err = save.error?.fields ?? {}
+  const [status] = memberStatus(m)
+
+  const remove = async () => {
+    const done = await confirmAndRun({ title: `Remove ${m.name}?`, text: 'They lose access to the admin panel straight away.', confirmText: 'Remove', danger: true }, () => adminApi.del(`/admin/staff/${m.id}`))
+    if (done) { toast.success('Staff member removed'); save.reset(); onClose(true) }
+  }
+  const resend = async () => {
+    try { toast.success((await adminApi.post(`/admin/staff/${m.id}/invite`)).message) } catch (e) { toast.error(e.message) }
+  }
+
+  return (
+    <Card title={m.name} sub={`${status} · ${m.last_login_at ? `last signed in ${ago(m.last_login_at)}` : 'has not signed in yet'}`} right={<button type="button" onClick={() => onClose()} className="text-xs font-semibold text-amute hover:text-ink">Close</button>}>
+      {protectedSuper && <p className="rounded-lg bg-asoft px-3.5 py-2.5 text-xs text-amute">Only a Super Admin can change another Super Admin.</p>}
+      <form className="space-y-3.5" onSubmit={(e) => { e.preventDefault(); save.mutate({ ...f, role_id: Number(f.role_id), phone: f.phone || null, password: f.password || null }) }}>
+        <FormField label="Full name" error={err.name}><TextInput value={f.name} onChange={(e) => set({ name: e.target.value })} disabled={!canEdit} /></FormField>
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <FormField label="Email" error={err.email}><TextInput type="email" value={f.email} onChange={(e) => set({ email: e.target.value })} disabled={!canEdit} /></FormField>
+          <FormField label="Mobile" error={err.phone}><TextInput value={f.phone} onChange={(e) => set({ phone: e.target.value })} disabled={!canEdit} /></FormField>
+        </div>
+        <FormField label="Role" error={err.role_id} help={self ? 'You can’t change your own role' : undefined}>
+          <Select value={f.role_id} onChange={(role_id) => set({ role_id })} options={roleOptions(roles, isSuperAdmin)} search={false} disabled={!canEdit || self} />
+        </FormField>
+        <FormField label="New password" error={err.password} help="Leave empty to keep the current one">
+          <TextInput type="password" autoComplete="new-password" value={f.password} onChange={(e) => set({ password: e.target.value })} disabled={!canEdit} />
+        </FormField>
+        <SwitchRow label="Can sign in" sub={f.is_active ? 'Active' : 'Disabled — signed out everywhere'} checked={f.is_active} onChange={(is_active) => set({ is_active })} disabled={!canEdit || self} />
+        {canEdit && (
+          <div className="flex flex-wrap gap-2">
+            <Btn type="submit" disabled={save.isPending}>{save.isPending && <Spin />}Save</Btn>
+            {!m.last_login_at && can('staff', 'create') && <Btn type="button" v="white" icon={Mail} onClick={resend}>Resend invite</Btn>}
+            {!self && can('staff', 'delete') && <button type="button" onClick={remove} className="ml-auto inline-flex items-center gap-1.5 rounded-lg px-3 text-xs font-semibold text-bad hover:bg-bad/10"><Trash2 className="size-3.5" />Remove</button>}
+          </div>
+        )}
+      </form>
+    </Card>
+  )
+}
+
+function TeamList({ staff, sel, onSelect }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-aline bg-white">
+      <div className="divide-y divide-aline">
+        {staff.map((m) => {
+          const [label, tone] = memberStatus(m)
+          return (
+            <button key={m.id} type="button" onClick={() => onSelect(m.id)} className={cx('flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-abg/60', sel === m.id && 'bg-asoft')}>
+              <Avatar name={m.name || '?'} />
+              <div className="min-w-0 flex-1"><p className="truncate text-[13px] font-semibold">{m.name}</p><p className="truncate text-[11px] text-amute">{m.email}{m.phone ? ` · ${m.phone}` : ''}</p></div>
+              <span className="max-sm:hidden"><Badge tone={roleTone(m.role)}>{m.role?.name ?? '—'}</Badge></span>
+              <Badge tone={tone}>{label}</Badge>
+              <span className="w-20 text-right text-[11px] text-amute max-lg:hidden">{m.last_login_at ? ago(m.last_login_at) : '—'}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminStaff() {
+  const { can } = useAdminAuth()
+  const rolesQ = useAdminList('roles')
+  const staffQ = useAdminList('staff')
+  const [sel, setSel] = useState(null)
+  const roles = rolesQ.data?.data ?? []
+  const staff = staffQ.data?.data ?? []
+  const current = staff.find((m) => m.id === sel)
+  const active = staff.filter((m) => m.is_active).length
+
   return (
     <>
       <PageHead
         title="Staff & roles"
-        sub="11 team members · 6 roles · 2FA enforced for admins"
-        actions={<>
-          <Btn v="white" icon={Shield}><span className="sm:hidden">Roles</span><span className="max-sm:hidden">Create role</span></Btn>
-          <Btn icon={Plus}><span className="sm:hidden">Invite</span><span className="max-sm:hidden">Invite staff</span></Btn>
-        </>}
+        sub={staffQ.data ? `${staff.length} team member${staff.length === 1 ? '' : 's'} (${active} active) · ${roles.length} roles` : 'Loading…'}
+        actions={can('staff', 'create') && <Btn v="white" icon={Shield} to="/admin/staff/roles/new"><span className="sm:hidden">Role</span><span className="max-sm:hidden">Create role</span></Btn>}
       />
-      <section className="space-y-3">
-        <h2 className="text-base font-semibold">Roles</h2>
-        <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">{ROLES.map((r) => <RoleCard key={r.id} r={r} />)}</div>
-      </section>
-      <section className="space-y-3">
-        <h2 className="text-base font-semibold">Team members</h2>
-        <TeamTable />
-        <TeamCards />
-      </section>
-      <Invite />
+      {rolesQ.isPending || staffQ.isPending ? <LoadingBlock /> : <>
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold">Roles</h2>
+          <div className="grid gap-2.5 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {roles.map((r) => <RoleCard key={r.id} r={r} members={staff.filter((m) => m.role?.id === r.id)} />)}
+          </div>
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-base font-semibold">Team members</h2>
+          <Two ratio="main">
+            <Col>{staff.length ? <TeamList staff={staff} sel={sel} onSelect={setSel} /> : <EmptyBlock title="No staff yet" />}</Col>
+            <Col>
+              {current
+                ? <MemberCard key={`${current.id}-${current.role?.id}-${current.is_active}-${current.name}`} m={current} roles={roles} onClose={() => setSel(null)} />
+                : can('staff', 'create') ? <InviteCard roles={roles} /> : <Card title="Team member"><p className="text-[13px] text-amute">Select someone to see their details.</p></Card>}
+            </Col>
+          </Two>
+        </section>
+        {current && can('staff', 'create') && <InviteCard roles={roles} />}
+      </>}
     </>
   )
 }

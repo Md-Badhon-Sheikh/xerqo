@@ -27,7 +27,7 @@ function ReviewCard({ r, active, onSelect, canEdit }) {
     invalidate: ['reviews'], success: (_, v) => v.msg,
   })
   const remove = async () => {
-    const done = await confirmAndRun({ title: 'Delete this review?', text: 'It is removed for good, with its photos.', confirmText: 'Delete', danger: true }, () => adminApi.delete(`/admin/reviews/${r.id}`))
+    const done = await confirmAndRun({ title: 'Delete this review?', text: 'It is removed for good, with its photos.', confirmText: 'Delete', danger: true }, () => adminApi.del(`/admin/reviews/${r.id}`))
     if (done) { toast.success('Review deleted'); act.reset(); onSelect(null, true) }
   }
 

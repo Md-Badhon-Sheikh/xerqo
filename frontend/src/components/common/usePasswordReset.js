@@ -9,7 +9,8 @@ import { useCountdown } from '../store/OtpInput'
  */
 export function usePasswordReset(scope = 'customer') {
   const [step, setStep] = useState(1)
-  const [identifier, setIdentifier] = useState('')
+  // staff invite emails link here with ?identifier=their@email
+  const [identifier, setIdentifier] = useState(() => new URLSearchParams(window.location.search).get('identifier') ?? '')
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')

@@ -11,7 +11,7 @@ class StaffRequest extends AdminRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->normalizeBooleans(['is_active']);
+        $this->normalizeBooleans(['is_active', 'send_invite']);
         $this->emptyToNull(['phone', 'password']);
 
         if ($this->filled('phone')) {
@@ -35,7 +35,9 @@ class StaffRequest extends AdminRequest
             'phone' => ['nullable', 'string', 'regex:'.Phone::REGEX, Rule::unique('users', 'phone')->ignore($staff?->id)],
             'role_id' => [$required, 'integer', 'exists:roles,id'],
             'is_active' => ['sometimes', 'boolean'],
-            'password' => [$this->isUpdate() ? 'nullable' : 'required', 'string', Password::min(8)],
+            // left empty on create = the new member sets their own password from the invite email
+            'password' => ['nullable', 'string', Password::min(8)],
+            'send_invite' => ['sometimes', 'boolean'],
         ];
     }
 }

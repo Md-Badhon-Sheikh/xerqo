@@ -146,6 +146,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     Route::middleware('admin:staff')->group(function () {
         Route::apiResource('staff', Admin\StaffController::class)->parameters(['staff' => 'user']);
+        Route::post('staff/{user}/invite', [Admin\StaffController::class, 'invite'])->middleware(['admin:staff,create', 'throttle:10,1']);
         Route::apiResource('roles', Admin\RoleController::class);
     });
 

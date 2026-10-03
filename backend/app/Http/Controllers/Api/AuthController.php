@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
+use App\Mail\PasswordResetCode;
 use App\Models\PasswordResetOtp;
 use App\Models\User;
 use App\Services\OtpService;
@@ -18,8 +19,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -188,7 +191,14 @@ class AuthController extends Controller
             ]);
         });
 
-        if ($user->phone) {
+        // the code goes where the person asked for it: an email address gets an email, a number an SMS
+        if ($user->email && (! Phone::looksLikePhone($identifier) || ! $user->phone)) {
+            try {
+                Mail::to($user->email)->send(new PasswordResetCode($user->name, $otp, self::OTP_TTL_MINUTES));
+            } catch (Throwable $e) {
+                Log::error('[Mail] password reset code to '.$user->email.' failed: '.$e->getMessage());
+            }
+        } elseif ($user->phone) {
             $sent = $sms->sendTemplate($user->phone, 'password_otp', [
                 'otp' => $otp,
                 'minutes' => self::OTP_TTL_MINUTES,
@@ -197,9 +207,6 @@ class AuthController extends Controller
             if (! $sent) {
                 $sms->send($user->phone, "Your XERQO password reset code is {$otp}. It expires in ".self::OTP_TTL_MINUTES.' minutes.');
             }
-        } else {
-            // Email-only account: plug a Mailable in here. Logged for now.
-            Log::info("[OTP] Password reset code for {$user->email}: {$otp}");
         }
 
         // Local development convenience only — never exposed when APP_DEBUG=false.

@@ -5,13 +5,18 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StaffRequest;
 use App\Http\Resources\UserResource;
+use App\Mail\StaffInvite;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Throwable;
 
 /**
  * Staff = users with a role. Route parameter: {user}.
@@ -29,18 +34,49 @@ class StaffController extends Controller
         return UserResource::collection($staff);
     }
 
+    /**
+     * POST /api/admin/staff — without a password the new member gets an invite email and sets their own.
+     */
     public function store(StaffRequest $request): JsonResponse
     {
         $data = $request->validated();
         $this->guardSuperAdminRole($request, (int) $data['role_id']);
+        $invite = empty($data['password']) || $request->boolean('send_invite');
 
         $user = User::create([
-            ...$data,
-            'password' => Hash::make($data['password']),
+            ...collect($data)->except('send_invite')->all(),
+            'password' => Hash::make($data['password'] ?? Str::random(40)),
             'is_active' => $data['is_active'] ?? true,
         ]);
 
-        return (new UserResource($user->load('role')))->response()->setStatusCode(201);
+        if ($invite) {
+            $this->sendInvite($user->load('role'), $request->user());
+        }
+
+        return (new UserResource($user->load('role')))
+            ->additional(['message' => $invite ? "Invite sent to {$user->email}." : 'Staff member added.'])
+            ->response()->setStatusCode(201);
+    }
+
+    /**
+     * POST /api/admin/staff/{user}/invite — send the "set your password" email again.
+     */
+    public function invite(Request $request, User $user): JsonResponse
+    {
+        abort_unless($user->isStaff(), 404);
+
+        $this->sendInvite($user->load('role'), $request->user());
+
+        return response()->json(['message' => "Invite sent to {$user->email}."]);
+    }
+
+    private function sendInvite(User $user, User $by): void
+    {
+        try {
+            Mail::to($user->email)->queue(new StaffInvite($user, $by->name));
+        } catch (Throwable $e) {
+            Log::error('[Mail] staff invite to '.$user->email.' failed: '.$e->getMessage());
+        }
     }
 
     public function show(User $user): UserResource

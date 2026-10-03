@@ -20,6 +20,7 @@ class RoleResource extends JsonResource
             'is_system' => $this->is_system,
             'users_count' => $this->whenCounted('users'),
             'created_at' => $this->created_at?->toIso8601String(),
+            'updated_at' => $this->updated_at?->toIso8601String(),
         ];
     }
 }
