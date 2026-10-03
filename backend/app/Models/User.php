@@ -31,6 +31,8 @@ class User extends Authenticatable
         'notify_order_sms',
         'marketing_sms',
         'marketing_email',
+        'cod_blocked',
+        'admin_note',
     ];
 
     protected $hidden = [
@@ -55,6 +57,7 @@ class User extends Authenticatable
             'notify_order_sms' => 'boolean',
             'marketing_sms' => 'boolean',
             'marketing_email' => 'boolean',
+            'cod_blocked' => 'boolean',
         ];
     }
 

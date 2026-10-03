@@ -183,7 +183,8 @@ export default function Checkout() {
   const delivery = usingNew ? addr : saved
   const zone = delivery?.district ? zoneFor(delivery.district) : 'inside_dhaka'
 
-  const methods = useMemo(() => Object.entries(settings?.payments ?? {}).filter(([, c]) => c?.enabled).map(([k, c]) => ({ id: k, ...c })), [settings])
+  // customers the store blocked from COD only see the pay-in-advance methods
+  const methods = useMemo(() => Object.entries(settings?.payments ?? {}).filter(([k, c]) => c?.enabled && !(k === 'cod' && user?.cod_blocked)).map(([k, c]) => ({ id: k, ...c })), [settings, user?.cod_blocked])
   // fall back to the first enabled method if the chosen one is switched off
   const method = methods.some((m) => m.id === picked) ? picked : methods[0]?.id ?? 'cod'
   const cfg = methods.find((m) => m.id === method)

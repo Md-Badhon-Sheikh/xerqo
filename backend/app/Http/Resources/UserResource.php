@@ -24,6 +24,7 @@ class UserResource extends JsonResource
             'marketing_sms' => (bool) $this->marketing_sms,
             'marketing_email' => (bool) $this->marketing_email,
             'is_active' => $this->is_active,
+            'cod_blocked' => (bool) $this->cod_blocked,
             'is_staff' => $this->isStaff(),
             'is_super_admin' => $this->isSuperAdmin(),
             'role' => $this->whenLoaded('role', fn () => $this->role ? new RoleResource($this->role) : null),

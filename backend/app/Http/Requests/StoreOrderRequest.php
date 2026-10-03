@@ -75,7 +75,15 @@ class StoreOrderRequest extends FormRequest
             'billing_phone' => ['exclude_if:billing_same,true', 'required', 'string', 'regex:'.Phone::REGEX],
             'billing_address' => ['exclude_if:billing_same,true', 'required', 'string', 'max:500'],
 
-            'payment_method' => ['required', Rule::in(self::enabledMethods())],
+            'payment_method' => [
+                'required', Rule::in(self::enabledMethods()),
+                // customers the store blocked from COD (too many refused parcels) must pay in advance
+                function (string $attribute, mixed $value, \Closure $fail) {
+                    if ($value === 'cod' && $this->user()?->cod_blocked) {
+                        $fail('Cash on delivery isn’t available for your account. Please pay in advance with bKash, Nagad, Rocket or bank transfer.');
+                    }
+                },
+            ],
             'transaction_id' => [
                 $wallet ? 'required' : 'nullable', 'string', 'max:100',
                 // the same wallet transaction can't pay for two orders

@@ -115,6 +115,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         Route::get('customers', [Admin\CustomerController::class, 'index']);
         Route::get('customers/{customer}', [Admin\CustomerController::class, 'show']);
     });
+    Route::middleware('admin:customers,edit')->group(function () {
+        Route::patch('customers/{customer}', [Admin\CustomerController::class, 'update']);
+        Route::post('customers/{customer}/sms', [Admin\CustomerController::class, 'sms'])->middleware('throttle:20,1');
+    });
 
     Route::middleware('admin:reviews')->group(function () {
         Route::get('reviews', [Admin\ReviewController::class, 'index']);

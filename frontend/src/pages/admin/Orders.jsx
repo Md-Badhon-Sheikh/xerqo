@@ -65,7 +65,7 @@ export default function Orders() {
   const { can } = useAdminAuth()
   const qc = useQueryClient()
   const [search] = useSearchParams()
-  const [f, setF] = useState({ status: search.get('status') ?? '', q: '', payment_method: '', payment_status: '', range: '', from: '', page: 1 })
+  const [f, setF] = useState({ status: search.get('status') ?? '', q: search.get('q') ?? '', payment_method: '', payment_status: '', range: '', from: '', page: 1 })
   const [selected, setSelected] = useState([])
   const [bulkBusy, setBulkBusy] = useState(false)
   const set = (patch) => { setF((x) => ({ ...x, ...patch, page: patch.page ?? 1 })); setSelected([]) }
