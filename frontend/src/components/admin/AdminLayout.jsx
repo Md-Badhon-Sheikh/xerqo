@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutGrid, ClipboardList, Undo2, Truck, Package, Tag, Layers, Users, Star, Percent, Image, Wallet, BarChart3, Shield, Settings,
@@ -78,8 +78,36 @@ function Sidebar({ rail, onNavigate }) {
   )
 }
 
+// short two-note chime (no audio file needed)
+function chime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    ;[[880, 0], [1320, 0.16]].forEach(([freq, at]) => {
+      const osc = ctx.createOscillator(); const gain = ctx.createGain()
+      osc.frequency.value = freq; osc.type = 'sine'
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + at)
+      gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + at + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + at + 0.3)
+      osc.connect(gain).connect(ctx.destination); osc.start(ctx.currentTime + at); osc.stop(ctx.currentTime + at + 0.32)
+    })
+  } catch { /* audio blocked until the page is clicked once */ }
+}
+
+// plays the chime when the number of pending orders goes up (opt-in under Notifications → Preferences)
+function useOrderChime(pending) {
+  const last = useRef(pending)
+  useEffect(() => {
+    let on = false
+    try { on = localStorage.getItem('xq_order_sound') === '1' } catch { /* storage blocked */ }
+    if (on && pending != null && last.current != null && pending > last.current) chime()
+    last.current = pending
+  }, [pending])
+}
+
 function Topbar({ onMenu }) {
   const { user, logout } = useAdminAuth()
+  const badges = useAdminList('badges', {}, { refetchInterval: 60_000, staleTime: 30_000 }).data?.data ?? {}
+  useOrderChime(badges.orders)
   const navigate = useNavigate()
   const signOut = async () => { await logout(); navigate('/admin/login', { replace: true }) }
   return (
@@ -93,7 +121,10 @@ function Topbar({ onMenu }) {
       </label>
       <div className="flex items-center gap-3.5 sm:gap-[18px]">
         <a href="/" target="_blank" className="hidden items-center gap-2 rounded-lg border border-aline px-3 py-2 text-xs font-semibold sm:flex"><Eye className="size-[15px]" /><span className="hidden xl:inline">View store</span></a>
-        <Link to="/admin/notifications" className="relative" aria-label="Notifications"><Bell className="size-5" /><span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-bad" /></Link>
+        <Link to="/admin/notifications" className="relative" aria-label={badges.notifications ? `Notifications (${badges.notifications} unread)` : 'Notifications'}>
+          <Bell className="size-5" />
+          {badges.notifications > 0 && <span className="absolute -right-1.5 -top-1.5 grid min-w-4 place-items-center rounded-full bg-bad px-1 text-[9px] font-bold leading-4 text-white">{badges.notifications > 9 ? '9+' : badges.notifications}</span>}
+        </Link>
         <Link to="/admin/profile" className="flex items-center gap-2.5">
           {user?.avatar
             ? <img src={user.avatar} alt="" className="size-8 rounded-full object-cover sm:size-9" />

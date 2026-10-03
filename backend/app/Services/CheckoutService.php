@@ -219,6 +219,12 @@ class CheckoutService
             'total' => number_format($order->total),
         ]);
         $this->mail->orderPlaced($order);
+        app(AdminNotifier::class)->notify(
+            'new_order',
+            "New order #{$order->order_number} · ৳".number_format($order->total),
+            "{$order->name} · {$order->district} · ".strtoupper($order->payment_method).($order->payment_method !== 'cod' ? ' — payment to verify' : ''),
+            "/admin/orders/{$order->order_number}",
+        );
 
         return $order->load(['items', 'statusHistories', 'latestPayment']);
     }

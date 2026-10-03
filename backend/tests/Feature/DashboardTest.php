@@ -56,6 +56,6 @@ class DashboardTest extends TestCase
         $role = Role::create(['name' => 'Packer', 'slug' => 'packer', 'permissions' => ['orders' => ['view']]]);
         Sanctum::actingAs(User::factory()->create(['role_id' => $role->id, 'is_active' => true]));
 
-        $this->getJson('/api/admin/badges')->assertOk()->assertExactJson(['data' => ['orders' => 1]]);
+        $this->getJson('/api/admin/badges')->assertOk()->assertExactJson(['data' => ['orders' => 1, 'notifications' => 0]]);
     }
 }

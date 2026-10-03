@@ -7,6 +7,7 @@ use App\Http\Requests\Customer\StoreReturnRequest;
 use App\Http\Resources\ReturnRequestResource;
 use App\Models\ReturnRequest;
 use App\Models\Setting;
+use App\Services\AdminNotifier;
 use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -92,6 +93,13 @@ class ReturnController extends Controller
             'status' => 'pending',
             'photos' => $photos ?: null,
         ]);
+
+        app(AdminNotifier::class)->notify(
+            'return',
+            "Return requested on #{$order->order_number}",
+            "{$item->name} · {$data['reason']} · wants ".($data['resolution'] === 'refund' ? 'a refund' : 'an exchange'),
+            '/admin/returns',
+        );
 
         return (new ReturnRequestResource($return->load(['order', 'orderItem'])))
             ->additional(['message' => 'Return request submitted. We will contact you shortly.'])

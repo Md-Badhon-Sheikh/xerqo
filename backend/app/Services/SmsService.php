@@ -249,5 +249,13 @@ class SmsService
         foreach ($emails as $email) {
             Mail::to($email)->queue(new LowSmsBalance($gateway->balance_paisa, $gateway->smsLeft()));
         }
+
+        // in-app too, but not by email again (the email above already went out)
+        app(AdminNotifier::class)->notify(
+            'sms_balance',
+            'SMS balance is low',
+            '৳'.number_format($gateway->balance_paisa / 100, 2).' left — about '.number_format($gateway->smsLeft()).' SMS',
+            '/admin/settings/sms',
+        );
     }
 }

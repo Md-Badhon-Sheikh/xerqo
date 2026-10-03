@@ -78,9 +78,29 @@ Route::middleware('auth:sanctum')->group(function () {
 // ---------------------------------------------------------------- Admin panel
 // "admin" = active staff user; "admin:{module}" also checks the role's permission matrix
 // (GET => view, POST => create, PUT/PATCH => edit, DELETE => delete).
-Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'admin.activity'])->group(function () {
     Route::get('dashboard', Admin\DashboardController::class)->middleware('admin:dashboard');
     Route::get('badges', [Admin\DashboardController::class, 'badges']); // filtered by the user's permissions
+
+    // every staff member: their own alerts and account
+    Route::get('notifications', [Admin\NotificationController::class, 'index']);
+    Route::post('notifications/read', [Admin\NotificationController::class, 'read']);
+    Route::get('notifications/preferences', [Admin\NotificationController::class, 'preferences']);
+    Route::put('notifications/preferences', [Admin\NotificationController::class, 'updatePreferences']);
+    Route::delete('notifications/{id}', [Admin\NotificationController::class, 'destroy']);
+    Route::get('profile', [Admin\ProfileController::class, 'show']);
+    Route::put('profile', [Admin\ProfileController::class, 'update']);
+    Route::put('profile/password', [Admin\ProfileController::class, 'password'])->middleware('throttle:6,1');
+    Route::match(['post', 'delete'], 'profile/avatar', [Admin\ProfileController::class, 'avatar']);
+    Route::get('profile/sessions', [Admin\ProfileController::class, 'sessions']);
+    Route::delete('profile/sessions/{id?}', [Admin\ProfileController::class, 'revoke'])->whereNumber('id');
+
+    // Settings → Security
+    Route::middleware('admin:staff')->group(function () {
+        Route::get('security/activity', [Admin\SecurityController::class, 'activity']);
+        Route::get('security/sessions', [Admin\SecurityController::class, 'sessions']);
+    });
+    Route::delete('security/sessions/{id?}', [Admin\SecurityController::class, 'revoke'])->whereNumber('id')->middleware('super-admin');
 
     // Orders (bound by order number, e.g. /api/admin/orders/XQ-24817)
     Route::middleware('admin:orders')->group(function () {

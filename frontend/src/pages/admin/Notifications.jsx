@@ -1,24 +1,52 @@
 import { useState } from 'react'
-import { Check, Settings2, ClipboardList, Star, Undo2, Layers, Wallet, Truck, Users } from 'lucide-react'
-import { Btn, PageHead, Tabs, Card, Two, Col, cx } from '../../components/admin/ui'
+import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { Bell, Check, ClipboardList, Layers, MessageSquare, Star, Undo2, Wallet, X } from 'lucide-react'
+import { Btn, Card, Col, PageHead, Tabs, Two, cx } from '../../components/admin/ui'
+import { EmptyBlock, LoadingBlock, Paginator, Spin } from '../../components/admin/form'
+import { ago } from '../../components/admin/orderUi'
+import { adminApi } from '../../lib/api'
+import { toast } from '../../lib/alert'
+import { useAdminList, useAdminMutation } from '../../lib/adminQueries'
 
 const TILE = { tan: 'bg-tan/12 text-tan', amber: 'bg-amber/12 text-amber', red: 'bg-bad/10 text-bad', green: 'bg-ok/10 text-ok', blue: 'bg-info/10 text-info' }
+const ICON = { new_order: ClipboardList, payment: Wallet, review: Star, return: Undo2, low_stock: Layers, sms_balance: MessageSquare }
+const TABS = [['All', ''], ['Orders', 'orders'], ['Reviews', 'reviews'], ['Returns', 'returns'], ['Stock', 'stock'], ['System', 'system']]
+const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString()
 
-const ITEMS = [
-  { group: 'Today', icon: ClipboardList, tone: 'tan', title: 'New order #XQ-24817', sub: 'Rahim Uddin · ৳2,600 · COD', time: '2 min ago', unread: true },
-  { group: 'Today', icon: Star, tone: 'amber', title: 'New 5★ review', sub: 'Classic Bifold Wallet · “Excellent stitching…”', time: '18 min ago', unread: true },
-  { group: 'Today', icon: Undo2, tone: 'amber', title: 'Return requested RT-1042', sub: 'Rose Clasp Purse · Colour mismatch', time: '1 h ago', unread: true },
-  { group: 'Earlier', icon: Layers, tone: 'red', title: 'Low stock: Zip Long Wallet', sub: '6 left · threshold 5', time: '3 h ago' },
-  { group: 'Earlier', icon: Wallet, tone: 'green', title: 'COD payout received', sub: 'Steadfast ৳52,840 · matched', time: '26 Sep' },
-  { group: 'Earlier', icon: Truck, tone: 'red', title: 'Delivery failed #XQ-24790', sub: 'Customer unreachable · reattempt tomorrow', time: '25 Sep' },
-  { group: 'Earlier', icon: Users, tone: 'blue', title: 'New staff login', sub: 'Nasir (Inventory) · Chrome, Dhaka', time: '25 Sep' },
-]
-
-const CHANNELS = ['In-app', 'Email', 'SMS']
-const PREFS = [
-  ['New order', [1, 1, 1]], ['New review', [1, 1, 0]], ['Return request', [1, 1, 1]],
-  ['Low stock', [1, 1, 0]], ['COD payout', [1, 1, 0]], ['Staff login', [1, 0, 0]],
-]
+function Feed({ list, onOpen, onDismiss }) {
+  const groups = [['Today', list.filter((n) => isToday(n.created_at))], ['Earlier', list.filter((n) => !isToday(n.created_at))]]
+  return (
+    <div className="overflow-hidden rounded-xl border border-aline bg-white">
+      {groups.map(([g, items]) => items.length > 0 && (
+        <div key={g}>
+          <p className="border-b border-aline bg-asoft px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-amute">{g}</p>
+          <ul className="divide-y divide-aline border-b border-aline last:border-b-0">
+            {items.map((n) => {
+              const Icon = ICON[n.event] ?? Bell
+              return (
+                <li key={n.id} className={cx('flex gap-3.5 px-4 py-3.5', !n.read && 'bg-abg/70')}>
+                  <span className={cx('grid size-9 shrink-0 place-items-center rounded-lg', TILE[n.tone] ?? TILE.tan)}><Icon className="size-[17px]" /></span>
+                  <button type="button" onClick={() => onOpen(n)} className="min-w-0 flex-1 text-left">
+                    <p className="text-[13px] font-semibold hover:text-tan">{n.title}</p>
+                    <p className="text-xs text-amute">{n.body}</p>
+                  </button>
+                  <div className="flex shrink-0 flex-col items-end gap-1.5">
+                    <span className="text-[11px] text-amute">{ago(n.created_at)}</span>
+                    <div className="flex items-center gap-2">
+                      {!n.read && <span className="size-1.5 rounded-full bg-tan" aria-label="Unread" />}
+                      <button type="button" onClick={() => onDismiss(n)} aria-label="Dismiss" className="text-amute hover:text-bad"><X className="size-3.5" /></button>
+                    </div>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function Box({ on, onClick, label }) {
   return (
@@ -29,79 +57,77 @@ function Box({ on, onClick, label }) {
   )
 }
 
-function Feed({ items, dismiss }) {
-  return (
-    <div className="overflow-hidden rounded-xl border border-aline bg-white">
-      {['Today', 'Earlier'].map((g) => {
-        const list = items.filter((n) => n.group === g)
-        if (!list.length) return null
-        return (
-          <div key={g}>
-            <p className="border-b border-aline bg-asoft px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-amute">{g}</p>
-            <ul className="divide-y divide-aline border-b border-aline last:border-b-0">
-              {list.map((n) => (
-                <li key={n.title} className={cx('flex gap-3.5 px-4 py-3.5', n.unread && 'bg-abg/70')}>
-                  <span className={cx('grid size-9 shrink-0 place-items-center rounded-lg', TILE[n.tone])}><n.icon className="size-[17px]" /></span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] font-semibold">{n.title}</p>
-                    <p className="text-xs text-amute">{n.sub}</p>
-                    {n.unread && <div className="mt-1.5 flex gap-4 text-xs max-sm:hidden"><button className="font-semibold text-tan">View</button><button onClick={() => dismiss(n.title)} className="text-amute">Dismiss</button></div>}
-                  </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1.5">
-                    <span className="text-[11px] text-amute">{n.time}</span>
-                    {n.unread && <span className="size-1.5 rounded-full bg-tan" />}
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
 function Preferences() {
-  const [prefs, setPrefs] = useState(PREFS)
-  const flip = (r, c) => setPrefs((p) => p.map(([e, v], i) => [e, i === r ? v.map((x, j) => (j === c ? 1 - x : x)) : v]))
+  const { data, isPending } = useAdminList('notifications/preferences')
+  const [draft, setDraft] = useState(null)
+  const rows = draft ?? data?.data ?? []
+  const flip = (event, channel) => setDraft(rows.map((r) => (r.event === event ? { ...r, [channel]: !r[channel] } : r)))
+  const save = useAdminMutation(() => adminApi.put('/admin/notifications/preferences', { prefs: Object.fromEntries(rows.map((r) => [r.event, { app: r.app, email: r.email }])) }), {
+    invalidate: ['notifications/preferences'], success: 'Preferences saved', onSuccess: () => setDraft(null),
+  })
+  const [sound, setSound] = useState(() => { try { return localStorage.getItem('xq_order_sound') === '1' } catch { return false } })
+  const toggleSound = () => { const next = !sound; setSound(next); try { localStorage.setItem('xq_order_sound', next ? '1' : '0') } catch { /* storage blocked */ } }
+
   return (
-    <Card title="Notification preferences" sub="Where you get alerted">
-      <table className="w-full text-[13px]">
-        <thead className="text-[11px] uppercase tracking-wider text-amute">
-          <tr><th className="pb-2 text-left font-semibold">Event</th>{CHANNELS.map((c) => <th key={c} className="w-14 pb-2 font-semibold normal-case tracking-normal">{c}</th>)}</tr>
-        </thead>
-        <tbody>
-          {prefs.map(([e, v], r) => (
-            <tr key={e}>
-              <td className="py-2">{e}</td>
-              {v.map((on, c) => <td key={c} className="py-2"><div className="grid place-items-center"><Box on={!!on} onClick={() => flip(r, c)} label={`${e} ${CHANNELS[c]}`} /></div></td>)}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <Btn>Save preferences</Btn>
+    <Card title="Notification preferences" sub="Only alerts for sections your role can open are listed">
+      {isPending ? <LoadingBlock rows={3} /> : <>
+        <table className="w-full text-[13px]">
+          <thead className="text-[11px] uppercase tracking-wider text-amute">
+            <tr><th className="pb-2 text-left font-semibold">Event</th><th className="w-16 pb-2 font-semibold normal-case tracking-normal">In-app</th><th className="w-16 pb-2 font-semibold normal-case tracking-normal">Email</th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.event}>
+                <td className="py-2">{r.label}</td>
+                {['app', 'email'].map((ch) => <td key={ch} className="py-2"><div className="grid place-items-center"><Box on={r[ch]} onClick={() => flip(r.event, ch)} label={`${r.label} ${ch === 'app' ? 'in-app' : 'email'}`} /></div></td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="flex w-full items-center justify-between gap-3 border-t border-aline pt-3 text-[13px]">
+          <span><span className="block font-medium">Sound on new orders</span><span className="block text-[11px] text-amute">A short chime while the admin is open in this browser</span></span>
+          <Box on={sound} onClick={toggleSound} label="Sound on new orders" />
+        </div>
+        <Btn disabled={!draft || save.isPending} onClick={() => save.mutate()}>{save.isPending && <Spin />}Save preferences</Btn>
+      </>}
     </Card>
   )
 }
 
 export default function AdminNotifications() {
-  const [items, setItems] = useState(ITEMS)
-  const markAll = () => setItems((l) => l.map((n) => ({ ...n, unread: false })))
-  const dismiss = (t) => setItems((l) => l.filter((n) => n.title !== t))
-  const count = (k) => String(items.filter((n) => n.title.toLowerCase().includes(k)).length)
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const [f, setF] = useState({ category: '', page: 1 })
+  const { data, isPending, isPlaceholderData } = useAdminList('notifications', f)
+  const list = data?.data ?? []
+  const refresh = () => ['notifications', 'badges'].forEach((k) => qc.invalidateQueries({ queryKey: ['admin', k] }))
+
+  const markAll = async () => {
+    try { await adminApi.post('/admin/notifications/read'); refresh(); toast.success('All caught up') } catch (e) { toast.error(e.message) }
+  }
+  const open = async (n) => {
+    if (!n.read) adminApi.post('/admin/notifications/read', { ids: [n.id] }).then(refresh).catch(() => {})
+    if (n.link) navigate(n.link)
+  }
+  const dismiss = async (n) => {
+    try { await adminApi.del(`/admin/notifications/${n.id}`); refresh() } catch (e) { toast.error(e.message) }
+  }
+
   return (
     <>
       <PageHead
         title="Notifications"
-        sub="Everything that needs your attention, in one place"
-        actions={<>
-          <Btn v="white" icon={Check} onClick={markAll}><span className="sm:hidden">Mark read</span><span className="max-sm:hidden">Mark all as read</span></Btn>
-          <Btn v="white" icon={Settings2} aria-label="Preferences"><span className="max-sm:hidden">Preferences</span></Btn>
-        </>}
+        sub={data ? `${data.unread} unread · alerts for orders, payments, reviews, returns and stock` : 'Loading…'}
+        actions={<Btn v="white" icon={Check} onClick={markAll} disabled={!data?.unread}><span className="sm:hidden">Mark read</span><span className="max-sm:hidden">Mark all as read</span></Btn>}
       />
-      <Tabs items={[['All', String(items.length)], ['Orders', count('order')], ['Reviews', count('review')], ['Stock', count('stock')], ['Returns', count('return')], ['System']]} />
+      <Tabs items={TABS.map(([l, k]) => [l, k ? data?.counts?.[k] : data?.counts?.all, k])} active={f.category} onChange={(category) => setF({ category, page: 1 })} />
       <Two ratio="wide">
-        <Col><Feed items={items} dismiss={dismiss} /></Col>
+        <Col className={cx('transition-opacity', isPlaceholderData && 'opacity-60')}>
+          {isPending ? <LoadingBlock /> : !list.length ? <EmptyBlock title="Nothing here" text="New orders, payments to verify, reviews, returns and low stock show up here." /> : <>
+            <Feed list={list} onOpen={open} onDismiss={dismiss} />
+            <Paginator meta={data?.meta} onPage={(page) => setF({ ...f, page })} />
+          </>}
+        </Col>
         <Col><Preferences /></Col>
       </Two>
     </>

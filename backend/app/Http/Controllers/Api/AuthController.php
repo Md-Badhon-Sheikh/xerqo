@@ -13,6 +13,8 @@ use App\Models\PasswordResetOtp;
 use App\Models\User;
 use App\Services\OtpService;
 use App\Services\SmsService;
+use App\Support\Activity;
+use App\Support\Device;
 use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -53,7 +55,7 @@ class AuthController extends Controller
         }
         $user->refresh(); // load column defaults (notification preferences)
 
-        $token = $user->createToken($data['device_name'] ?? 'xerqo-spa')->plainTextToken;
+        $token = $this->issueToken($user, $data['device_name'] ?? null);
 
         return $this->tokenResponse($user, $token, 201);
     }
@@ -67,6 +69,10 @@ class AuthController extends Controller
         $user = $this->findUserByIdentifier($login);
 
         if (! $user || ! Hash::check($request->validated('password'), $user->password)) {
+            if ($user?->isStaff()) {
+                Activity::log('auth.login_failed', 'auth', 'Failed sign-in (wrong password)', $user, [], $user);
+            }
+
             throw ValidationException::withMessages([
                 'login' => 'These credentials do not match our records.',
             ]);
@@ -85,7 +91,11 @@ class AuthController extends Controller
         $user->last_login_at = now();
         $user->save();
 
-        $token = $user->createToken($request->validated('device_name') ?? 'xerqo-spa')->plainTextToken;
+        $token = $this->issueToken($user, $request->validated('device_name'));
+
+        if ($user->isStaff()) {
+            Activity::log('auth.login', 'auth', 'Signed in', $user, [], $user);
+        }
 
         return $this->tokenResponse($user, $token);
     }
@@ -144,7 +154,7 @@ class AuthController extends Controller
             'phone_verified_at' => $user->phone_verified_at ?? now(),
         ])->save();
 
-        return $this->tokenResponse($user, $user->createToken($data['device_name'] ?? 'xerqo-spa')->plainTextToken);
+        return $this->tokenResponse($user, $this->issueToken($user, $data['device_name'] ?? null));
     }
 
     /**
@@ -246,6 +256,24 @@ class AuthController extends Controller
         });
 
         return response()->json(['message' => 'Your password has been reset. Please log in.']);
+    }
+
+    /**
+     * A new API token, tagged with the device and IP so people can recognise (and revoke) their sessions.
+     */
+    private function issueToken(User $user, ?string $name = null): string
+    {
+        // forget sessions nobody has used for a month, so the devices list stays meaningful
+        $user->tokens()->where(fn ($q) => $q->where('last_used_at', '<', now()->subDays(30))
+            ->orWhere(fn ($q) => $q->whereNull('last_used_at')->where('created_at', '<', now()->subDays(30))))->delete();
+
+        $new = $user->createToken($name ?: 'xerqo-spa');
+        $new->accessToken->forceFill([
+            'ip' => request()->ip(),
+            'device' => Device::describe(request()->userAgent()),
+        ])->save();
+
+        return $new->plainTextToken;
     }
 
     private function findUserByIdentifier(string $identifier): ?User

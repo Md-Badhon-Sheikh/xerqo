@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\AdminNotifier;
 use App\Support\Media;
 use App\Support\Phone;
 use Illuminate\Http\Request;
@@ -99,6 +100,12 @@ class OrderController extends Controller
             $current->update($attributes);
         } else {
             $order->payments()->create([...$attributes, 'method' => $order->payment_method, 'amount' => $order->total, 'status' => Payment::STATUS_PENDING]);
+            app(AdminNotifier::class)->notify(
+                'payment',
+                "Payment sent for #{$order->order_number}",
+                strtoupper($order->payment_method).' · ৳'.number_format($order->total).(! empty($attributes['transaction_id']) ? " · TxnID {$attributes['transaction_id']}" : ' · slip uploaded'),
+                '/admin/payments',
+            );
             $order->update(['payment_status' => 'pending']);
         }
 

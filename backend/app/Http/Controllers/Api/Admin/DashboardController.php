@@ -93,6 +93,7 @@ class DashboardController extends Controller
             'reviews' => $can('reviews') ? Review::where('status', Review::STATUS_PENDING)->count() : null,
             'payments' => $can('payments') ? Payment::where('status', Payment::STATUS_PENDING)->count() : null,
             'shipments' => $can('shipments') ? Order::whereIn('status', ['confirmed', 'processing'])->count() : null,
+            'notifications' => $request->user()->unreadNotifications()->count(),
         ], fn ($v) => $v !== null)]);
     }
 

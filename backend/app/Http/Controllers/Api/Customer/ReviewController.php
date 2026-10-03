@@ -9,10 +9,12 @@ use App\Models\Order;
 use App\Models\OrderFeedback;
 use App\Models\Review;
 use App\Models\Setting;
+use App\Services\AdminNotifier;
 use App\Support\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -154,7 +156,15 @@ class ReviewController extends Controller
             'packaging_rating' => $data['packaging_rating'] ?? null,
         ]);
 
-        return (new ReviewResource($review->load(self::WITH)))
+        $review->load(self::WITH);
+        app(AdminNotifier::class)->notify(
+            'review',
+            "New {$review->rating}★ review".($review->status === Review::STATUS_APPROVED ? ' (published)' : ''),
+            ($review->product?->name ?? 'A product').($review->body ? ' · “'.Str::limit($review->body, 80).'”' : ''),
+            '/admin/reviews',
+        );
+
+        return (new ReviewResource($review))
             ->additional(['message' => $review->status === Review::STATUS_APPROVED ? 'Thanks! Your review is live.' : 'Thanks! Your review will appear after moderation.'])
             ->response()
             ->setStatusCode(201);

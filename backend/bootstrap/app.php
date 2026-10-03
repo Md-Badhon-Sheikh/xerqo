@@ -3,6 +3,7 @@
 use App\Http\Middleware\EnsureUserIsAdmin;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\LogAdminActivity;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'super-admin' => EnsureUserIsSuperAdmin::class,
+            'admin.activity' => LogAdminActivity::class,
         ]);
 
         // Pure token API: never redirect unauthenticated API calls to a login page.
