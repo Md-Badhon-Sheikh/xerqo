@@ -30,6 +30,9 @@ class StoreReviewRequest extends FormRequest
             'delivery_rating' => ['nullable', 'integer', 'between:1,5'],
             'courier_rating' => ['nullable', 'integer', 'between:1,5'],
             'packaging_rating' => ['nullable', 'integer', 'between:1,5'],
+            'tags' => ['nullable', 'array', 'max:7'],
+            'tags.*' => ['string', 'max:40'],
+            'is_anonymous' => ['nullable', 'boolean'],
         ];
     }
 }

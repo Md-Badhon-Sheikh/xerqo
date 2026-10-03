@@ -121,8 +121,7 @@ class SettingSeeder extends Seeder
                 'order_delivered_review' => [
                     'name' => 'Delivered + review request',
                     'enabled' => true,
-                    'body' => 'Delivered! Loved your {product}? Rate it in 10 sec & get 50 reward points: {review_link}',
-                    'delay' => 'Sent 2 hours after courier marks the parcel delivered',
+                    'body' => 'Delivered! Loved your {product}? Rate it in 10 sec: {review_link}',
                 ],
                 'order_cancelled' => [
                     'name' => 'Order cancelled',

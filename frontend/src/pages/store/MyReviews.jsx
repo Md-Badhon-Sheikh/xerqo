@@ -1,130 +1,135 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ThumbsUp, Clock } from 'lucide-react'
-import { orders, products } from '../../data/store'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Clock, MessageSquareText, Star } from 'lucide-react'
 import { AccountShell } from '../../components/store/AccountShell'
-import { Button, Stars, Pill, cx } from '../../components/store/ui'
+import { Bone, Button, EmptyState, Pill, Stars, cx } from '../../components/store/ui'
+import { useAuth } from '../../context/AuthContext'
+import { api } from '../../lib/api'
+import { confirmAndRun, toast } from '../../lib/alert'
 
-const toReview = [
-  { p: products[0], order: orders[1] },
-  { p: products[15], order: orders[2] },
-]
+const fmt = (iso) => (iso ? new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '')
+const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
 
-const myReviews = [
-  { p: products[5], variant: 'Cognac', rating: 5, date: '28 Jul 2026', status: 'Published', helpful: 14, photos: ['/images/fb-long-wallet.jpg', '/images/wallet-cash.jpg'],
-    text: 'Genuine crocodile-embossed leather, stitching is super neat. Smells like real leather. After 2 months it looks even better.',
-    reply: 'Thank you Rahim bhai! Condition it every 3 months to keep that shine.' },
-  { p: products[11], variant: 'Black', rating: 4, date: '24 Aug 2026', status: 'Pending', helpful: 0, photos: ['/images/fb-passport-black.jpg'],
-    text: 'Name engraving came out perfect. Only wish it had one more card slot.' },
-  { p: products[30], variant: 'Tan', rating: 5, date: '02 Jun 2026', status: 'Published', helpful: 6, photos: [],
-    text: 'Slim enough for my front pocket and the edges are beautifully burnished.' },
-]
-
-const feedback = [
-  { id: 'XQ-21877', date: '22 Aug 2026', courier: 'Steadfast', scores: [5, 5, 4], note: 'Rider called before arriving — very helpful!' },
-  { id: 'XQ-19340', date: '28 Jul 2026', courier: 'Pathao', scores: [4, 5, 5], note: 'Gift box was lovely.' },
-  { id: 'XQ-17702', date: '02 Jun 2026', courier: 'Steadfast', scores: [5, 4, 4], note: '' },
-]
-
-function AwaitingCard({ p, order }) {
+function AwaitingCard({ t }) {
   return (
     <article className="flex flex-col gap-3 rounded-lg bg-white p-3.5 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
       <div className="flex flex-1 items-center gap-3 sm:gap-4">
-        <img src={p.image} alt={p.name} className="size-[60px] shrink-0 rounded object-cover" />
+        <img src={t.image || '/images/logo.png'} alt={t.name} className="size-[60px] shrink-0 rounded object-cover" />
         <div className="min-w-0">
-          <h3 className="font-display text-xl font-semibold leading-tight sm:text-[22px]">{p.name}</h3>
-          <p className="text-xs text-mute">Delivered {order.date.replace(/ 2026$/, '')} · Order #{order.id}</p>
-          <p className="text-sm text-line">☆☆☆☆☆ <span className="ml-1 text-xs text-mute/50">Tap to rate</span></p>
+          <h3 className="font-display text-xl font-semibold leading-tight sm:text-[22px]">{t.name}</h3>
+          <p className="text-xs text-mute">{t.variant_name ? `${t.variant_name} · ` : ''}Delivered {fmt(t.delivered_at)} · Order #{t.order_number}</p>
         </div>
       </div>
-      <Button to={`/account/review/${order.id}`} variant="tan" className="w-full sm:w-auto">Write review</Button>
+      <Button to={`/account/review/${t.order_number}`} variant="tan" className="w-full sm:w-auto">Write review</Button>
     </article>
   )
 }
 
-function ReviewCard({ r }) {
+function ReviewCard({ r, name, onDeleted }) {
+  const statusPill = {
+    pending: <Pill tone="amber" className="whitespace-nowrap"><Clock className="size-3" />Pending<span className="max-sm:hidden"> moderation</span></Pill>,
+    approved: <Pill tone="leaf">Published</Pill>,
+    rejected: <Pill tone="rust">Not published</Pill>,
+  }[r.status]
+  const remove = async () => {
+    const done = await confirmAndRun({ title: 'Delete this review?', text: 'This cannot be undone.', confirmText: 'Delete', danger: true }, () => api.delete(`/reviews/${r.id}`))
+    if (done) { toast.success('Review deleted'); onDeleted() }
+  }
   return (
     <article className="space-y-3.5 rounded-lg border border-line bg-white p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold text-tan">RU</span>
+          <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold text-tan">{initials(name)}</span>
           <div>
-            <p className="text-sm font-semibold">Rahim Uddin</p>
-            <p className="whitespace-nowrap text-[11px] text-leaf"><span className="text-mute">Dhaka ·</span> ✓ Verified buyer</p>
+            <p className="text-sm font-semibold">{r.is_anonymous ? 'Posted anonymously' : name}</p>
+            <p className="whitespace-nowrap text-[11px] text-leaf">✓ Verified buyer</p>
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">
-          <span className="text-xs text-mute">{r.date}</span>
-          {r.status === 'Pending'
-            ? <Pill tone="amber" className="whitespace-nowrap"><Clock className="size-3" />Pending<span className="max-sm:hidden"> moderation</span></Pill>
-            : <Pill tone="leaf">Published</Pill>}
+          <span className="text-xs text-mute">{fmt(r.created_at)}</span>
+          {statusPill}
         </div>
       </div>
       <p className="flex flex-wrap items-center gap-x-2 text-xs text-mute">
         <Stars n={r.rating} className="text-sm" />
-        <Link to={`/product/${r.p.slug}`} className="hover:text-ink">{r.p.name} · {r.variant}</Link>
+        {r.product ? <Link to={`/product/${r.product.slug}`} className="hover:text-ink">{r.product.name}</Link> : 'Product removed'}
+        {r.order_number && <span>· Order #{r.order_number}</span>}
       </p>
-      <p className="text-sm leading-relaxed">{r.text}</p>
-      {r.photos.length > 0 && (
-        <div className="flex gap-2">{r.photos.map((src) => <img key={src} src={src} alt="" className="size-16 rounded object-cover sm:size-[68px]" />)}</div>
-      )}
-      {r.reply && (
+      {r.title && <p className="text-sm font-semibold">{r.title}</p>}
+      {r.body && <p className="whitespace-pre-line text-sm leading-relaxed">{r.body}</p>}
+      {r.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{r.tags.map((t) => <span key={t} className="rounded-full bg-cream px-2.5 py-1 text-[11px]">{t}</span>)}</div>}
+      {r.photos?.length > 0 && <div className="flex gap-2">{r.photos.map((src) => <img key={src} src={src} alt="" className="size-16 rounded object-cover sm:size-[68px]" />)}</div>}
+      {r.reply && r.status === 'approved' && (
         <div className="rounded bg-sand p-3.5">
           <p className="text-xs font-semibold text-tan">XERQO replied</p>
           <p className="mt-0.5 text-[13px] text-mute">{r.reply}</p>
         </div>
       )}
       <div className="flex gap-4 text-xs text-mute">
-        {r.status === 'Pending'
-          ? <><button className="font-semibold text-ink hover:underline">Edit</button><button className="hover:text-rust">Delete</button></>
-          : <><span className="flex items-center gap-1"><ThumbsUp className="size-3.5 text-amber" />Helpful ({r.helpful})</span><button className="hover:text-ink">Report</button></>}
+        {r.order_number && <Link to={`/account/review/${r.order_number}`} className="font-semibold text-ink hover:underline">Edit</Link>}
+        <button type="button" onClick={remove} className="hover:text-rust">Delete</button>
+        {r.status === 'approved' && r.product && <Link to={`/product/${r.product.slug}#reviews`} className="ml-auto hover:text-ink">View on product page</Link>}
       </div>
     </article>
   )
 }
 
+const LABELS = [['delivery_rating', 'Delivery speed'], ['packaging_rating', 'Packaging'], ['courier_rating', 'Courier'], ['support_rating', 'Call confirmation']]
 function FeedbackCard({ f }) {
-  const labels = ['Delivery speed', 'Packaging', 'Courier']
   return (
     <article className="space-y-3 rounded-lg bg-white p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-semibold">Order #{f.id}</p>
-        <span className="text-xs text-mute">{f.date} · {f.courier}</span>
+        <p className="text-sm font-semibold">Order #{f.order_number}</p>
+        <span className="text-xs text-mute">{fmt(f.delivered_at || f.created_at)}{f.courier ? ` · ${f.courier}` : ''}</span>
       </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        {labels.map((l, i) => <p key={l} className="flex items-center justify-between gap-2 rounded bg-cream px-3 py-2 text-xs"><span>{l}</span><Stars n={f.scores[i]} /></p>)}
+      <div className="grid gap-2 sm:grid-cols-2">
+        {LABELS.filter(([k]) => f[k]).map(([k, l]) => <p key={k} className="flex items-center justify-between gap-2 rounded bg-cream px-3 py-2 text-xs"><span>{l}</span><Stars n={f[k]} /></p>)}
       </div>
-      {f.note && <p className="text-[13px] italic text-mute">“{f.note}”</p>}
+      {f.nps != null && <p className="text-xs text-mute">Would recommend XERQO: <b className="text-ink">{f.nps}/10</b></p>}
+      {f.comment && <p className="text-[13px] italic text-mute">“{f.comment}”</p>}
+      <Link to={`/account/review/${f.order_number}`} className="inline-block text-xs font-semibold text-ink hover:underline">Edit feedback</Link>
     </article>
   )
 }
 
 export default function MyReviews() {
-  const published = myReviews.filter((r) => r.status === 'Published')
-  const tabs = [['review', `To review (${toReview.length})`], ['published', `Published (${published.length})`], ['feedback', `Feedback (${feedback.length})`]]
+  const { user } = useAuth()
+  const qc = useQueryClient()
+  const { data, isPending } = useQuery({ queryKey: ['customer', 'reviews'], queryFn: () => api.get('/me/reviews') })
+  const reviews = data?.data ?? []
+  const toReview = data?.to_review ?? []
+  const feedback = data?.feedback ?? []
+  const published = reviews.filter((r) => r.status === 'approved')
   const [tab, setTab] = useState('review')
+  const tabs = [['review', `To review (${toReview.length})`], ['mine', `My reviews (${reviews.length})`], ['published', `Published (${published.length})`], ['feedback', `Feedback (${feedback.length})`]]
+  const refresh = () => qc.invalidateQueries({ queryKey: ['customer', 'reviews'] })
+  const list = tab === 'published' ? published : reviews
+
   return (
     <AccountShell title="My reviews">
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
         {tabs.map(([k, l]) => (
-          <button key={k} onClick={() => setTab(k)} className={cx('shrink-0 rounded-full border px-3.5 py-2 text-xs font-medium', tab === k ? 'border-ink bg-ink text-white' : 'border-line bg-white hover:border-ink')}>{l}</button>
+          <button key={k} type="button" onClick={() => setTab(k)} className={cx('shrink-0 rounded-full border px-3.5 py-2 text-xs font-medium', tab === k ? 'border-ink bg-ink text-white' : 'border-line bg-white hover:border-ink')}>{l}</button>
         ))}
       </div>
 
-      {tab === 'review' && (
-        <>
-          <div className="space-y-3">{toReview.map((t) => <AwaitingCard key={t.p.id} {...t} />)}</div>
-          <p className="eyebrow pt-2">Your reviews</p>
-          <div className="space-y-3 sm:space-y-4">{myReviews.map((r) => <ReviewCard key={r.p.id} r={r} />)}</div>
-        </>
-      )}
-      {tab === 'published' && <div className="space-y-3 sm:space-y-4">{published.map((r) => <ReviewCard key={r.p.id} r={r} />)}</div>}
-      {tab === 'feedback' && (
-        <>
+      {isPending ? <div className="space-y-3">{[0, 1].map((i) => <Bone key={i} className="h-24 w-full rounded-lg" />)}</div> : <>
+        {tab === 'review' && (toReview.length
+          ? <div className="space-y-3">{toReview.map((t) => <AwaitingCard key={`${t.order_number}-${t.product_id}`} t={t} />)}</div>
+          : <EmptyState icon={Star} title="Nothing to review" text="When an order is delivered, its products show up here so you can rate them." action={<Button to="/shop" variant="outline">Continue shopping</Button>} />)}
+
+        {(tab === 'mine' || tab === 'published') && (list.length
+          ? <div className="space-y-3 sm:space-y-4">{list.map((r) => <ReviewCard key={r.id} r={r} name={user?.name ?? ''} onDeleted={refresh} />)}</div>
+          : <EmptyState icon={MessageSquareText} title={tab === 'published' ? 'No published reviews yet' : 'No reviews yet'} text="Reviews are checked by our team before they go live." />)}
+
+        {tab === 'feedback' && <>
           <p className="text-[13px] text-mute">Delivery &amp; service feedback is private — only the XERQO team sees it.</p>
-          <div className="space-y-3">{feedback.map((f) => <FeedbackCard key={f.id} f={f} />)}</div>
-        </>
-      )}
+          {feedback.length
+            ? <div className="space-y-3">{feedback.map((f) => <FeedbackCard key={f.id} f={f} />)}</div>
+            : <EmptyState icon={MessageSquareText} title="No feedback yet" text="Tell us about the delivery when you review an order." />}
+        </>}
+      </>}
     </AccountShell>
   )
 }

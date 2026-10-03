@@ -66,6 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('me/reviews', [Customer\ReviewController::class, 'index']);
     Route::post('reviews', [Customer\ReviewController::class, 'store'])->middleware('throttle:20,1');
+    Route::put('reviews/{review}', [Customer\ReviewController::class, 'update'])->middleware('throttle:20,1');
+    Route::delete('reviews/{review}', [Customer\ReviewController::class, 'destroy']);
+    Route::get('me/orders/{orderNumber}/review', [Customer\ReviewController::class, 'order']);
+    Route::post('me/orders/{orderNumber}/feedback', [Customer\ReviewController::class, 'feedback'])->middleware('throttle:20,1');
 
     Route::get('me/returns', [Customer\ReturnController::class, 'index']);
     Route::post('returns', [Customer\ReturnController::class, 'store'])->middleware('throttle:10,1');
@@ -122,8 +126,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
 
     Route::middleware('admin:reviews')->group(function () {
         Route::get('reviews', [Admin\ReviewController::class, 'index']);
+        Route::get('reviews/feedback', [Admin\ReviewController::class, 'feedback']);
         Route::patch('reviews/{review}/approve', [Admin\ReviewController::class, 'approve']);
         Route::patch('reviews/{review}/reject', [Admin\ReviewController::class, 'reject']);
+        Route::patch('reviews/{review}/reply', [Admin\ReviewController::class, 'reply']);
+        Route::patch('reviews/{review}/feature', [Admin\ReviewController::class, 'feature']);
         Route::delete('reviews/{review}', [Admin\ReviewController::class, 'destroy']);
     });
 

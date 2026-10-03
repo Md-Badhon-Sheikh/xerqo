@@ -71,6 +71,7 @@ class HomeController extends Controller
             ->where('rating', '>=', 4)
             ->whereNotNull('body')
             ->with(['user:id,name', 'user.addresses:id,user_id,district'])
+            ->orderByDesc('is_featured')
             ->latest()
             ->limit(3)
             ->get();

@@ -221,8 +221,15 @@ function ReviewCard({ r }) {
       <Stars n={r.rating} />
       {r.title && <p className="text-sm font-semibold">{r.title}</p>}
       {r.body && <p className="text-sm leading-relaxed">{r.body}</p>}
+      {r.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{r.tags.map((t) => <span key={t} className="rounded-full bg-cream px-2.5 py-1 text-[11px]">{t}</span>)}</div>}
       {r.photos?.length > 0 && (
         <div className="flex gap-2">{r.photos.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="Customer photo" loading="lazy" className="size-16 rounded object-cover" /></a>)}</div>
+      )}
+      {r.reply && (
+        <div className="rounded bg-sand p-3.5">
+          <p className="text-xs font-semibold text-tan">XERQO replied</p>
+          <p className="mt-0.5 text-[13px] text-mute">{r.reply}</p>
+        </div>
       )}
     </article>
   )
