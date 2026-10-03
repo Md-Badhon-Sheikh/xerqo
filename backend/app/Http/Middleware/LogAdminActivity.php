@@ -26,6 +26,7 @@ class LogAdminActivity
         'products' => ['catalog', 'product', 'name'],
         'roles' => ['staff', 'role', 'name'],
         'staff' => ['staff', 'staff member', 'name'],
+        'expenses' => ['accounts', 'expense', 'description'],
     ];
 
     private const SECRETS = ['password', 'password_confirmation', 'current_password', 'api_key', 'secret_key'];

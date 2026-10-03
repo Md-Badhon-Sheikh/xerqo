@@ -20,7 +20,7 @@ const Compare = S('Compare')
 const ALogin = A('Login'), AForgot = A('ForgotPassword'), Dashboard = A('Dashboard'), Orders = A('Orders'), OrderDetail = A('OrderDetail')
 const Invoice = A('Invoice'), Products = A('Products'), ProductForm = A('ProductForm'), Categories = A('Categories'), Inventory = A('Inventory')
 const Customers = A('Customers'), CustomerDetail = A('CustomerDetail'), Reviews = A('Reviews'), Coupons = A('Coupons'), Content = A('Content')
-const Returns = A('Returns'), Shipments = A('Shipments'), Payments = A('Payments'), Reports = A('Reports'), Staff = A('Staff'), RoleEdit = A('RoleEdit')
+const Returns = A('Returns'), Shipments = A('Shipments'), Payments = A('Payments'), Reports = A('Reports'), Accounts = A('Accounts'), Staff = A('Staff'), RoleEdit = A('RoleEdit')
 const Settings = A('Settings'), SettingsGeneral = A('SettingsGeneral'), SettingsSms = A('SettingsSms'), SettingsSecurity = A('SettingsSecurity')
 const Notifications = A('Notifications'), AProfile = A('Profile'), Brands = A('Brands'), FlashSales = A('FlashSales')
 
@@ -84,6 +84,7 @@ export default function App() {
             <Route path="shipments" element={<Shipments />} />
             <Route path="payments" element={<Payments />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="accounts" element={<Accounts />} />
             <Route path="staff" element={<Staff />} />
             <Route path="staff/roles/:id" element={<RoleEdit />} />
             <Route path="settings" element={<Settings />} />

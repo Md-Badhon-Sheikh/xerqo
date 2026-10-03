@@ -9,7 +9,7 @@ class ActivityLog extends Model
 {
     public const UPDATED_AT = null;
 
-    public const CATEGORIES = ['orders', 'payments', 'returns', 'catalog', 'customers', 'reviews', 'marketing', 'content', 'settings', 'sms', 'staff', 'auth'];
+    public const CATEGORIES = ['orders', 'payments', 'returns', 'catalog', 'customers', 'reviews', 'marketing', 'content', 'accounts', 'settings', 'sms', 'staff', 'auth'];
 
     protected $fillable = ['user_id', 'action', 'category', 'description', 'subject_type', 'subject_id', 'properties', 'ip', 'device'];
 

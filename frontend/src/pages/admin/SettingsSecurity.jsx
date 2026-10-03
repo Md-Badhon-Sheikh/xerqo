@@ -11,7 +11,7 @@ import { confirmAndRun, toast } from '../../lib/alert'
 import { useAdminList } from '../../lib/adminQueries'
 
 const KIND = { phone: Smartphone, tablet: Tablet, desktop: Monitor }
-const CATEGORIES = [['', 'Type: All'], ['auth', 'Sign-ins'], ['orders', 'Orders'], ['payments', 'Payments'], ['returns', 'Returns'], ['catalog', 'Catalogue & stock'], ['customers', 'Customers'], ['reviews', 'Reviews'], ['marketing', 'Coupons & sales'], ['content', 'Content'], ['settings', 'Settings'], ['sms', 'SMS'], ['staff', 'Staff & roles']].map(([value, label]) => ({ value, label }))
+const CATEGORIES = [['', 'Type: All'], ['auth', 'Sign-ins'], ['orders', 'Orders'], ['payments', 'Payments'], ['returns', 'Returns'], ['catalog', 'Catalogue & stock'], ['customers', 'Customers'], ['reviews', 'Reviews'], ['marketing', 'Coupons & sales'], ['content', 'Content'], ['accounts', 'Accounts'], ['settings', 'Settings'], ['sms', 'SMS'], ['staff', 'Staff & roles']].map(([value, label]) => ({ value, label }))
 
 // what XERQO enforces today (shown so staff know the rules)
 const PROTECTION = [

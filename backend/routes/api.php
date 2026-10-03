@@ -95,6 +95,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
     Route::get('profile/sessions', [Admin\ProfileController::class, 'sessions']);
     Route::delete('profile/sessions/{id?}', [Admin\ProfileController::class, 'revoke'])->whereNumber('id');
 
+    // Reports & accounts (expenses need reports create/edit/delete)
+    Route::get('reports/sales', [Admin\ReportController::class, 'sales'])->middleware('admin:reports');
+    Route::get('accounts', [Admin\AccountController::class, 'index'])->middleware('admin:reports');
+    Route::apiResource('expenses', Admin\AccountController::class)->only(['store', 'update', 'destroy'])->middleware('admin:reports');
+
     // Settings → Security
     Route::middleware('admin:staff')->group(function () {
         Route::get('security/activity', [Admin\SecurityController::class, 'activity']);
