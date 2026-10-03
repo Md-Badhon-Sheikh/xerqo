@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Support\StockLedger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -45,7 +46,7 @@ class OrderStatusService
             }
 
             if (in_array($status, ['cancelled', 'returned'], true)) {
-                $this->restock($order);
+                $this->restock($order, $status);
             }
 
             if ($status === 'cancelled' && $order->coupon_id) {
@@ -66,7 +67,7 @@ class OrderStatusService
         return $order->refresh();
     }
 
-    private function restock(Order $order): void
+    private function restock(Order $order, string $status): void
     {
         foreach ($order->items as $item) {
             if ($item->variant_id) {
@@ -75,6 +76,11 @@ class OrderStatusService
 
             if ($item->product_id) {
                 Product::whereKey($item->product_id)->increment('stock', $item->qty);
+
+                $after = $item->variant_id
+                    ? (int) ProductVariant::whereKey($item->variant_id)->value('stock')
+                    : (int) Product::whereKey($item->product_id)->value('stock');
+                StockLedger::record($item->product_id, $item->variant_id, $item->qty, $after, $status === 'cancelled' ? 'cancel' : 'return', 'Order '.$status, $order->order_number);
             }
         }
     }

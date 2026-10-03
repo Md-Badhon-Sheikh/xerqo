@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { ArrowRight, ChevronDown, Search as SearchIcon, X } from 'lucide-react'
+import { ArrowRight, Search as SearchIcon, X } from 'lucide-react'
 import { tk } from '../../data/store'
 import { useProducts } from '../../lib/queries'
 import { Button, ProductCard, ProductCardSkeleton, EmptyState, cx } from '../../components/store/ui'
 import { ErrorState } from '../../components/common/feedback'
+import Select2 from '../../components/common/Select2'
 
 const POPULAR = ['long wallet', 'passport cover', 'card holder', 'key holder', 'purse', 'belt', 'tote bag', 'backpack']
 const SORTS = [['', 'Relevance'], ['popular', 'Best selling'], ['newest', 'Newest'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low']]
@@ -126,13 +127,8 @@ export default function Search() {
             {cats.length > 0 && <p className="text-[13px] text-mute">In {cats.map((c) => c.name).join(', ')}</p>}
           </div>
           {query && (
-            <label className="relative flex items-center self-start lg:self-auto">
-              <span className="sr-only">Sort results</span>
-              <select value={sort} onChange={(e) => setParam('sort', e.target.value)} className="appearance-none rounded-full border border-line bg-white py-2 pl-3.5 pr-9 text-[13px] outline-none hover:border-ink">
-                {SORTS.map(([v, l]) => <option key={v} value={v}>Sort: {l}</option>)}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-3 size-3.5 text-mute" />
-            </label>
+            <Select2 variant="pill" search={false} aria-label="Sort results" className="w-56 self-start lg:self-auto" value={sort} onChange={(v) => setParam('sort', v)}
+              options={SORTS.map(([v, l]) => ({ value: v, label: `Sort: ${l}` }))} />
           )}
         </div>
 

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, ChevronDown, Lock } from 'lucide-react'
 import { cartItems, tk } from '../../data/store'
 import { Button, Field, cx } from '../../components/store/ui'
+import Select2 from '../../components/common/Select2'
 
 /* Static checkout data — replace with the cart/checkout API later */
 const FREE_DELIVERY_AT = 2000
@@ -49,8 +50,7 @@ function Select({ label, options, defaultValue }) {
   return (
     <Field label={label}>
       <span className="relative block">
-        <select defaultValue={defaultValue} className="input appearance-none pr-10">{options.map((o) => <option key={o}>{o}</option>)}</select>
-        <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-mute" />
+        <Select2 variant="store" options={options} defaultValue={defaultValue} />
       </span>
     </Field>
   )

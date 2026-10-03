@@ -22,7 +22,7 @@ const Invoice = A('Invoice'), Products = A('Products'), ProductForm = A('Product
 const Customers = A('Customers'), CustomerDetail = A('CustomerDetail'), Reviews = A('Reviews'), Coupons = A('Coupons'), Content = A('Content')
 const Returns = A('Returns'), Shipments = A('Shipments'), Payments = A('Payments'), Reports = A('Reports'), Staff = A('Staff'), RoleEdit = A('RoleEdit')
 const Settings = A('Settings'), SettingsGeneral = A('SettingsGeneral'), SettingsSms = A('SettingsSms'), SettingsSecurity = A('SettingsSecurity')
-const Notifications = A('Notifications'), AProfile = A('Profile')
+const Notifications = A('Notifications'), AProfile = A('Profile'), Brands = A('Brands'), FlashSales = A('FlashSales')
 
 // Admin session lives only under /admin so the storefront never loads it
 const AdminScope = () => <AdminAuthProvider><Outlet /></AdminAuthProvider>
@@ -69,7 +69,10 @@ export default function App() {
             <Route path="invoice/:id" element={<Invoice />} />
             <Route path="products" element={<Products />} />
             <Route path="products/new" element={<ProductForm />} />
+            <Route path="products/:id/edit" element={<ProductForm />} />
             <Route path="categories" element={<Categories />} />
+            <Route path="brands" element={<Brands />} />
+            <Route path="flash-sales" element={<FlashSales />} />
             <Route path="inventory" element={<Inventory />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/:id" element={<CustomerDetail />} />

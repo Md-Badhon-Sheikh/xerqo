@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\ReturnRequest;
 use App\Services\SmsService;
+use App\Support\StockLedger;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,11 @@ class ReturnController extends Controller
 
                 if ($item?->product_id) {
                     Product::whereKey($item->product_id)->increment('stock', $return->qty);
+
+                    $after = $item->variant_id
+                        ? (int) ProductVariant::whereKey($item->variant_id)->value('stock')
+                        : (int) Product::whereKey($item->product_id)->value('stock');
+                    StockLedger::record($item->product_id, $item->variant_id, $return->qty, $after, 'return', 'Return received', 'RT-'.$return->id);
                 }
             }
 

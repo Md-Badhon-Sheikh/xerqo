@@ -42,15 +42,28 @@ function CompareIcon() {
   )
 }
 
+// Strip above the header — edited in Admin › Content & banners
+function AnnouncementBar() {
+  const a = useSettings().data?.announcement
+  if (!a?.enabled || !a.text) return null
+  const external = /^https?:\/\//.test(a.link || '')
+  const link = a.link_text && a.link && (external
+    ? <a href={a.link} className="ml-2 font-semibold text-gold underline underline-offset-2">{a.link_text}</a>
+    : <Link to={a.link} className="ml-2 font-semibold text-gold underline underline-offset-2">{a.link_text}</Link>)
+  return (
+    <div className="bg-espresso py-2 text-center text-[11px] tracking-wide text-white sm:text-xs">
+      <span className={a.mobile_text ? 'hidden sm:inline' : ''}>{a.text}</span>
+      {a.mobile_text && <span className="sm:hidden">{a.mobile_text}</span>}
+      {link}
+    </div>
+  )
+}
+
 function Header() {
   const { setDrawer, setMenu } = useUI()
   return (
     <header className="sticky top-0 z-40">
-      <div className="bg-espresso py-2 text-center text-[11px] tracking-wide text-white sm:text-xs">
-        <span className="hidden sm:inline">Free delivery across Bangladesh on orders over Tk 2,000 · Cash on Delivery · bKash &amp; Nagad</span>
-        <span className="sm:hidden">Free delivery over Tk 2,000 · COD</span>
-        <Link to="/shop" className="ml-2 font-semibold text-gold underline underline-offset-2">Shop Now</Link>
-      </div>
+      <AnnouncementBar />
       <div className="border-b border-line bg-white">
         <div className="container-x flex items-center justify-between gap-6 py-2 lg:py-3">
           {/* mobile / tablet left */}

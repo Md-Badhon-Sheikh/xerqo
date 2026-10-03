@@ -84,11 +84,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
         Route::post('products/{product}/images', [Admin\ProductController::class, 'uploadImages']);
         Route::patch('products/{product}/images/reorder', [Admin\ProductController::class, 'reorderImages']);
         Route::delete('products/{product}/images/{image}', [Admin\ProductController::class, 'destroyImage']);
+        Route::post('products/{product}/variants/{variant}/image', [Admin\ProductController::class, 'uploadVariantImage']);
+        Route::delete('products/{product}/variants/{variant}/image', [Admin\ProductController::class, 'destroyVariantImage']);
     });
 
     Route::apiResource('categories', Admin\CategoryController::class)->middleware('admin:categories');
+    // brands are part of the catalogue structure, so they share the categories permission
+    Route::apiResource('brands', Admin\BrandController::class)->middleware('admin:categories');
 
     Route::get('inventory', [Admin\InventoryController::class, 'index'])->middleware('admin:inventory');
+    Route::get('inventory/movements', [Admin\InventoryController::class, 'movements'])->middleware('admin:inventory');
     Route::post('inventory/adjust', [Admin\InventoryController::class, 'adjust'])->middleware('admin:inventory,edit');
 
     Route::middleware('admin:customers')->group(function () {
@@ -104,6 +109,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     });
 
     Route::apiResource('coupons', Admin\CouponController::class)->middleware('admin:coupons');
+    // flash sales are a promotion, so they share the coupons (marketing) permission
+    Route::apiResource('flash-sales', Admin\FlashSaleController::class)
+        ->parameters(['flash-sales' => 'flashSale'])
+        ->middleware('admin:coupons');
 
     Route::apiResource('returns', Admin\ReturnController::class)
         ->only(['index', 'show', 'update'])
@@ -120,4 +129,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->g
     });
 
     Route::apiResource('banners', Admin\BannerController::class)->middleware('admin:content');
+    Route::put('content/announcement', [Admin\SettingController::class, 'announcement'])->middleware('admin:content,edit');
 });

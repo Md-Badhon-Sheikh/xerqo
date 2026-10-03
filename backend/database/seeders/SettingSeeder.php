@@ -51,6 +51,15 @@ class SettingSeeder extends Seeder
                 'fee' => 0,
             ], 'general', true],
 
+            // the strip above the storefront header
+            'announcement' => [[
+                'enabled' => true,
+                'text' => 'Free delivery across Bangladesh on orders over Tk 2,000 · Cash on Delivery · bKash, Rocket & Nagad',
+                'mobile_text' => 'Free delivery over Tk 2,000 · COD',
+                'link_text' => 'Shop Now',
+                'link' => '/shop',
+            ], 'content', true],
+
             'reviews' => [[
                 'auto_approve' => false,
                 'review_request_delay_hours' => 2,

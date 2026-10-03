@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { ChevronDown } from 'lucide-react'
+import Select2 from '../common/Select2'
 
 export const cx = (...c) => c.filter(Boolean).join(' ')
 
@@ -67,14 +67,19 @@ export function KPIs({ items }) {
   )
 }
 
-export function Tabs({ items, active = 0 }) {
+// items: [label, count?, key?]; `active` is the key (or index when no keys); onChange(key)
+export function Tabs({ items, active = 0, onChange }) {
   return (
-    <div className="no-scrollbar flex gap-5 overflow-x-auto border-b border-aline">
-      {items.map(([t, n], i) => (
-        <button key={t} className={cx('-mb-px flex shrink-0 items-center gap-1.5 border-b-2 pb-3 text-[13px]', i === active ? 'border-tan font-semibold text-ink' : 'border-transparent text-amute')}>
-          {t}{n && <span className={cx('rounded-full px-1.5 text-[10px] font-bold', i === active ? 'bg-tan text-white' : 'bg-asoft text-amute')}>{n}</span>}
-        </button>
-      ))}
+    <div role="tablist" className="no-scrollbar flex gap-5 overflow-x-auto border-b border-aline">
+      {items.map(([t, n, key], i) => {
+        const k = key ?? i
+        const on = k === active
+        return (
+          <button key={t} type="button" role="tab" aria-selected={on} onClick={() => onChange?.(k)} className={cx('-mb-px flex shrink-0 items-center gap-1.5 border-b-2 pb-3 text-[13px]', on ? 'border-tan font-semibold text-ink' : 'border-transparent text-amute hover:text-ink')}>
+            {t}{n != null && n !== '' && <span className={cx('rounded-full px-1.5 text-[10px] font-bold', on ? 'bg-tan text-white' : 'bg-asoft text-amute')}>{n}</span>}
+          </button>
+        )
+      })}
     </div>
   )
 }
@@ -106,11 +111,9 @@ export function Field({ label, help, children, className, ...input }) {
     </label>
   )
 }
-export const Select = ({ options = [], defaultValue, className }) => (
-  <div className={cx('relative', className)}>
-    <select defaultValue={defaultValue} className="ainput appearance-none pr-8">{options.map((o) => <option key={o}>{o}</option>)}</select>
-    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-amute" />
-  </div>
+// Admin dropdown — always Select2 (options: strings or { value, label })
+export const Select = ({ options = [], className, ...props }) => (
+  <Select2 variant="admin" options={options} className={className} {...props} />
 )
 export const Textarea = (p) => <textarea rows={4} className="ainput resize-y leading-relaxed" {...p} />
 

@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\StockLedger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -73,6 +74,7 @@ class CheckoutService
     {
         $order = DB::transaction(function () use ($data, $user) {
             $lines = [];
+            $movements = []; // [product_id, variant_id, change, stock_after] for the stock log
             $subtotal = 0.0;
 
             foreach (array_values($data['items']) as $index => $line) {
@@ -132,6 +134,7 @@ class CheckoutService
 
                 $product->decrement('stock', $qty);
                 $variant?->decrement('stock', $qty);
+                $movements[] = [$product->id, $variant?->id, -$qty, $variant ? $variant->stock : $product->stock];
 
                 $lines[] = [
                     'product_id' => $product->id,
@@ -181,6 +184,10 @@ class CheckoutService
             ]);
 
             $order->items()->createMany($lines);
+
+            foreach ($movements as [$productId, $variantId, $change, $after]) {
+                StockLedger::record($productId, $variantId, $change, $after, 'order', 'Order placed', $order->order_number, $user?->id);
+            }
 
             $order->statusHistories()->create([
                 'status' => 'pending',

@@ -77,6 +77,7 @@ class HomeController extends Controller
 
         return response()->json([
             'banners' => BannerResource::collection(Banner::live()->where('position', 'home_hero')->orderBy('sort_order')->get()),
+            'side_banners' => BannerResource::collection(Banner::live()->where('position', 'home_side')->orderBy('sort_order')->limit(2)->get()),
             'categories' => CategoryResource::collection($categories),
             'flash_sale' => $flash && $flash->products->isNotEmpty() ? new FlashSaleResource($flash) : null,
             'top_selling' => ProductResource::collection($topSelling),

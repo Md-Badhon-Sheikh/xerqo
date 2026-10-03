@@ -1,5 +1,6 @@
-import { Phone, MessageCircle, Mail, MapPin, Camera, ChevronDown } from 'lucide-react'
+import { Phone, MessageCircle, Mail, MapPin, Camera } from 'lucide-react'
 import { Button, Field, PageHero } from '../../components/store/ui'
+import Select2 from '../../components/common/Select2'
 
 const CHANNELS = [
   [Phone, 'Call us', '+880 1XXX-XXXXXX', 'Sat–Thu · 10am–8pm', 'tel:+8801000000000'],
@@ -16,10 +17,7 @@ function ContactForm() {
         <Field label="Your name *" placeholder="Full name" />
         <Field label="Phone *" inputMode="tel" placeholder="01XXXXXXXXX" />
         <Field label="Subject">
-          <div className="relative">
-            <select className="input appearance-none pr-10">{['Order support', 'Custom engraving', 'Corporate gifting', 'Returns & exchange', 'Other'].map((o) => <option key={o}>{o}</option>)}</select>
-            <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-mute" />
-          </div>
+          <Select2 variant="store" options={['Order support', 'Custom engraving', 'Corporate gifting', 'Returns & exchange', 'Other']} />
         </Field>
         <Field label="Order ID (optional)" placeholder="XQ-" />
       </div>

@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plus, ChevronDown } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { AccountShell } from '../../components/store/AccountShell'
 import { Button, Field, Checkbox, cx } from '../../components/store/ui'
+import Select2 from '../../components/common/Select2'
 import { PasswordInput } from './Login'
 
 const ADDRESSES = [
@@ -24,12 +25,7 @@ function Toggle({ label, defaultOn }) {
   )
 }
 
-const Select = ({ placeholder, options }) => (
-  <div className="relative">
-    <select defaultValue="" className="input appearance-none pr-10"><option value="" disabled>{placeholder}</option>{options.map((o) => <option key={o}>{o}</option>)}</select>
-    <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-mute" />
-  </div>
-)
+const Select = ({ placeholder, options }) => <Select2 variant="store" placeholder={placeholder} options={options} />
 
 function PersonalInfo() {
   return (

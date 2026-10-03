@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
-import { ChevronDown, Star, Truck, FileText, RotateCcw } from 'lucide-react'
+import { Star, Truck, FileText, RotateCcw } from 'lucide-react'
 import { orders, tk } from '../../data/store'
 import { AccountShell } from '../../components/store/AccountShell'
 import { useAuth } from '../../context/AuthContext'
 import { Button, StatusBadge } from '../../components/store/ui'
+import Select2 from '../../components/common/Select2'
 
 const STATS = [['3', 'Orders'], ['6', 'Wishlist'], ['2', 'Reviews'], ['৳120', 'Reward']]
 
@@ -85,13 +86,7 @@ export default function Account() {
       <AccountShell hideUser>
         <div className="flex items-center justify-between">
           <h2 className="h-display text-[30px] sm:text-4xl">My orders</h2>
-          <label className="relative">
-            <span className="sr-only">Filter orders</span>
-            <select className="appearance-none bg-transparent pr-5 text-sm font-medium outline-none">
-              {['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled'].map((s) => <option key={s}>{s}</option>)}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-0 top-1/2 size-3.5 -translate-y-1/2" />
-          </label>
+          <Select2 variant="pill" className="w-40" aria-label="Filter orders" defaultValue="All" options={['All', 'Processing', 'Shipped', 'Delivered', 'Cancelled']} />
         </div>
         <div className="space-y-3 sm:space-y-4">
           {orders.map((o) => <OrderCard key={o.id} o={o} />)}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, ProductCard, CatProductCard, TopProductCard, SectionHead, Stars, ProductCardSkeleton, CatCardSkeleton, Bone } from '../../components/store/ui'
+import { Button, ProductCard, CatProductCard, TopProductCard, SectionHead, Stars, ProductCardSkeleton, CatCardSkeleton, Bone, cx } from '../../components/store/ui'
 import { Carousel, BP } from '../../components/store/Carousel'
 import { ErrorState } from '../../components/common/feedback'
 import { useHome } from '../../lib/queries'
@@ -29,9 +29,27 @@ function HeroBanner({ b, first }) {
   )
 }
 
-function Hero({ banners, loading }) {
+// Promo tile beside the slider (Admin › Content & banners › Promo tiles)
+function SideTile({ b }) {
   return (
-    <section className="container-x grid gap-3 pt-3 sm:gap-4 sm:pt-6 lg:grid-cols-[2fr_1fr] lg:pt-8">
+    <SmartLink to={b.link} className="group relative min-h-[150px] overflow-hidden rounded-lg bg-espresso sm:min-h-[190px]">
+      <img src={b.image} alt={b.show_text === false ? b.title : ''} loading="lazy" className={cx('absolute inset-0 size-full object-cover transition duration-500 group-hover:scale-105', b.show_text !== false && 'opacity-60')} />
+      {b.show_text !== false && (
+        <div className="relative flex h-full flex-col justify-end gap-1 p-3.5 text-white sm:p-6">
+          {b.eyebrow && <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gold sm:text-[11px]">{b.eyebrow}</p>}
+          <p className="h-display text-lg sm:text-[28px]">{b.title}</p>
+          {b.subtitle && <p className="hidden text-xs text-white/75 sm:block">{b.subtitle}</p>}
+          {b.button_text && <span className="text-[11px] font-semibold underline underline-offset-4 sm:text-xs">{b.button_text}</span>}
+        </div>
+      )}
+    </SmartLink>
+  )
+}
+
+function Hero({ banners, side, loading }) {
+  const tiles = loading ? [] : side ?? []
+  return (
+    <section className={cx('container-x grid gap-3 pt-3 sm:gap-4 sm:pt-6 lg:pt-8', (loading || tiles.length > 0) && 'lg:grid-cols-[2fr_1fr]')}>
       <div className="overflow-hidden rounded-lg bg-espresso">
         {loading || !banners?.length
           ? <div className="aspect-[1983/793] h-full animate-pulse bg-espresso/90 lg:aspect-auto lg:min-h-[340px]" />
@@ -41,22 +59,15 @@ function Hero({ banners, loading }) {
             </Carousel>
           )}
       </div>
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1">
-        <Link to="/product/custom-name-passport-cover" className="group relative min-h-[150px] overflow-hidden rounded-lg bg-espresso sm:min-h-[190px]">
-          <img src="/images/fb-passport-hand.jpg" alt="" className="absolute inset-0 size-full object-cover opacity-60 transition duration-500 group-hover:scale-105" />
-          <div className="relative flex h-full flex-col justify-end gap-1 p-3.5 text-white sm:p-6">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-gold sm:text-[11px]">Personalised</p>
-            <p className="h-display text-lg sm:text-[28px]">Your name on your passport cover</p>
-            <span className="text-[11px] font-semibold underline underline-offset-4 sm:text-xs">Customise it →</span>
-          </div>
-        </Link>
-        <div className="relative flex min-h-[150px] flex-col justify-center gap-1.5 overflow-hidden rounded-lg bg-[#FCE4EE] p-3.5 sm:min-h-[190px] sm:p-6">
-          <span className="w-fit rounded bg-bkash px-1.5 py-0.5 text-[9px] font-bold text-white sm:text-[10px]">bKash</span>
-          <p className="h-display max-w-[60%] text-lg leading-tight sm:text-2xl">Cashback on bKash payment</p>
-          <p className="max-w-[62%] text-[10px] text-mute sm:text-xs">On orders over ৳1,500 · T&amp;C apply</p>
-          <span className="absolute -right-3 bottom-2 grid size-20 place-items-center rounded-full border-[6px] border-bkash/20 font-display text-2xl font-bold text-bkash sm:right-5 sm:size-28 sm:text-[38px]">10%</span>
+      {loading ? (
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-1">
+          <div className="min-h-[150px] animate-pulse rounded-lg bg-espresso/80 sm:min-h-[190px]" /><div className="min-h-[150px] animate-pulse rounded-lg bg-espresso/80 sm:min-h-[190px]" />
         </div>
-      </div>
+      ) : tiles.length > 0 && (
+        <div className={cx('grid gap-3 sm:gap-4 lg:grid-cols-1', tiles.length > 1 ? 'grid-cols-2' : 'grid-cols-1')}>
+          {tiles.map((b) => <SideTile key={b.id} b={b} />)}
+        </div>
+      )}
     </section>
   )
 }
@@ -254,7 +265,7 @@ export default function Home() {
   if (error && !data) return <div className="container-x py-16"><ErrorState error={error} onRetry={refetch} /></div>
   return (
     <>
-      <Hero banners={data?.banners} loading={isPending} />
+      <Hero banners={data?.banners} side={data?.side_banners} loading={isPending} />
       <FeaturedCategories categories={data?.categories ?? []} loading={isPending} />
       {isPending ? <SectionsSkeleton /> : data.flash_sale && <FlashSale sale={data.flash_sale} />}
       <TrustStrip />

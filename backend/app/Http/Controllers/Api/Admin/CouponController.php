@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\CouponRequest;
 use App\Http\Resources\CouponResource;
 use App\Models\Coupon;
+use App\Models\Order;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -20,7 +21,18 @@ class CouponController extends Controller
             ->paginate(min($request->integer('per_page', 20), 100))
             ->withQueryString();
 
-        return CouponResource::collection($coupons);
+        $orders = Order::query()->whereNotNull('coupon_id')->where('status', '!=', 'cancelled');
+
+        return CouponResource::collection($coupons)->additional([
+            'summary' => [
+                'active' => Coupon::where('is_active', true)
+                    ->where(fn ($q) => $q->whereNull('ends_at')->orWhere('ends_at', '>=', now()))
+                    ->count(),
+                'redemptions' => (int) Coupon::sum('used'),
+                'discount_given' => round((float) (clone $orders)->sum('discount'), 2),
+                'revenue_with_coupons' => round((float) (clone $orders)->sum('total'), 2),
+            ],
+        ]);
     }
 
     public function store(CouponRequest $request): JsonResponse

@@ -10,7 +10,7 @@ class CategoryRequest extends AdminRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->normalizeBooleans(['is_active']);
+        $this->normalizeBooleans(['is_active', 'show_on_home']);
         $this->emptyToNull(['parent_id', 'description', 'slug']);
 
         if (! $this->isUpdate() && ! $this->filled('slug') && $this->filled('name')) {
@@ -35,6 +35,7 @@ class CategoryRequest extends AdminRequest
             'image' => ['sometimes', 'nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],
+            'show_on_home' => ['sometimes', 'boolean'],
         ];
     }
 }

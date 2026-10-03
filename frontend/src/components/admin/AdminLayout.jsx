@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutGrid, ClipboardList, Undo2, Truck, Package, Tag, Layers, Users, Star, Percent, Image, Wallet, BarChart3, Shield, Settings,
-  Search, Eye, Bell, Menu, X, MoreHorizontal, MessageSquare, Lock, LogOut, ShieldOff,
+  Search, Eye, Bell, Menu, X, MoreHorizontal, MessageSquare, Lock, LogOut, ShieldOff, BadgeCheck, Zap,
 } from 'lucide-react'
 import { cx, Btn } from './ui'
 import { useAdminAuth } from '../../context/AuthContext'
 import { RequireAdmin } from '../common/guards'
 
 // Permission module (Role::MODULES on the API) that guards an /admin/... path; null = every staff member
-const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders' }
+const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders', brands: 'categories', 'flash-sales': 'coupons' }
 const MODULES = ['dashboard', 'orders', 'returns', 'shipments', 'products', 'categories', 'inventory', 'customers', 'reviews', 'coupons', 'content', 'payments', 'reports', 'staff', 'settings']
 export function moduleFor(path) {
   const seg = path.replace(/^\/admin\/?/, '').split(/[/#?]/)[0]
@@ -21,9 +21,9 @@ const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).ma
 
 export const NAV = [
   ['MAIN', [['Dashboard', '/admin', LayoutGrid], ['Orders', '/admin/orders', ClipboardList, '24'], ['Returns', '/admin/returns', Undo2, '3'], ['Shipping', '/admin/shipments', Truck]]],
-  ['CATALOG', [['Products', '/admin/products', Package], ['Categories', '/admin/categories', Tag], ['Inventory', '/admin/inventory', Layers]]],
+  ['CATALOG', [['Products', '/admin/products', Package], ['Categories', '/admin/categories', Tag], ['Brands', '/admin/brands', BadgeCheck], ['Inventory', '/admin/inventory', Layers]]],
   ['CUSTOMERS', [['Customers', '/admin/customers', Users], ['Reviews', '/admin/reviews', Star, '5']]],
-  ['MARKETING', [['Coupons', '/admin/coupons', Percent], ['Content & Banners', '/admin/content', Image]]],
+  ['MARKETING', [['Coupons', '/admin/coupons', Percent], ['Flash Sales', '/admin/flash-sales', Zap], ['Content & Banners', '/admin/content', Image]]],
   ['FINANCE', [['Payments & COD', '/admin/payments', Wallet], ['Reports', '/admin/reports', BarChart3]]],
   ['SYSTEM', [['Staff & Roles', '/admin/staff', Shield], ['Settings', '/admin/settings', Settings]]],
 ]

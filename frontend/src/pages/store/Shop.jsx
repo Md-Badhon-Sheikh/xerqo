@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { keepPreviousData, useQueries } from '@tanstack/react-query'
-import { ChevronDown, ChevronLeft, ChevronRight, GitCompareArrows, LayoutGrid, List, Minus, PackageSearch, Plus, SlidersHorizontal, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, GitCompareArrows, LayoutGrid, List, Minus, PackageSearch, Plus, SlidersHorizontal, X } from 'lucide-react'
 import { tk } from '../../data/store'
 import { api } from '../../lib/api'
 import { normalizeProduct } from '../../lib/product'
@@ -11,6 +11,7 @@ import { useQuickAdd } from '../../context/StoreUIContext'
 import { useToast } from '../../context/ToastContext'
 import { Breadcrumb, Button, ProductCard, ProductCardSkeleton, Price, Stars, Pill, HeartBtn, EmptyState, cx } from '../../components/store/ui'
 import { ErrorState } from '../../components/common/feedback'
+import Select2 from '../../components/common/Select2'
 
 const PER_PAGE = 12
 const SORTS = [['featured', 'Featured'], ['popular', 'Best selling'], ['newest', 'Newest'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low'], ['rating', 'Top rated']]
@@ -194,13 +195,8 @@ function FilterSheet({ open, onClose, resultCount, onClear, ...props }) {
 /* ---------- Toolbar & listing ---------- */
 function SortSelect({ value, onChange, className }) {
   return (
-    <label className={cx('relative flex items-center', className)}>
-      <span className="sr-only">Sort products</span>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="h-full w-full appearance-none rounded border border-line bg-white py-2.5 pl-3.5 pr-9 text-[13px] text-ink outline-none focus:border-ink">
-        {SORTS.map(([v, l]) => <option key={v} value={v}>Sort: {l}</option>)}
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 size-4 text-mute" />
-    </label>
+    <Select2 variant="store" search={false} aria-label="Sort products" className={className} value={value} onChange={onChange}
+      options={SORTS.map(([v, l]) => ({ value: v, label: `Sort: ${l}` }))} />
   )
 }
 

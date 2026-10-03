@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\UpdateSettingsRequest;
 use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SettingController extends Controller
@@ -13,6 +14,25 @@ class SettingController extends Controller
     /**
      * GET /api/admin/settings — every setting as {key: value}, plus group/visibility metadata.
      */
+    /**
+     * PUT /api/admin/content/announcement — the strip above the storefront header.
+     * Lives under the "content" permission so content editors can change it without full settings access.
+     */
+    public function announcement(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'text' => ['required', 'string', 'max:200'],
+            'mobile_text' => ['nullable', 'string', 'max:80'],
+            'link_text' => ['nullable', 'string', 'max:40'],
+            'link' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        Setting::setValue('announcement', $data, 'content', true);
+
+        return response()->json(['data' => Setting::getValue('announcement')]);
+    }
+
     public function index(): JsonResponse
     {
         $settings = Setting::orderBy('group')->orderBy('key')->get();

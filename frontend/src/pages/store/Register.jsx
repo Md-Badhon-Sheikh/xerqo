@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
-import { ChevronDown, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { useReturnTo } from '../../components/common/guards'
 import { FormError } from '../../components/common/feedback'
 import { AuthShell } from '../../components/store/AccountShell'
 import { Button, Field, Checkbox, cx } from '../../components/store/ui'
+import Select2 from '../../components/common/Select2'
 import { AuthTabs, OrDivider, SocialButtons, PasswordInput } from './Login'
 
 const DISTRICTS = ['Dhaka', 'Chattogram', 'Gazipur', 'Narayanganj', 'Sylhet', 'Rajshahi', 'Khulna', 'Barishal', 'Rangpur', 'Mymensingh', 'Cumilla']
@@ -77,10 +78,7 @@ export default function Register() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Email (optional)" type="email" autoComplete="email" placeholder="you@email.com" value={form.email} onChange={set('email')} error={errors.email} />
           <Field label="District">
-            <div className="relative">
-              <select defaultValue="Dhaka" className="input appearance-none pr-10">{DISTRICTS.map((d) => <option key={d}>{d}</option>)}</select>
-              <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 size-4 -translate-y-1/2 text-mute" />
-            </div>
+            <Select2 variant="store" search defaultValue="Dhaka" options={DISTRICTS} aria-label="District" />
           </Field>
         </div>
         <Field label="Password *" error={errors.password}><PasswordInput autoComplete="new-password" value={form.password} onChange={set('password')} error={errors.password} /></Field>

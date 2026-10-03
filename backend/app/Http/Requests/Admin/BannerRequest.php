@@ -6,8 +6,8 @@ class BannerRequest extends AdminRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->normalizeBooleans(['is_active']);
-        $this->emptyToNull(['subtitle', 'link', 'starts_at', 'ends_at']);
+        $this->normalizeBooleans(['is_active', 'show_text']);
+        $this->emptyToNull(['subtitle', 'link', 'starts_at', 'ends_at', 'eyebrow', 'button_text']);
     }
 
     public function rules(): array
@@ -17,6 +17,9 @@ class BannerRequest extends AdminRequest
         return [
             'title' => [$required, 'string', 'max:255'],
             'subtitle' => ['nullable', 'string', 'max:255'],
+            'eyebrow' => ['nullable', 'string', 'max:60'],
+            'button_text' => ['nullable', 'string', 'max:40'],
+            'show_text' => ['sometimes', 'boolean'],
             // Either upload a file (multipart) or send an existing path / URL as "image_url".
             'image' => [$this->isUpdate() ? 'sometimes' : 'required_without:image_url', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'image_url' => ['nullable', 'string', 'max:255'],

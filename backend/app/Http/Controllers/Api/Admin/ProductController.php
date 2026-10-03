@@ -9,9 +9,11 @@ use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Support\Media;
+use App\Support\StockLedger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -23,7 +25,7 @@ class ProductController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         $products = Product::query()
-            ->with(['category', 'primaryImage'])
+            ->with(['category', 'brand', 'primaryImage'])
             ->withCount('variants')
             ->withRating()
             ->when($request->filled('q'), function ($q) use ($request) {
@@ -31,14 +33,29 @@ class ProductController extends Controller
                 $q->where(fn ($w) => $w->where('name', 'like', $term)->orWhere('sku', 'like', $term));
             })
             ->when($request->filled('category_id'), fn ($q) => $q->where('category_id', $request->integer('category_id')))
+            ->when($request->filled('brand_id'), fn ($q) => $q->where('brand_id', $request->integer('brand_id')))
             ->when($request->filled('status'), fn ($q) => $q->where('status', (string) $request->input('status')))
+            ->when($request->boolean('featured'), fn ($q) => $q->where('is_featured', true))
+            ->when($request->input('stock') === 'in', fn ($q) => $q->whereColumn('stock', '>', 'low_stock_threshold'))
             ->when($request->input('stock') === 'low', fn ($q) => $q->whereColumn('stock', '<=', 'low_stock_threshold')->where('stock', '>', 0))
             ->when($request->input('stock') === 'out', fn ($q) => $q->where('stock', 0))
             ->latest('id')
             ->paginate(min($request->integer('per_page', 20), 100))
             ->withQueryString();
 
-        return ProductResource::collection($products);
+        // tab counts for the product list
+        $counts = Product::query()->toBase()->selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+            SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) as draft,
+            SUM(CASE WHEN status = 'hidden' THEN 1 ELSE 0 END) as hidden,
+            SUM(CASE WHEN stock > 0 AND stock <= low_stock_threshold THEN 1 ELSE 0 END) as low_stock,
+            SUM(CASE WHEN stock = 0 THEN 1 ELSE 0 END) as out_of_stock
+        ")->first();
+
+        return ProductResource::collection($products)->additional([
+            'counts' => array_map('intval', (array) $counts),
+        ]);
     }
 
     /**
@@ -51,6 +68,7 @@ class ProductController extends Controller
 
             $this->syncVariants($product, $request->validated('variants'));
             $this->storeImages($product, $request->file('images', []));
+            StockLedger::record($product->id, null, $product->stock, $product->stock, 'edit', 'Opening stock', null, $request->user()->id);
 
             return $product;
         });
@@ -72,6 +90,7 @@ class ProductController extends Controller
     public function update(ProductRequest $request, Product $product): ProductResource
     {
         DB::transaction(function () use ($request, $product) {
+            $before = $product->stock;
             $product->update($request->safe()->except(['images', 'variants']));
 
             if ($request->has('variants')) {
@@ -79,6 +98,9 @@ class ProductController extends Controller
             }
 
             $this->storeImages($product, $request->file('images', []));
+
+            $product->refresh();
+            StockLedger::record($product->id, null, $product->stock - $before, $product->stock, 'edit', 'Edited in product form', null, $request->user()->id);
         });
 
         return new ProductResource($this->loadDetail($product->refresh()));
@@ -144,7 +166,7 @@ class ProductController extends Controller
     }
 
     /**
-     * @param  array<int, \Illuminate\Http\UploadedFile>  $files
+     * @param  array<int, UploadedFile>  $files
      */
     private function storeImages(Product $product, array $files): void
     {
@@ -177,6 +199,7 @@ class ProductController extends Controller
         foreach ($variants as $index => $row) {
             $attributes = [
                 'name' => $row['name'],
+                'color_hex' => $row['color_hex'] ?? null,
                 'sku' => isset($row['sku']) && $row['sku'] !== '' ? strtoupper($row['sku']) : null,
                 'price' => $row['price'] ?? null,
                 'stock' => (int) $row['stock'],
@@ -209,12 +232,46 @@ class ProductController extends Controller
             $keep[] = $variant->id;
         }
 
+        $removed = $product->variants()->whereNotIn('id', $keep)->get();
+        $removed->each(fn (ProductVariant $v) => Media::delete($v->image));
         $product->variants()->whereNotIn('id', $keep)->delete();
+
+        // a product with colour options is in stock exactly as much as its options are
+        if ($keep !== []) {
+            $product->update(['stock' => (int) $product->variants()->sum('stock')]);
+        }
+    }
+
+    /**
+     * POST /api/admin/products/{id}/variants/{variant}/image (multipart: image) — photo shown when that colour is picked.
+     */
+    public function uploadVariantImage(Request $request, Product $product, ProductVariant $variant): ProductResource
+    {
+        abort_unless((int) $variant->product_id === (int) $product->id, 404);
+        $request->validate(['image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096']]);
+
+        Media::delete($variant->image);
+        $variant->update(['image' => Media::store($request->file('image'), 'products')]);
+
+        return new ProductResource($this->loadDetail($product));
+    }
+
+    /**
+     * DELETE /api/admin/products/{id}/variants/{variant}/image
+     */
+    public function destroyVariantImage(Product $product, ProductVariant $variant): ProductResource
+    {
+        abort_unless((int) $variant->product_id === (int) $product->id, 404);
+
+        Media::delete($variant->image);
+        $variant->update(['image' => null]);
+
+        return new ProductResource($this->loadDetail($product));
     }
 
     private function loadDetail(Product $product): Product
     {
-        return $product->load(['category', 'images', 'variants'])
+        return $product->load(['category', 'brand', 'images', 'variants' => fn ($q) => $q->orderBy('id')])
             ->loadAvg('approvedReviews as rating', 'rating')
             ->loadCount('approvedReviews as reviews_count');
     }

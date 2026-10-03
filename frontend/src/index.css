@@ -56,3 +56,81 @@
       outline-none transition focus:border-tan focus:ring-1 focus:ring-tan;
   }
 }
+
+/* ---------- Select2 (every dropdown) — matches .input (store) and .ainput (admin) ---------- */
+html .s2-wrap .select2-container { display: block; font-family: var(--font-sans); }
+html .select2-container .select2-selection--single,
+html .select2-container .select2-selection--multiple {
+  display: flex; align-items: center; min-height: 44px; height: auto;
+  border: 1px solid var(--color-line); border-radius: 4px; background: #fff; transition: border-color .15s, box-shadow .15s;
+}
+html .select2-container .select2-selection--single .select2-selection__rendered {
+  flex: 1; padding: 0 2.25rem 0 1rem; line-height: 1.4; font-size: 14px; color: var(--color-ink);
+}
+html .select2-container .select2-selection--single .select2-selection__placeholder { color: var(--color-mute); }
+html .select2-container .select2-selection--single .select2-selection__arrow { height: 100%; top: 0; right: 10px; width: 18px; }
+html .select2-container .select2-selection--single .select2-selection__arrow b { display: none; }
+html .select2-container .select2-selection--single .select2-selection__arrow {
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236F5E52' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / 16px no-repeat;
+  transition: transform .15s;
+}
+html .select2-container--open .select2-selection--single .select2-selection__arrow { transform: rotate(180deg); }
+html .select2-container .select2-selection--single .select2-selection__clear { margin-right: 1.75rem; color: var(--color-mute); font-size: 16px; }
+html .select2-container--focus .select2-selection, html .select2-container--open .select2-selection {
+  border-color: var(--color-ink) !important; box-shadow: 0 0 0 1px var(--color-ink);
+}
+html .select2-container .select2-selection--multiple { padding: 4px 8px; }
+html .select2-container .select2-selection--multiple .select2-selection__choice {
+  margin: 3px 4px 3px 0; padding: 2px 8px 2px 20px; border: none; border-radius: 999px; background: var(--color-sand); font-size: 12px;
+}
+html .select2-container .select2-selection--multiple .select2-search__field { margin-top: 4px; font-family: var(--font-sans); font-size: 13px; }
+html .s2-invalid .select2-selection { border-color: var(--color-rust) !important; }
+html .select2-container--disabled .select2-selection { background: var(--color-sand) !important; opacity: .7; }
+
+/* admin look */
+html .select2-container .select2-selection.s2-admin { min-height: 40px; border-color: var(--color-aline); border-radius: 8px; }
+html .select2-container .select2-selection.s2-admin .select2-selection__rendered { padding-left: .75rem; font-size: 13px; }
+html .select2-container--focus .select2-selection.s2-admin, html .select2-container--open .select2-selection.s2-admin {
+  border-color: var(--color-tan) !important; box-shadow: 0 0 0 1px var(--color-tan);
+}
+/* compact pill-like look for toolbars (sort menus) */
+html .select2-container .select2-selection.s2-pill { min-height: 40px; border-radius: 999px; }
+html .select2-container .select2-selection.s2-pill .select2-selection__rendered { font-size: 13px; }
+
+/* dropdown panel */
+html .select2-dropdown {
+  border: 1px solid var(--color-line) !important; border-radius: 8px !important; overflow: hidden;
+  box-shadow: 0 12px 30px rgba(35, 26, 21, .12); font-family: var(--font-sans); z-index: 1060;
+}
+html .select2-container--open .select2-dropdown--below { margin-top: 4px; }
+html .select2-container--open .select2-dropdown--above { margin-top: -4px; }
+html .select2-search--dropdown { padding: 8px; }
+html .select2-search--dropdown .select2-search__field {
+  border: 1px solid var(--color-line) !important; border-radius: 6px; padding: 7px 10px; font-size: 13px; outline: none;
+}
+html .select2-search--dropdown .select2-search__field:focus { border-color: var(--color-ink) !important; }
+html .select2-results__option { padding: 8px 12px; font-size: 13px; color: var(--color-ink); }
+html .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable { background: var(--color-ink); color: #fff; }
+html .select2-container--default .select2-results__option--selected { background: var(--color-sand); font-weight: 600; }
+html .select2-container--default .select2-results__option--disabled { color: var(--color-mute); }
+html .s2-admin-dropdown .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable,
+html .s2-admin-dropdown .select2-results__option--highlighted.select2-results__option--selectable { background: var(--color-tan); }
+
+/* ---------- SweetAlert2 — brand styling ---------- */
+.swal2-popup { font-family: var(--font-sans) !important; border-radius: 14px !important; color: var(--color-ink) !important; }
+.swal2-title { font-family: var(--font-display); font-weight: 600 !important; font-size: 28px !important; color: var(--color-ink) !important; }
+.swal2-html-container { font-size: 14px !important; color: var(--color-mute) !important; }
+.swal2-actions { gap: 8px; }
+.xq-swal-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 110px; padding: 11px 20px; border-radius: 6px;
+  font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; transition: background .15s, color .15s;
+}
+.xq-swal-confirm { background: var(--color-ink); color: #fff; }
+.xq-swal-confirm:hover { background: var(--color-espresso); }
+.xq-swal-danger { background: var(--color-rust); color: #fff; }
+.xq-swal-danger:hover { filter: brightness(1.08); }
+.xq-swal-cancel { background: var(--color-sand); color: var(--color-ink); }
+.xq-swal-cancel:hover { background: var(--color-line); }
+.swal2-toast { font-family: var(--font-sans) !important; border-radius: 10px !important; box-shadow: 0 10px 30px rgba(35, 26, 21, .18) !important; }
+.swal2-toast .swal2-title { font-family: var(--font-sans); font-size: 13px !important; font-weight: 500 !important; }
+.swal2-timer-progress-bar { background: var(--color-tan) !important; }

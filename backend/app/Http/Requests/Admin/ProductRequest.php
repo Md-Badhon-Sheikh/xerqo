@@ -10,8 +10,8 @@ class ProductRequest extends AdminRequest
 {
     protected function prepareForValidation(): void
     {
-        $this->normalizeBooleans(['is_engravable']);
-        $this->emptyToNull(['compare_price', 'cost', 'description', 'badge', 'meta_title', 'meta_description', 'slug']);
+        $this->normalizeBooleans(['is_engravable', 'is_featured']);
+        $this->emptyToNull(['compare_price', 'cost', 'description', 'badge', 'meta_title', 'meta_description', 'slug', 'brand_id']);
 
         if (! $this->isUpdate() && ! $this->filled('slug') && $this->filled('name')) {
             $this->merge(['slug' => Str::slug($this->input('name'))]);
@@ -22,6 +22,19 @@ class ProductRequest extends AdminRequest
         }
     }
 
+    public function attributes(): array
+    {
+        return [
+            'sku' => 'SKU',
+            'category_id' => 'category',
+            'brand_id' => 'brand',
+            'variants.*.name' => 'colour name',
+            'variants.*.sku' => 'colour SKU',
+            'variants.*.color_hex' => 'colour code',
+            'variants.*.stock' => 'colour stock',
+        ];
+    }
+
     public function rules(): array
     {
         /** @var Product|null $product */
@@ -30,6 +43,8 @@ class ProductRequest extends AdminRequest
 
         return [
             'category_id' => [$required, 'integer', 'exists:categories,id'],
+            'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'is_featured' => ['sometimes', 'boolean'],
             'name' => [$required, 'string', 'max:255'],
             'slug' => [$required, 'string', 'max:255', 'alpha_dash', Rule::unique('products', 'slug')->ignore($product?->id)],
             'sku' => [$required, 'string', 'max:64', Rule::unique('products', 'sku')->ignore($product?->id)],
@@ -54,6 +69,7 @@ class ProductRequest extends AdminRequest
             'variants' => ['sometimes', 'array'],
             'variants.*.id' => ['nullable', 'integer'],
             'variants.*.name' => ['required', 'string', 'max:100'],
+            'variants.*.color_hex' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
             'variants.*.sku' => ['nullable', 'string', 'max:64', 'distinct'],
             'variants.*.price' => ['nullable', 'numeric', 'min:0'],
             'variants.*.stock' => ['required', 'integer', 'min:0'],
