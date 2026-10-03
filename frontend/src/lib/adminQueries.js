@@ -29,7 +29,7 @@ export function useAdminMutation(fn, { invalidate = [], success, onSuccess, sile
   return useMutation({
     mutationFn: fn,
     onSuccess: (data, vars) => {
-      invalidate.forEach((r) => qc.invalidateQueries({ queryKey: ['admin', r] }))
+      ;[...invalidate, 'badges', 'dashboard'].forEach((r) => qc.invalidateQueries({ queryKey: ['admin', r] }))
       // storefront data may have changed too
       ;['home', 'products', 'product', 'categories', 'settings'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }))
       if (success) toast.success(typeof success === 'function' ? success(data, vars) : success)

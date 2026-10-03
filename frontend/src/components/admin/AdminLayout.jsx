@@ -7,6 +7,7 @@ import {
 import { cx, Btn } from './ui'
 import { useAdminAuth } from '../../context/AuthContext'
 import { RequireAdmin } from '../common/guards'
+import { useAdminList } from '../../lib/adminQueries'
 
 // Permission module (Role::MODULES on the API) that guards an /admin/... path; null = every staff member
 const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders', brands: 'categories', 'flash-sales': 'coupons' }
@@ -20,11 +21,11 @@ export function moduleFor(path) {
 const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase()
 
 export const NAV = [
-  ['MAIN', [['Dashboard', '/admin', LayoutGrid], ['Orders', '/admin/orders', ClipboardList, '24'], ['Returns', '/admin/returns', Undo2, '3'], ['Shipping', '/admin/shipments', Truck]]],
+  ['MAIN', [['Dashboard', '/admin', LayoutGrid], ['Orders', '/admin/orders', ClipboardList, 'orders'], ['Returns', '/admin/returns', Undo2, 'returns'], ['Shipping', '/admin/shipments', Truck, 'shipments']]],
   ['CATALOG', [['Products', '/admin/products', Package], ['Categories', '/admin/categories', Tag], ['Brands', '/admin/brands', BadgeCheck], ['Inventory', '/admin/inventory', Layers]]],
-  ['CUSTOMERS', [['Customers', '/admin/customers', Users], ['Reviews', '/admin/reviews', Star, '5']]],
+  ['CUSTOMERS', [['Customers', '/admin/customers', Users], ['Reviews', '/admin/reviews', Star, 'reviews']]],
   ['MARKETING', [['Coupons', '/admin/coupons', Percent], ['Flash Sales', '/admin/flash-sales', Zap], ['Content & Banners', '/admin/content', Image]]],
-  ['FINANCE', [['Payments & COD', '/admin/payments', Wallet], ['Reports', '/admin/reports', BarChart3]]],
+  ['FINANCE', [['Payments & COD', '/admin/payments', Wallet, 'payments'], ['Reports', '/admin/reports', BarChart3]]],
   ['SYSTEM', [['Staff & Roles', '/admin/staff', Shield], ['Settings', '/admin/settings', Settings]]],
 ]
 
@@ -34,6 +35,8 @@ const LogoTile = ({ size = 34 }) => (
 
 function Sidebar({ rail, onNavigate }) {
   const { can } = useAdminAuth()
+  // live counters (pending orders, returns, reviews, payments, parcels to ship)
+  const badges = useAdminList('badges', {}, { refetchInterval: 60_000, staleTime: 30_000 }).data?.data ?? {}
   const nav = NAV
     .map(([group, items]) => [group, items.filter(([, to]) => { const m = moduleFor(to); return !m || can(m) })])
     .filter(([, items]) => items.length)
@@ -47,16 +50,21 @@ function Sidebar({ rail, onNavigate }) {
         {nav.map(([group, items]) => (
           <div key={group} className={cx(rail && 'border-t border-white/10 pt-2 first:border-0')}>
             {!rail && <p className="px-2 pb-1 pt-2.5 text-[10px] font-semibold tracking-[0.14em] text-white/40">{group}</p>}
-            {items.map(([name, to, Icon, count]) => (
-              <NavLink key={name} to={to} end={to === '/admin'} onClick={onNavigate} title={name}
-                className={({ isActive }) => cx('flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px]', rail && 'justify-center', isActive ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white')}>
+            {items.map(([name, to, Icon, badge]) => {
+              const count = badge ? badges[badge] : 0
+              return (
+              <NavLink key={name} to={to} end={to === '/admin'} onClick={onNavigate} title={count ? `${name} (${count})` : name}
+                className={({ isActive }) => cx('relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px]', rail && 'justify-center', isActive ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white')}>
                 {({ isActive }) => <>
                   <Icon className={cx('size-[17px] shrink-0', isActive && 'text-gold')} />
                   {!rail && <span className="flex-1">{name}</span>}
-                  {!rail && count && <span className="rounded-full bg-tan px-1.5 text-[10px] font-bold">{count}</span>}
+                  {count > 0 && (rail
+                    ? <span className="absolute right-1.5 top-1.5 size-2 rounded-full bg-tan" />
+                    : <span className="rounded-full bg-tan px-1.5 text-[10px] font-bold">{count > 99 ? '99+' : count}</span>)}
                 </>}
               </NavLink>
-            ))}
+              )
+            })}
           </div>
         ))}
       </nav>

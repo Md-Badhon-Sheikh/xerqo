@@ -76,6 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // (GET => view, POST => create, PUT/PATCH => edit, DELETE => delete).
 Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('dashboard', Admin\DashboardController::class)->middleware('admin:dashboard');
+    Route::get('badges', [Admin\DashboardController::class, 'badges']); // filtered by the user's permissions
 
     // Orders (bound by order number, e.g. /api/admin/orders/XQ-24817)
     Route::middleware('admin:orders')->group(function () {

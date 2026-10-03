@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Download, Minus, Plus } from 'lucide-react'
 import { Badge, Btn, Card, KPIs, PageHead, Select, Table, Two, Col, cx } from '../../components/admin/ui'
 import { EmptyBlock, FormField, LoadingBlock, Paginator, SearchBox, Spin, TextInput } from '../../components/admin/form'
@@ -113,7 +113,8 @@ async function exportCsv() {
 
 export default function Inventory() {
   const { can } = useAdminAuth()
-  const [f, setF] = useState({ q: '', category_id: '', stock: '', page: 1 })
+  const [search] = useSearchParams()
+  const [f, setF] = useState({ q: '', category_id: '', stock: search.get('stock') ?? '', page: 1 })
   const set = (patch) => setF((x) => ({ ...x, ...patch, page: patch.page ?? 1 }))
   const { data, isPending, isPlaceholderData } = useAdminList('inventory', { ...f, per_page: 20 })
   const { data: all } = useAdminList('inventory', { per_page: 100 }) // options for the adjustment form

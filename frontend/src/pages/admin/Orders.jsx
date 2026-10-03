@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Download, MoreHorizontal, Printer, Truck } from 'lucide-react'
 import { Badge, Btn, PageHead, PayChip, Select, Table, Tabs, cx } from '../../components/admin/ui'
@@ -11,8 +11,6 @@ import { confirm, toast } from '../../lib/alert'
 import { useAdminList } from '../../lib/adminQueries'
 
 export const Tk = TkFmt
-export const AGO = ['2m ago', '18m ago', '42m ago', '1h ago', '3h ago', '5h ago', '6h ago', '8h ago']
-export const orderId = (id) => id
 
 /* Mobile order card — accepts an API order (or the legacy demo shape used on the dashboard) */
 export function OrderCard({ o, ago: when }) {
@@ -66,7 +64,8 @@ async function exportCsv(params) {
 export default function Orders() {
   const { can } = useAdminAuth()
   const qc = useQueryClient()
-  const [f, setF] = useState({ status: '', q: '', payment_method: '', payment_status: '', range: '', from: '', page: 1 })
+  const [search] = useSearchParams()
+  const [f, setF] = useState({ status: search.get('status') ?? '', q: '', payment_method: '', payment_status: '', range: '', from: '', page: 1 })
   const [selected, setSelected] = useState([])
   const [bulkBusy, setBulkBusy] = useState(false)
   const set = (patch) => { setF((x) => ({ ...x, ...patch, page: patch.page ?? 1 })); setSelected([]) }
