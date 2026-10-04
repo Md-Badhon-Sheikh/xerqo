@@ -13,6 +13,9 @@ class SmsLog extends Model
 
     public const STATUS_SKIPPED = 'skipped';
 
+    // SMS_DRIVER=log: written to laravel.log only — never sent, never charged
+    public const STATUS_TEST = 'test';
+
     protected $fillable = [
         'phone',
         'message',

@@ -204,27 +204,30 @@ export function TopProductCard({ p, rank }) {
   const quickAdd = useQuickAdd()
   const sold = !q.inStock
   return (
-    <article className="flex items-stretch overflow-hidden rounded-lg bg-cream">
-      <Link to={`/product/${q.slug}`} className="relative w-[124px] shrink-0 bg-tile sm:w-[300px] lg:w-[45%]">
+    // sized by the card's own width (container queries), not the screen: laptops show two cards per row,
+    // so a wide screen can still mean a narrow card
+    <article className="@container flex items-stretch overflow-hidden rounded-lg bg-cream">
+      <Link to={`/product/${q.slug}`} className="relative w-[124px] shrink-0 bg-tile @lg:w-[40%] @4xl:w-[45%]">
         <img src={q.image} alt={q.name} loading="lazy" className="absolute inset-0 size-full object-cover" />
-        <Pill className="absolute left-2 top-2 sm:left-3 sm:top-3">#{rank} Best seller</Pill>
+        <Pill className="absolute left-2 top-2 @lg:left-3 @lg:top-3">#{rank} Best seller</Pill>
       </Link>
-      <div className="flex min-h-[168px] flex-1 flex-col justify-center gap-1.5 p-3 sm:min-h-[250px] sm:gap-2.5 sm:p-7 lg:min-h-[280px]">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mute sm:text-[11px]">{q.category.replace(/s$/, '')}</p>
-        <Link to={`/product/${q.slug}`} className="font-display text-[19px] font-semibold leading-tight hover:text-tan sm:text-[26px] lg:text-[28px]">{q.name}</Link>
-        {q.reviews > 0 && <Stars n={Math.round(q.rating)} count={`${q.reviews} reviews`} className="hidden sm:inline" />}
+      <div className="flex min-h-[168px] min-w-0 flex-1 flex-col justify-center gap-1.5 p-3 @lg:min-h-[250px] @lg:gap-2.5 @lg:p-6 @4xl:min-h-[280px] @4xl:p-8">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-mute @lg:text-[11px]">{q.category.replace(/s$/, '')}</p>
+        <Link to={`/product/${q.slug}`} className="font-display text-[19px] font-semibold leading-tight hover:text-tan @lg:text-[24px] @4xl:text-[28px]">{q.name}</Link>
+        {q.reviews > 0 && <Stars n={Math.round(q.rating)} count={`${q.reviews} reviews`} className="hidden @lg:inline" />}
         <div className="flex flex-wrap items-center gap-2">
           <Price p={q} size="lg" />
-          {q.oldPrice > q.price && <span className="rounded-full bg-leaf/12 px-2.5 py-0.5 text-[10px] font-semibold text-leaf sm:text-[11px]">Save {tk(q.oldPrice - q.price)}</span>}
+          {q.oldPrice > q.price && <span className="rounded-full bg-leaf/12 px-2.5 py-0.5 text-[10px] font-semibold text-leaf @lg:text-[11px]">Save {tk(q.oldPrice - q.price)}</span>}
         </div>
-        <div className="flex gap-2 pt-1 sm:pt-2">
+        {/* buttons share a row when there is room and stack neatly when there isn't */}
+        <div className="flex flex-wrap gap-2 pt-1 @lg:pt-2">
           {sold ? (
-            <Button variant="soft" className="flex-1 sm:flex-none" disabled>Sold out</Button>
+            <Button variant="soft" className="flex-1 @lg:flex-none" disabled>Sold out</Button>
           ) : (
             <>
-              <Button variant="outline" className="max-sm:hidden" onClick={() => quickAdd(q)}><ShoppingBag className="size-4" /> {q.hasVariants ? 'Choose colour' : 'Add to cart'}</Button>
-              <Button className="flex-1 sm:flex-none" onClick={() => quickAdd(q, { buyNow: true })}><ShoppingBag className="size-4 max-sm:hidden" /> Buy now</Button>
-              <Button variant="outline" className="!px-3 sm:!hidden" aria-label="Add to cart" onClick={() => quickAdd(q)}><ShoppingBag className="size-4" /></Button>
+              <Button variant="outline" className="!hidden basis-[150px] whitespace-nowrap @lg:!inline-flex @lg:flex-1 @4xl:flex-none" onClick={() => quickAdd(q)}><ShoppingBag className="size-4" /> {q.hasVariants ? 'Choose colour' : 'Add to cart'}</Button>
+              <Button className="flex-1 whitespace-nowrap @lg:basis-[120px] @4xl:flex-none" onClick={() => quickAdd(q, { buyNow: true })}><ShoppingBag className="hidden size-4 @lg:block" /> Buy now</Button>
+              <Button variant="outline" className="!px-3 @lg:!hidden" aria-label="Add to cart" onClick={() => quickAdd(q)}><ShoppingBag className="size-4" /></Button>
             </>
           )}
         </div>

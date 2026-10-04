@@ -18,6 +18,7 @@ use App\Services\SmsService;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\Factory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -32,8 +33,24 @@ class SmsTest extends TestCase
     {
         parent::setUp();
         $this->seed([RoleSeeder::class, SettingSeeder::class]);
+        // live Reve driver against a fake Reve server that accepts every message
+        config(['services.sms.driver' => 'reve']);
+        SmsGateway::current()->update(['balance_paisa' => 100, 'rate_paisa' => 35, 'low_balance_paisa' => 0, 'api_key' => 'key-123', 'secret_key' => 'secret-456', 'sender_id' => '8809601000000']);
+        Http::fake(['*' => Http::response(['Status' => '0', 'Text' => 'ACCEPTD', 'Message_ID' => '1'])]);
+    }
+
+    public function test_test_mode_logs_without_charging_or_claiming_sent(): void
+    {
         config(['services.sms.driver' => 'log']);
-        SmsGateway::current()->update(['balance_paisa' => 100, 'rate_paisa' => 35, 'low_balance_paisa' => 0]);
+
+        $this->assertTrue($this->sms()->send('01712345678', 'Your code is 123456')); // sign-in codes keep working locally
+        $this->assertSame(100, SmsGateway::current()->balance_paisa);
+        Http::assertNothingSent();
+        $this->assertDatabaseHas('sms_logs', ['status' => 'test', 'cost_paisa' => 0]);
+
+        Sanctum::actingAs($this->staff(Role::ADMIN));
+        $this->postJson('/api/admin/sms/test', ['phone' => '01712345678', 'message' => 'Hi'])
+            ->assertUnprocessable()->assertJsonPath('data.status', 'test');
     }
 
     private function staff(string $role): User
@@ -70,15 +87,14 @@ class SmsTest extends TestCase
 
     public function test_reve_driver_posts_the_message_and_refunds_a_refused_one(): void
     {
-        config(['services.sms.driver' => 'reve']);
-        SmsGateway::current()->update(['api_key' => 'key-123', 'secret_key' => 'secret-456', 'sender_id' => '8809601000000']);
-
+        SmsGateway::current()->update(['api_url' => 'http://103.177.125.108/sendtext?']); // full URL as copied from the Reve panel
+        Http::swap(new Factory);
         Http::fakeSequence()
             ->push(['Status' => '0', 'Text' => 'ACCEPTD', 'Message_ID' => '9001'])
             ->push(['Status' => '108', 'Text' => 'Wrong Password']);
 
         $this->assertTrue($this->sms()->send('01712345678', 'Order XQ-1 shipped'));
-        Http::assertSent(fn (Request $r) => $r->url() === 'https://smpp.revesms.com:7790/sendtext'
+        Http::assertSent(fn (Request $r) => $r->method() === 'GET' && str_starts_with($r->url(), 'http://103.177.125.108/sendtext?')
             && $r['apikey'] === 'key-123' && $r['secretkey'] === 'secret-456'
             && $r['callerID'] === '8809601000000' && $r['toUser'] === '8801712345678' && $r['messageContent'] === 'Order XQ-1 shipped');
 
@@ -90,8 +106,7 @@ class SmsTest extends TestCase
 
     public function test_reve_driver_without_keys_skips(): void
     {
-        config(['services.sms.driver' => 'reve']);
-        Http::fake();
+        SmsGateway::current()->update(['api_key' => null]);
 
         $this->assertFalse($this->sms()->send('01712345678', 'Hello'));
         Http::assertNothingSent();

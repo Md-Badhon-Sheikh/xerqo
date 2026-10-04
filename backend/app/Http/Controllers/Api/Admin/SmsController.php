@@ -63,7 +63,7 @@ class SmsController extends Controller
     public function logs(Request $request): JsonResponse
     {
         $request->validate([
-            'status' => ['nullable', Rule::in([SmsLog::STATUS_SENT, SmsLog::STATUS_FAILED, SmsLog::STATUS_SKIPPED])],
+            'status' => ['nullable', Rule::in([SmsLog::STATUS_SENT, SmsLog::STATUS_FAILED, SmsLog::STATUS_SKIPPED, SmsLog::STATUS_TEST])],
             'q' => ['nullable', 'string', 'max:100'],
         ]);
 

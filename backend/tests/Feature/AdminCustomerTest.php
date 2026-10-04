@@ -11,6 +11,7 @@ use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -100,7 +101,9 @@ class AdminCustomerTest extends TestCase
     public function test_one_off_sms_uses_the_wallet_and_needs_edit_permission(): void
     {
         $customer = User::factory()->create(['phone' => '01812345678']);
-        SmsGateway::current()->update(['balance_paisa' => 100, 'rate_paisa' => 35]);
+        config(['services.sms.driver' => 'reve']);
+        SmsGateway::current()->update(['balance_paisa' => 100, 'rate_paisa' => 35, 'api_key' => 'k', 'secret_key' => 's', 'sender_id' => 'XERQO']);
+        Http::fake(['*' => Http::response(['Status' => '0', 'Message_ID' => '1'])]);
 
         Sanctum::actingAs($this->admin);
         $this->postJson("/api/admin/customers/{$customer->id}/sms", ['message' => 'Your parcel is ready'])->assertOk();

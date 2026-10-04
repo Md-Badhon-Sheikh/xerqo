@@ -41,7 +41,8 @@ class SmsService
 
     public function send(string $phone, string $message, ?string $template = null, ?User $by = null): bool
     {
-        return $this->deliver($phone, $message, $template, $by)->status === SmsLog::STATUS_SENT;
+        // test mode counts as delivered so sign-in codes still work on a developer machine
+        return in_array($this->deliver($phone, $message, $template, $by)->status, [SmsLog::STATUS_SENT, SmsLog::STATUS_TEST], true);
     }
 
     /**
@@ -74,7 +75,15 @@ class SmsService
             return $skip('SMS is switched off');
         }
 
-        if ($driver === 'reve' && ! $gateway->isConfigured()) {
+        // test mode (SMS_DRIVER=log): nothing leaves the server, so nothing is charged or shown as sent
+        if ($driver !== 'reve') {
+            Log::info('[SMS] to '.$phone.': '.$message);
+            $log->fill(['status' => SmsLog::STATUS_TEST, 'reason' => 'Test mode (SMS_DRIVER=log in backend/.env) — written to the server log, not sent to the phone. Set SMS_DRIVER=reve to send for real'])->save();
+
+            return $log;
+        }
+
+        if (! $gateway->isConfigured()) {
             return $skip('Reve API key, secret key or sender ID missing');
         }
 
@@ -84,7 +93,7 @@ class SmsService
             return $skip('SMS balance too low');
         }
 
-        $result = $driver === 'reve' ? $this->sendViaReve($gateway, $phone, $message) : $this->sendToLog($phone, $message);
+        $result = $this->sendViaReve($gateway, $phone, $message);
 
         if (! $result['ok']) {
             SmsGateway::whereKey($gateway->id)->increment('balance_paisa', $cost);
@@ -192,7 +201,8 @@ class SmsService
     private function sendViaReve(SmsGateway $gateway, string $phone, string $message): array
     {
         try {
-            $response = Http::asForm()->timeout(15)->post(rtrim($gateway->api_url, '/').'/sendtext', [
+            // Reve's documented form: GET {base}/sendtext?apikey=…&secretkey=…&callerID=…&toUser=…&messageContent=…
+            $response = Http::timeout(15)->get(self::sendUrl($gateway->api_url), [
                 'apikey' => $gateway->api_key,
                 'secretkey' => $gateway->secret_key,
                 'callerID' => $gateway->sender_id,
@@ -200,10 +210,11 @@ class SmsService
                 'messageContent' => $message,
             ]);
 
-            $status = (string) ($response->json('Status') ?? '');
+            // some Reve servers answer {"Status":"0",…}, others wrap it in a list
+            $status = (string) ($response->json('Status') ?? $response->json('0.Status') ?? '');
 
             if ($response->successful() && $status === '0') {
-                return ['ok' => true, 'message_id' => $response->json('Message_ID'), 'response' => $response->body()];
+                return ['ok' => true, 'message_id' => $response->json('Message_ID') ?? $response->json('0.Message_ID'), 'response' => $response->body()];
             }
 
             $error = self::REVE_ERRORS[$status] ?? ($response->json('Text') ?: 'Gateway error (HTTP '.$response->status().')');
@@ -218,13 +229,14 @@ class SmsService
     }
 
     /**
-     * @return array{ok: bool, message_id: null, response: string}
+     * The send endpoint, whether the Super Admin saved the base address ("https://smpp.revesms.com:7790")
+     * or the full one from Reve's panel ("http://103.177.125.108/sendtext?").
      */
-    private function sendToLog(string $phone, string $message): array
+    public static function sendUrl(string $apiUrl): string
     {
-        Log::info('[SMS] to '.$phone.': '.$message);
+        $base = preg_replace('#/sendtext/?$#i', '', rtrim(trim($apiUrl), '/?&'));
 
-        return ['ok' => true, 'message_id' => null, 'response' => 'Written to laravel.log (SMS_DRIVER=log)'];
+        return rtrim($base, '/').'/sendtext';
     }
 
     /**

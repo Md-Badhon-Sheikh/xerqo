@@ -81,7 +81,7 @@ function WalletCard({ overview }) {
     }
   }
 
-  const status = !g.is_enabled ? ['Switched off', 'red'] : g.balance <= 0 ? ['No balance', 'red'] : g.low_balance ? ['Low balance', 'amber'] : g.live ? ['Live', 'green'] : ['Test mode', 'blue']
+  const status = !g.is_enabled ? ['Switched off', 'red'] : !g.live ? ['Test mode', 'blue'] : g.balance <= 0 ? ['No balance', 'red'] : g.low_balance ? ['Low balance', 'amber'] : ['Live', 'green']
 
   return (
     <Card title="SMS balance" sub="Every SMS is paid from this prepaid balance — when it runs out, SMS stop." right={<Badge tone={status[1]}>{status[0]}</Badge>}>
@@ -97,7 +97,7 @@ function WalletCard({ overview }) {
           ))}
         </div>
       </div>
-      {!g.live && <p className="rounded-lg bg-info/10 px-3.5 py-2.5 text-xs text-info">Test mode (SMS_DRIVER=log): messages are charged and logged but written to the server log instead of being sent through Reve.</p>}
+      {!g.live && <p className="rounded-lg bg-info/10 px-3.5 py-2.5 text-xs text-info"><b>Test mode — no SMS reaches any phone.</b> SMS_DRIVER=log in backend/.env: messages are only written to the server log and nothing is charged. Set SMS_DRIVER=reve (then php artisan config:clear) to send through Reve.</p>}
 
       {isSuperAdmin ? (
         <>
@@ -320,14 +320,15 @@ function EmailCard({ email, canEdit }) {
 }
 
 /* ---------- delivery log ---------- */
-const LOG_TONE = { sent: 'green', failed: 'red', skipped: 'amber' }
+const LOG_TONE = { sent: 'green', failed: 'red', skipped: 'amber', test: 'blue' }
+const LOG_LABEL = { test: 'test mode — not sent' }
 function SmsLog() {
   const [f, setF] = useState({ status: '', q: '', page: 1 })
   const { data, isPending, isPlaceholderData } = useAdminList('sms/logs', { ...f, per_page: 15 })
   const list = data?.data ?? []
   return (
     <Card title="SMS log" sub="Every message — sent, failed at the gateway, or skipped (switched off, no balance, customer opted out)" right={<MessageSquare className="size-4 text-amute" />}>
-      <Tabs items={[['All', null, ''], ['Sent', null, 'sent'], ['Failed', null, 'failed'], ['Skipped', null, 'skipped']]} active={f.status} onChange={(status) => setF({ ...f, status, page: 1 })} />
+      <Tabs items={[['All', null, ''], ['Sent', null, 'sent'], ['Failed', null, 'failed'], ['Skipped', null, 'skipped'], ['Test mode', null, 'test']]} active={f.status} onChange={(status) => setF({ ...f, status, page: 1 })} />
       <SearchBox value={f.q} onChange={(q) => setF({ ...f, q, page: 1 })} placeholder="Search phone or text" />
       {isPending ? <LoadingBlock rows={3} /> : !list.length ? <EmptyBlock title="No messages here" text="Messages appear as orders move along." /> : (
         <div className={cx('divide-y divide-aline transition-opacity', isPlaceholderData && 'opacity-60')}>
@@ -335,7 +336,7 @@ function SmsLog() {
             <div key={l.id} className="space-y-1 py-3 first:pt-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="text-[13px] font-semibold">{l.phone}</p>
-                <Badge tone={LOG_TONE[l.status]}>{l.status}</Badge>
+                <Badge tone={LOG_TONE[l.status]}>{LOG_LABEL[l.status] ?? l.status}</Badge>
                 {l.template_name && <span className="text-[11px] text-amute">{l.template_name}</span>}
                 <span className="ml-auto text-[11px] text-amute" title={new Date(l.created_at).toLocaleString()}>{ago(l.created_at)}</span>
               </div>
