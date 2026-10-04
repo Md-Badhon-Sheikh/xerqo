@@ -1,0 +1,12 @@
+# XERQO — everyone may crawl the shop (Facebook/WhatsApp link previews included);
+# the admin panel and the raw API are not for search engines.
+User-agent: *
+Disallow: /admin
+Disallow: /api/
+Allow: /
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
