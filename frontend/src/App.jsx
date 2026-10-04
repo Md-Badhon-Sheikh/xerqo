@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Outlet } from 'react-router-dom'
 import StoreLayout from './components/store/StoreLayout'
 import AdminLayout from './components/admin/AdminLayout'
@@ -27,9 +27,20 @@ const Notifications = A('Notifications'), AProfile = A('Profile'), Brands = A('B
 // Admin session lives only under /admin so the storefront never loads it
 const AdminScope = () => <AdminAuthProvider><Outlet /></AdminAuthProvider>
 
+// Sits inside the Suspense boundary, so it only mounts once the first page's code has loaded —
+// then the logo intro from index.html can fade out (no spinner flashes in between)
+function IntroDone() {
+  useEffect(() => {
+    const hide = () => window.xqHideIntro?.()
+    ;(document.fonts?.ready ?? Promise.resolve()).then(hide, hide)
+  }, [])
+  return null
+}
+
 export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
+      <IntroDone />
       <Routes>
         <Route element={<StoreLayout />}>
           <Route index element={<Home />} />

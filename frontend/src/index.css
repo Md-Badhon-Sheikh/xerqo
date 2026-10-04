@@ -134,3 +134,31 @@ html .s2-admin-dropdown .select2-results__option--highlighted.select2-results__o
 .swal2-toast { font-family: var(--font-sans) !important; border-radius: 10px !important; box-shadow: 0 10px 30px rgba(35, 26, 21, .18) !important; }
 .swal2-toast .swal2-title { font-family: var(--font-sans); font-size: 13px !important; font-weight: 500 !important; }
 .swal2-timer-progress-bar { background: var(--color-tan) !important; }
+
+/* ---------- "xerqo" loading mark (components/common/feedback.jsx → XerqoMark) ---------- */
+.xq-mark-svg { height: auto; overflow: visible; }
+.xq-mark-svg .xq-st { fill: none; stroke: currentColor; stroke-width: 36; }
+.xq-mark-svg .xq-bar { fill: currentColor; }
+/* draws in, holds, wipes away and draws again for as long as the page loads */
+.xq-loop .xq-st { stroke-dasharray: 1; stroke-dashoffset: 1; animation: xq-loop-draw 2.6s cubic-bezier(.65, 0, .35, 1) infinite; }
+.xq-loop .xq-x2 { animation-delay: .08s; }
+.xq-loop .xq-e { animation-delay: .16s; }
+.xq-loop .xq-r { animation-delay: .24s; }
+.xq-loop .xq-q { animation-delay: .32s; }
+.xq-loop .xq-qt { animation-delay: .44s; }
+.xq-loop .xq-o { animation-delay: .40s; }
+.xq-loop .xq-bar { fill: var(--color-tan); transform-box: fill-box; transform-origin: 50% 0; animation: xq-loop-bar 2.6s cubic-bezier(.34, 1.56, .64, 1) infinite; }
+@keyframes xq-loop-draw {
+  0% { stroke-dashoffset: 1; }
+  38%, 78% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -1; }
+}
+@keyframes xq-loop-bar {
+  0%, 30% { transform: scaleY(0); }
+  45%, 80% { transform: scaleY(1); }
+  100% { transform: scaleY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xq-loop .xq-st { animation: none; stroke-dashoffset: 0; }
+  .xq-loop .xq-bar { animation: none; }
+}

@@ -6,8 +6,78 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="XERQO — premium genuine leather wallets, long wallets, passport covers, key holders, purses and bags. Cash on delivery all over Bangladesh." />
     <title>XERQO — Premium Leather Goods</title>
+    <!-- Page-load intro: the "xerqo" wordmark draws itself while the app loads (inline so it shows instantly) -->
+    <style>
+      #xq-intro { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center; background: #F6F1EA; transition: opacity .55s ease, visibility .55s ease; }
+      #xq-intro.xq-out { opacity: 0; visibility: hidden; }
+      #xq-intro .xq-mark { width: 150px; height: auto; overflow: visible; }
+      #xq-intro .xq-s { fill: none; stroke: #231A15; stroke-width: 36; stroke-dasharray: 1; stroke-dashoffset: 1; animation: xq-draw .7s cubic-bezier(.65, 0, .35, 1) forwards; }
+      #xq-intro .xq-x1 { animation-delay: .10s; }
+      #xq-intro .xq-x2 { animation-delay: .22s; }
+      #xq-intro .xq-e  { animation-delay: .34s; animation-duration: .8s; }
+      #xq-intro .xq-r  { animation-delay: .50s; }
+      #xq-intro .xq-q  { animation-delay: .62s; animation-duration: .85s; }
+      #xq-intro .xq-qt { animation-delay: 1.10s; animation-duration: .3s; }
+      #xq-intro .xq-o  { animation-delay: .78s; animation-duration: .8s; }
+      /* the power-button bar of the q drops in last, in the brand tan, then settles to ink */
+      #xq-intro .xq-bar { fill: #9C5B2E; transform-box: fill-box; transform-origin: 50% 0; transform: scaleY(0); animation: xq-bar .45s cubic-bezier(.34, 1.56, .64, 1) 1.30s forwards, xq-ink .5s ease 1.85s forwards; }
+      #xq-intro .xq-line { width: 150px; height: 2px; margin: 14px auto 0; background: #EDE3D5; overflow: hidden; border-radius: 2px; }
+      @media (min-width: 640px) { #xq-intro .xq-mark, #xq-intro .xq-line { width: 180px; } }
+      #xq-intro .xq-line i { display: block; height: 100%; width: 40%; background: #9C5B2E; border-radius: 2px; animation: xq-slide 1.1s ease-in-out infinite; }
+      @keyframes xq-draw { to { stroke-dashoffset: 0; } }
+      @keyframes xq-bar { to { transform: scaleY(1); } }
+      @keyframes xq-ink { to { fill: #231A15; } }
+      @keyframes xq-slide { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+      @media (prefers-reduced-motion: reduce) {
+        #xq-intro .xq-s { animation: none; stroke-dashoffset: 0; }
+        #xq-intro .xq-bar { animation: none; transform: none; fill: #231A15; }
+        #xq-intro .xq-line i { animation: none; width: 100%; }
+      }
+    </style>
   </head>
   <body>
+    <div id="xq-intro" role="status" aria-label="Loading XERQO">
+      <div>
+        <svg class="xq-mark" viewBox="100 655 1310 300" aria-hidden="true">
+          <defs><clipPath id="xq-x-clip"><rect x="110" y="688" width="278" height="252" /></clipPath></defs>
+          <!-- x -->
+          <g clip-path="url(#xq-x-clip)">
+            <path class="xq-s xq-x1" pathLength="1" d="M127 668 L370 960" />
+            <path class="xq-s xq-x2" pathLength="1" d="M370 668 L127 960" />
+          </g>
+          <!-- e -->
+          <path class="xq-s xq-e" pathLength="1" d="M403 814.5 H622 V738 A32 32 0 0 0 590 706 H435 A32 32 0 0 0 403 738 V890 A32 32 0 0 0 435 922 H640" />
+          <!-- r -->
+          <path class="xq-s xq-r" pathLength="1" d="M698 940 V738 A32 32 0 0 1 730 706 H874" />
+          <!-- q: ring with the power-button gap, tail, and the bar -->
+          <path class="xq-s xq-q" pathLength="1" d="M943 726.7 A104 104 0 1 0 1031 726.7" />
+          <path class="xq-s xq-qt" pathLength="1" d="M1058 886 L1110 940" />
+          <rect class="xq-bar" x="968" y="680" width="41" height="122" />
+          <!-- o -->
+          <path class="xq-s xq-o" pathLength="1" d="M1188 706 H1344 A32 32 0 0 1 1376 738 V890 A32 32 0 0 1 1344 922 H1188 A32 32 0 0 1 1156 890 V738 A32 32 0 0 1 1188 706 Z" />
+        </svg>
+        <div class="xq-line"><i></i></div>
+      </div>
+    </div>
+    <script>
+      // shown until the app has rendered — and at least long enough for the logo to finish drawing
+      (function () {
+        var start = Date.now(), done = false
+        window.xqHideIntro = function () {
+          if (done) return
+          done = true
+          var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches
+          var wait = Math.max(0, (reduce ? 300 : 2100) - (Date.now() - start))
+          setTimeout(function () {
+            var el = document.getElementById('xq-intro')
+            if (!el) return
+            el.classList.add('xq-out')
+            setTimeout(function () { el.remove() }, 600)
+          }, wait)
+        }
+        setTimeout(window.xqHideIntro, 10000) // never block the page if something goes wrong
+      })()
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
