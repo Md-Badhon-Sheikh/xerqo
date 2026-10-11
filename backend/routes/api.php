@@ -202,6 +202,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
     });
 
     Route::middleware('admin:settings,edit')->group(function () {
+        Route::post('settings/images/{slot}', [Admin\SiteImageController::class, 'store'])->whereIn('slot', ['favicon', 'og-image']);
+        Route::delete('settings/images/{slot}', [Admin\SiteImageController::class, 'destroy'])->whereIn('slot', ['favicon', 'og-image']);
         Route::put('sms/templates/{key}', [Admin\SmsController::class, 'updateTemplate']);
         Route::post('sms/test', [Admin\SmsController::class, 'test'])->middleware('throttle:10,1');
         Route::put('sms/email', [Admin\SmsController::class, 'updateEmail']);

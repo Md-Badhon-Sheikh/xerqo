@@ -138,7 +138,9 @@ cd ../backend && composer install --no-dev --optimize-autoloader
 ```
 
 Upload the changed backend files to `~/xerqo` and the new `frontend/dist/*` to `public_html/`
-(delete the old `public_html/assets/` first). Then in Terminal:
+(delete the old `public_html/assets/` first). If `deploy/public_html/.htaccess` or `index.php` changed,
+upload those too — page addresses go through Laravel so the favicon and share image set in
+Admin → Settings end up in the HTML that Facebook/WhatsApp read. Then in Terminal:
 
 ```bash
 cd ~/xerqo

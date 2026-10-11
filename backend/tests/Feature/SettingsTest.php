@@ -8,6 +8,8 @@ use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -64,6 +66,82 @@ class SettingsTest extends TestCase
             ->assertJsonMissingPath('data.sms_templates')
             ->assertJsonMissingPath('data.email_notifications')
             ->assertJsonMissingPath('data.reviews');
+    }
+
+    public function test_favicon_and_share_image_upload_replace_and_remove(): void
+    {
+        Storage::fake('public');
+
+        $this->post('/api/admin/settings/images/favicon', ['image' => UploadedFile::fake()->create('icon.svg', 2, 'image/svg+xml')], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('image');
+        $this->post('/api/admin/settings/images/og-image', ['image' => UploadedFile::fake()->image('tiny.jpg', 200, 100)], ['Accept' => 'application/json'])
+            ->assertUnprocessable()->assertJsonValidationErrors('image');
+
+        $this->post('/api/admin/settings/images/favicon', ['image' => UploadedFile::fake()->image('icon.png', 64, 64)], ['Accept' => 'application/json'])->assertOk();
+        $this->post('/api/admin/settings/images/og-image', ['image' => UploadedFile::fake()->image('share.jpg', 1200, 630)], ['Accept' => 'application/json'])->assertOk();
+        $first = Setting::getValue('seo.og_image');
+        Storage::disk('public')->assertExists([Setting::getValue('store.favicon'), $first]);
+        $this->assertSame(1200, Setting::getValue('seo.og_image_width'));
+        $this->assertNotNull(Setting::getValue('store.name')); // other store fields kept
+        $this->assertNotNull(Setting::getValue('seo.meta_title'));
+
+        // a new upload replaces the old file
+        $this->post('/api/admin/settings/images/og-image', ['image' => UploadedFile::fake()->image('new.png', 1200, 630)], ['Accept' => 'application/json'])->assertOk();
+        Storage::disk('public')->assertMissing($first);
+
+        $this->getJson('/api/settings')->assertOk()
+            ->assertJsonPath('data.store.favicon_url', Storage::disk('public')->url(Setting::getValue('store.favicon')))
+            ->assertJsonPath('data.seo.og_image_url', Storage::disk('public')->url(Setting::getValue('seo.og_image')));
+
+        // the paths can't be set through the normal settings form
+        $this->save(['seo' => ['og_image' => 'http://evil.test/x.jpg']])->assertUnprocessable();
+
+        $favicon = Setting::getValue('store.favicon');
+        $this->deleteJson('/api/admin/settings/images/favicon')->assertOk();
+        Storage::disk('public')->assertMissing($favicon);
+        $this->assertNull(Setting::getValue('store.favicon'));
+        $this->deleteJson('/api/admin/settings/images/logo')->assertNotFound();
+    }
+
+    public function test_pages_are_served_with_settings_in_the_html(): void
+    {
+        Storage::fake('public');
+        $public = sys_get_temp_dir().'/xerqo-shell-'.uniqid();
+        mkdir($public);
+        file_put_contents($public.'/index.html', <<<'HTML'
+            <html><head>
+            <link rel="icon" type="image/png" href="/favicon.png" />
+            <meta name="description" content="old" />
+            <title>Old</title>
+            <meta property="og:title" content="Old" />
+            <meta property="og:image" content="https://xerqo.test/images/og-image.jpg" />
+            <meta property="og:image:type" content="image/jpeg" />
+            </head><body><div id="root"></div></body></html>
+            HTML);
+        $this->app->usePublicPath($public);
+
+        try {
+            $this->post('/api/admin/settings/images/favicon', ['image' => UploadedFile::fake()->image('icon.png', 64, 64)], ['Accept' => 'application/json'])->assertOk();
+            $this->post('/api/admin/settings/images/og-image', ['image' => UploadedFile::fake()->image('share.png', 1200, 630)], ['Accept' => 'application/json'])->assertOk();
+            $this->save(['seo' => ['meta_title' => 'XERQO "Leather" & Co', 'meta_description' => 'Wallets']])->assertOk();
+
+            $html = $this->get('/shop/wallets')->assertOk()->assertCookieMissing('laravel_session')->getContent();
+            $og = url(Storage::disk('public')->url(Setting::getValue('seo.og_image')));
+            $this->assertStringContainsString('<title>XERQO &quot;Leather&quot; &amp; Co</title>', $html);
+            $this->assertStringContainsString('<meta property="og:image" content="'.$og.'" />', $html);
+            $this->assertStringContainsString('<meta property="og:image:type" content="image/png" />', $html);
+            $this->assertStringContainsString('<meta property="og:image:width" content="1200" />', $html);
+            $this->assertStringContainsString('<meta name="twitter:image" content="'.$og.'" />', $html);
+            $this->assertStringContainsString('<meta name="description" content="Wallets" />', $html);
+            $this->assertStringContainsString('href="'.url(Storage::disk('public')->url(Setting::getValue('store.favicon'))).'"', $html);
+            $this->assertStringNotContainsString('/favicon.png', $html);
+
+            $this->get('/')->assertOk()->assertSee('<div id="root">', false);
+            $this->getJson('/api/nope')->assertNotFound()->assertJsonStructure(['message']);
+        } finally {
+            @unlink($public.'/index.html');
+            @rmdir($public);
+        }
     }
 
     public function test_store_links_must_be_urls_and_return_window_bounds(): void

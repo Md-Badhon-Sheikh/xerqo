@@ -13,7 +13,7 @@ class SettingController extends Controller
      */
     public function index(): JsonResponse
     {
-        $settings = Setting::where('is_public', true)->get()->pluck('value', 'key');
+        $settings = Setting::withImageUrls(Setting::where('is_public', true)->get()->pluck('value', 'key')->all());
 
         return response()->json(['data' => $settings]);
     }

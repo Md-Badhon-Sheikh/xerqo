@@ -94,7 +94,7 @@ export function Paginator({ meta, onPage, className }) {
 }
 
 // Single image picker: shows the current URL or the chosen file, returns a File via onChange
-export function ImagePicker({ value, onChange, onRemove, label = 'Upload image', hint, className, aspect = 'aspect-square', size = 'w-[88px]' }) {
+export function ImagePicker({ value, onChange, onRemove, label = 'Upload image', hint, className, aspect = 'aspect-square', size = 'w-[88px]', accept = 'image/jpeg,image/png,image/webp', contain = false, busy = false, disabled = false }) {
   const [preview, setPreview] = useState(null)
   useEffect(() => {
     if (!(value instanceof File)) { setPreview(null); return }
@@ -106,13 +106,14 @@ export function ImagePicker({ value, onChange, onRemove, label = 'Upload image',
   return (
     <div className={cx('flex items-center gap-3.5', className)}>
       <div className={cx('relative shrink-0 overflow-hidden rounded-lg border border-aline bg-asoft', aspect, size)}>
-        {src ? <img src={src} alt="" className="size-full object-cover" /> : <span className="grid size-full place-items-center text-amute"><ImagePlus className="size-5" /></span>}
-        {src && onRemove && <button type="button" onClick={onRemove} aria-label="Remove image" className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-white shadow"><X className="size-3" /></button>}
+        {src ? <img src={src} alt="" className={cx('size-full', contain ? 'object-contain p-2' : 'object-cover')} /> : <span className="grid size-full place-items-center text-amute"><ImagePlus className="size-5" /></span>}
+        {busy && <span className="absolute inset-0 grid place-items-center bg-white/70"><Loader2 className="size-4 animate-spin" /></span>}
+        {src && onRemove && !busy && !disabled && <button type="button" onClick={onRemove} aria-label="Remove image" className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-white shadow"><X className="size-3" /></button>}
       </div>
       <div className="space-y-1.5">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-aline bg-white px-3 py-1.5 text-xs font-semibold hover:border-ink">
+        <label className={cx('inline-flex items-center gap-2 rounded-lg border border-aline bg-white px-3 py-1.5 text-xs font-semibold', busy || disabled ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:border-ink')}>
           <ImagePlus className="size-3.5" />{src ? 'Replace image' : label}
-          <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onChange(f); e.target.value = '' }} />
+          <input type="file" accept={accept} disabled={busy || disabled} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) onChange(f); e.target.value = '' }} />
         </label>
         {hint && <p className="text-[11px] text-amute">{hint}</p>}
       </div>

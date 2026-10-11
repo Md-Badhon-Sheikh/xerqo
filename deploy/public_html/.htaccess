@@ -1,9 +1,10 @@
 # XERQO — public_html/.htaccess
 #   /api/...       -> Laravel (index.php)
 #   /storage/...   -> uploaded files (symlink), or Laravel when symlinks aren't allowed
-#   everything else -> the React app (index.html)
+#   everything else -> the React app (index.html, served through Laravel to fill in the SEO tags)
 
-DirectoryIndex index.html
+# pages go through Laravel so the favicon / share image from Admin → Settings are in the HTML
+DirectoryIndex index.php index.html
 Options -Indexes -MultiViews
 
 <IfModule mod_rewrite.c>
@@ -29,8 +30,9 @@ Options -Indexes -MultiViews
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
 
-    # Every other address is a page of the React app
-    RewriteRule ^ index.html [L]
+    # Every other address is a page of the React app: Laravel sends index.html with the
+    # favicon, title and share image from Admin → Settings filled in (crawlers don't run JavaScript)
+    RewriteRule ^ index.php [L]
 </IfModule>
 
 # Keep secrets and source files private

@@ -38,7 +38,7 @@ class SettingController extends Controller
         $settings = Setting::orderBy('group')->orderBy('key')->get();
 
         return response()->json([
-            'data' => $settings->pluck('value', 'key'),
+            'data' => Setting::withImageUrls($settings->pluck('value', 'key')->all()),
             'meta' => $settings->map(fn (Setting $s) => [
                 'key' => $s->key,
                 'group' => $s->group,

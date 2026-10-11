@@ -4,7 +4,7 @@
  * Laravel front controller for cPanel.
  * Copy this file into public_html/ (next to the React build). It runs the Laravel app that lives
  * OUTSIDE the web root, in /home/USER/xerqo — change XERQO_APP if you used another folder name.
- * Apache only sends /api/... (and /storage/... when no symlink exists) here; see .htaccess.
+ * Apache sends /api/..., /storage/... (when no symlink exists) and the app's page addresses here; see .htaccess.
  */
 
 use Illuminate\Foundation\Application;

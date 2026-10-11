@@ -5,6 +5,7 @@ import AdminLayout from './components/admin/AdminLayout'
 import { AdminAuthProvider } from './context/AuthContext'
 import { RequireAuth } from './components/common/guards'
 import { PageLoader } from './components/common/feedback'
+import { useSettings } from './lib/queries'
 
 const S = (name) => lazy(() => import(`./pages/store/${name}.jsx`))
 const A = (name) => lazy(() => import(`./pages/admin/${name}.jsx`))
@@ -37,10 +38,24 @@ function IntroDone() {
   return null
 }
 
+// Favicon from Admin → Settings. The live server already puts it in index.html; this keeps the tab icon
+// current right after it's changed (and in development, where index.html is served by Vite)
+function SiteFavicon() {
+  const url = useSettings().data?.store?.favicon_url
+  useEffect(() => {
+    if (url === undefined) return // settings not loaded yet
+    const link = document.querySelector('link[rel~=icon]') ?? document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'icon' }))
+    link.removeAttribute('type')
+    link.href = url || '/favicon.png'
+  }, [url])
+  return null
+}
+
 export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
       <IntroDone />
+      <SiteFavicon />
       <Routes>
         <Route element={<StoreLayout />}>
           <Route index element={<Home />} />

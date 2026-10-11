@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { SettingsShell } from '../../components/admin/AdminLayout'
 import { Btn, Card, PageHead, Textarea } from '../../components/admin/ui'
-import { FormField, LoadingBlock, MoneyInput, Spin, SwitchRow, TextInput } from '../../components/admin/form'
+import { FormField, ImagePicker, LoadingBlock, MoneyInput, Spin, SwitchRow, TextInput } from '../../components/admin/form'
 import { useAdminAuth } from '../../context/AuthContext'
+import { useAdminMutation } from '../../lib/adminQueries'
 import { confirm } from '../../lib/alert'
+import { adminApi } from '../../lib/api'
 import { useSettingSave, useSettingsData } from './Settings'
 
 const SaveBar = ({ save, onSave, children = 'Save' }) => (
@@ -65,11 +67,47 @@ function Social({ initial, canEdit }) {
   )
 }
 
+// Favicon / share image: uploaded straight away, removing goes back to the default from the website build
+function useSiteImage(slot, label) {
+  const upload = useAdminMutation((file) => {
+    const body = new FormData()
+    body.append('image', file)
+    return adminApi.post(`/admin/settings/images/${slot}`, body)
+  }, { invalidate: ['settings'], success: `${label} updated` })
+  const remove = useAdminMutation(() => adminApi.del(`/admin/settings/images/${slot}`), { invalidate: ['settings'], success: `${label} removed` })
+  const onRemove = async () => {
+    if (await confirm({ title: `Remove the ${label.toLowerCase()}?`, text: 'The website goes back to the default image.', confirmText: 'Remove', danger: true })) remove.mutate()
+  }
+  return { upload, onRemove, busy: upload.isPending || remove.isPending, error: upload.error?.fields?.image }
+}
+
+function Favicon({ store, canEdit }) {
+  const { upload, onRemove, busy, error } = useSiteImage('favicon', 'Favicon')
+  const src = store.favicon_url || '/favicon.png'
+  return (
+    <Card title="Favicon" sub="The small icon in the browser tab, bookmarks and on phone home screens">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <ImagePicker value={store.favicon_url || null} onChange={(f) => upload.mutate(f)} onRemove={store.favicon_url ? onRemove : undefined} label="Upload favicon" hint="Square PNG or ICO, at least 48×48px (512×512 is best) · max 1 MB" accept="image/png,image/x-icon,image/vnd.microsoft.icon,image/jpeg,image/webp,.ico" contain busy={busy} disabled={!canEdit} size="w-[72px]" />
+        <div className="flex min-w-0 items-center gap-2 rounded-t-lg border border-b-0 border-aline bg-asoft px-3 py-2 sm:ml-auto sm:w-60" aria-hidden="true">
+          <img src={src} alt="" className="size-4 shrink-0 object-contain" />
+          <span className="truncate text-xs">{store.name || 'XERQO'}</span>
+          <span className="ml-auto text-amute">×</span>
+        </div>
+      </div>
+      {error && <p role="alert" className="text-xs text-bad">{error}</p>}
+      {!store.favicon_url && <p className="text-[11px] text-amute">Using the default XERQO icon.</p>}
+    </Card>
+  )
+}
+
 function Seo({ initial, canEdit }) {
   const [v, set] = useDraft(initial)
   const { save, err } = useSettingSave('seo', { success: 'SEO saved' })
+  const og = useSiteImage('og-image', 'Share image')
   const title = v.meta_title ?? ''
   const desc = v.meta_description ?? ''
+  const ogSrc = initial.og_image_url || '/images/og-image.jpg'
+  const ogSize = initial.og_image_width && `${initial.og_image_width}×${initial.og_image_height}px`
   return (
     <Card title="SEO" sub="How XERQO appears on Google and when the home page is shared">
       <FormField label="Meta title" error={err('meta_title')} help={`${title.length} / 60 characters${title.length > 60 ? ' — Google may cut it short' : ''}`}>
@@ -83,6 +121,18 @@ function Seo({ initial, canEdit }) {
         <p className="mt-0.5 line-clamp-1 text-[15px] text-info">{title || 'XERQO'}</p>
         <p className="mt-0.5 line-clamp-2 text-xs text-amute">{desc || 'Add a short description of the store.'}</p>
       </div>
+      <FormField label="Share image (Open Graph)" error={og.error} help="Shown when a link to the shop is shared on Facebook, Messenger, WhatsApp or X. Saved as soon as you pick it.">
+        <ImagePicker value={initial.og_image_url || null} onChange={(f) => og.upload.mutate(f)} onRemove={initial.og_image_url ? og.onRemove : undefined} label="Upload share image" hint={`JPG, PNG or WebP · 1200×630px is best · max 5 MB${ogSize ? ` · current ${ogSize}` : ''}`} aspect="aspect-[1200/630]" size="w-[180px]" busy={og.busy} disabled={!canEdit} />
+      </FormField>
+      <div className="overflow-hidden rounded-xl border border-aline sm:max-w-md" aria-label="Link preview">
+        <img src={ogSrc} alt="" className="aspect-[1200/630] w-full bg-asoft object-cover" />
+        <div className="bg-asoft px-3.5 py-2.5">
+          <p className="text-[11px] uppercase text-amute">xerqo.com</p>
+          <p className="line-clamp-1 text-sm font-semibold">{title || 'XERQO'}</p>
+          <p className="line-clamp-1 text-xs text-amute">{desc || 'Add a short description of the store.'}</p>
+        </div>
+      </div>
+      {!initial.og_image_url && <p className="text-[11px] text-amute">Using the default share image.</p>}
       {canEdit && <SaveBar save={save} onSave={() => save.mutate(pick(v, ['meta_title', 'meta_description']))}>Save SEO</SaveBar>}
     </Card>
   )
@@ -156,10 +206,11 @@ export default function AdminSettingsGeneral() {
   const { values, isPending } = useSettingsData()
   return (
     <>
-      <PageHead title="Settings" sub="Store profile, SEO, social links, store status and policies" />
+      <PageHead title="Settings" sub="Store profile, favicon, SEO, social links, store status and policies" />
       <SettingsShell>
         {isPending || !values ? <LoadingBlock /> : <>
           <StoreInfo initial={values.store ?? {}} canEdit={canEdit} />
+          <Favicon store={values.store ?? {}} canEdit={canEdit} />
           <StoreStatus maintenance={values.maintenance ?? {}} auth={values.auth ?? {}} canEdit={canEdit} />
           <Seo initial={values.seo ?? {}} canEdit={canEdit} />
           <Social initial={values.store ?? {}} canEdit={canEdit} />

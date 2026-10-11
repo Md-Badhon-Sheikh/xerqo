@@ -31,10 +31,18 @@ class UpdateSettingsRequest extends AdminRequest
             'settings.store.instagram' => ['sometimes', 'nullable', 'url', 'max:255'],
             'settings.store.messenger' => ['sometimes', 'nullable', 'url', 'max:255'],
             'settings.store.show_chat_button' => ['sometimes', 'boolean'],
+            // uploaded through /admin/settings/images/favicon
+            'settings.store.favicon' => ['prohibited'],
+            'settings.store.favicon_url' => ['prohibited'],
 
             'settings.seo' => ['sometimes', 'array'],
             'settings.seo.meta_title' => ['sometimes', 'nullable', 'string', 'max:70'],
             'settings.seo.meta_description' => ['sometimes', 'nullable', 'string', 'max:170'],
+            // uploaded through /admin/settings/images/og-image
+            'settings.seo.og_image' => ['prohibited'],
+            'settings.seo.og_image_url' => ['prohibited'],
+            'settings.seo.og_image_width' => ['prohibited'],
+            'settings.seo.og_image_height' => ['prohibited'],
 
             'settings.maintenance' => ['sometimes', 'array'],
             'settings.maintenance.enabled' => ['sometimes', 'boolean'],

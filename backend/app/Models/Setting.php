@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Media;
 use Illuminate\Database\Eloquent\Model;
 
 class Setting extends Model
@@ -62,6 +63,23 @@ class Setting extends Model
         $setting->save();
 
         return $setting;
+    }
+
+    /**
+     * Adds the public URLs of uploaded site images (store.favicon_url, seo.og_image_url) for API responses.
+     *
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    public static function withImageUrls(array $values): array
+    {
+        foreach ([['store', 'favicon'], ['seo', 'og_image']] as [$key, $field]) {
+            if (is_array($values[$key] ?? null)) {
+                $values[$key]["{$field}_url"] = Media::url($values[$key][$field] ?? null);
+            }
+        }
+
+        return $values;
     }
 
     public static function flushCache(): void
