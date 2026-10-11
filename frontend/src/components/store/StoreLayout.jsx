@@ -10,6 +10,7 @@ import { StoreUI, useUI } from '../../context/StoreUIContext'
 import { WishlistProvider } from '../../context/WishlistContext'
 import { useCategories, useSettings } from '../../lib/queries'
 import { tokens } from '../../lib/api'
+import { waLink } from '../../lib/bd'
 
 const NAV = [['Home', '/'], ['Shop', '/shop'], ['Wallets', '/shop?c=wallets'], ['Bags', '/shop?c=bags'], ['Women', '/shop?c=womens-purses'], ['Travel', '/shop?c=passport-covers'], ['About Us', '/about'], ['Contact', '/contact']]
 
@@ -214,32 +215,69 @@ export function CartDrawer({ forceOpen }) {
   )
 }
 
+// internal paths use the router; https://, tel: and mailto: links are plain links
+const FooterLink = ({ to, children }) => (/^(https?:|tel:|mailto:)/i.test(to || '')
+  ? <a href={to} target={/^https?:/i.test(to) ? '_blank' : undefined} rel="noreferrer" className="hover:text-white">{children}</a>
+  : <Link to={to || '/'} className="hover:text-white">{children}</Link>)
+
+const PAYMENT_LABELS = [['cod', 'COD'], ['bkash', 'bKash'], ['rocket', 'Rocket'], ['nagad', 'Nagad'], ['bank', 'Bank / Card']]
+
+// brand icons (Simple Icons paths, 24×24)
+const SOCIAL_ICONS = {
+  Facebook: 'M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z',
+  Instagram: 'M7.03.084c-1.277.06-2.149.264-2.91.563a5.874 5.874 0 0 0-2.124 1.388 5.878 5.878 0 0 0-1.38 2.127C.321 4.926.12 5.8.064 7.076.008 8.354-.005 8.764.001 12.023c.007 3.259.021 3.667.083 4.947.061 1.277.264 2.149.563 2.911.308.789.72 1.457 1.388 2.123a5.872 5.872 0 0 0 2.129 1.38c.763.295 1.636.496 2.913.552 1.278.056 1.689.069 4.947.063 3.257-.007 3.668-.021 4.947-.082 1.28-.06 2.147-.265 2.91-.563a5.881 5.881 0 0 0 2.123-1.388 5.881 5.881 0 0 0 1.38-2.129c.295-.763.496-1.636.551-2.912.056-1.28.07-1.69.063-4.948-.006-3.258-.02-3.667-.081-4.947-.06-1.28-.264-2.148-.564-2.911a5.892 5.892 0 0 0-1.387-2.123 5.857 5.857 0 0 0-2.128-1.38C19.074.322 18.202.12 16.924.066 15.647.009 15.236-.006 11.977 0 8.718.008 8.31.021 7.03.084m.14 21.693c-1.17-.05-1.805-.245-2.228-.408a3.736 3.736 0 0 1-1.382-.895 3.695 3.695 0 0 1-.9-1.378c-.165-.423-.363-1.058-.417-2.228-.06-1.264-.072-1.644-.08-4.848-.006-3.204.006-3.583.061-4.848.05-1.169.246-1.805.408-2.228.216-.561.477-.96.895-1.382a3.705 3.705 0 0 1 1.379-.9c.423-.165 1.057-.361 2.227-.417 1.265-.06 1.644-.072 4.848-.08 3.203-.006 3.583.006 4.85.062 1.168.05 1.804.244 2.227.408.56.216.96.475 1.382.895.421.42.681.817.9 1.378.165.422.362 1.056.417 2.227.06 1.265.074 1.645.08 4.848.005 3.203-.006 3.583-.061 4.848-.051 1.17-.245 1.805-.408 2.23-.216.56-.477.96-.896 1.38a3.705 3.705 0 0 1-1.378.9c-.422.165-1.058.362-2.226.418-1.266.06-1.645.072-4.85.079-3.204.007-3.582-.006-4.848-.06m9.783-16.192a1.44 1.44 0 1 0 1.437-1.442 1.44 1.44 0 0 0-1.437 1.442M5.839 12.012a6.161 6.161 0 1 0 12.323-.024 6.162 6.162 0 0 0-12.323.024M8 12.008A4 4 0 1 1 12.008 16 4 4 0 0 1 8 12.008',
+  WhatsApp: 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z',
+}
+
+// Text and link columns: Admin › Pages › Footer. Contact details, social links and payment methods: Admin › Settings.
 function Footer({ sticky }) {
-  const G = [['Shop', ['Wallets', 'Long Wallets', 'Card Holders', 'Passport Covers', 'Key Holders', "Women's Purses", 'Bags', 'Belts']], ['Help', ['Track Order', 'Shipping & Delivery', 'Returns & Exchange', 'FAQs', 'Contact Us']], ['Company', ['Our Story', 'Corporate Gifting', 'Wholesale', 'Privacy Policy', 'Terms']], ['Contact', ['Dhaka, Bangladesh', '+880 1XXX-XXXXXX', 'hello@xerqo.com', 'Sat–Thu · 10am–8pm']]]
-  const links = { 'Track Order': '/track', FAQs: '/faq', 'Contact Us': '/contact', 'Our Story': '/about', 'Privacy Policy': '/policy', Terms: '/policy', 'Shipping & Delivery': '/policy', 'Returns & Exchange': '/policy' }
+  const settings = useSettings().data
+  const footer = settings?.footer ?? {}
+  const store = settings?.store ?? {}
+  const hours = settings?.contact_page?.hours
+  const contact = [
+    store.address && [store.address],
+    store.phone && [store.phone, `tel:${store.phone.replace(/[^\d+]/g, '')}`],
+    store.email && [store.email, `mailto:${store.email}`],
+    hours && [hours],
+  ].filter(Boolean)
+  const social = [['Facebook', store.facebook], ['Instagram', store.instagram], ['WhatsApp', waLink(store.whatsapp)]].filter(([, url]) => url)
+  const payments = PAYMENT_LABELS.filter(([k]) => settings?.payments?.[k]?.enabled).map(([, label]) => label)
+  const columns = [...(footer.columns ?? []), ...(contact.length ? [{ title: 'Contact', links: contact.map(([label, link]) => ({ label, link })) }] : [])]
+  const copyright = (footer.copyright || '© {year} XERQO. All rights reserved.').replaceAll('{year}', new Date().getFullYear())
   return (
     <footer className={cx('bg-espresso text-white sm:pb-8', sticky ? 'pb-40' : 'pb-24')}>
       <div className="container-x">
-        <div className="flex flex-col gap-5 border-b border-white/10 py-10 md:flex-row md:items-center md:justify-between lg:py-14">
-          <div><h3 className="h-display text-3xl sm:text-4xl">Join the XERQO circle</h3><p className="mt-1 text-sm text-white/60">New drops, care tips and member-only offers.</p></div>
-          <form className="flex w-full max-w-md" onSubmit={(e) => e.preventDefault()}><input className="flex-1 border border-white/25 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-white/50" placeholder="Email or phone number" /><button className="bg-white px-5 text-xs font-semibold uppercase tracking-widest text-ink">Subscribe</button></form>
-        </div>
-        <div className="grid gap-8 py-10 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:py-14">
+        {footer.newsletter?.enabled && (
+          <div className="flex flex-col gap-5 border-b border-white/10 py-10 md:flex-row md:items-center md:justify-between lg:py-14">
+            <div><h3 className="h-display text-3xl sm:text-4xl">{footer.newsletter.title}</h3>{footer.newsletter.text && <p className="mt-1 text-sm text-white/60">{footer.newsletter.text}</p>}</div>
+            <form className="flex w-full max-w-md" onSubmit={(e) => e.preventDefault()}><input className="flex-1 border border-white/25 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-white/50" placeholder="Email or phone number" /><button className="bg-white px-5 text-xs font-semibold uppercase tracking-widest text-ink">Subscribe</button></form>
+          </div>
+        )}
+        <div className={cx('grid gap-8 py-10 lg:py-14', ['lg:grid-cols-[1.4fr]', 'lg:grid-cols-[1.4fr_1fr]', 'lg:grid-cols-[1.4fr_repeat(2,1fr)]', 'lg:grid-cols-[1.4fr_repeat(3,1fr)]', 'lg:grid-cols-[1.4fr_repeat(4,1fr)]'][columns.length])}>
           <div className="space-y-4">
             <Logo light />
-            <p className="max-w-[300px] text-sm leading-relaxed text-white/60">Genuine leather wallets, bags and travel goods — crafted for class, made to last.</p>
-            <p className="text-[13px] font-medium text-gold"><a href="https://www.facebook.com/xerqo.bd" target="_blank" rel="noreferrer">Facebook</a> · Instagram · WhatsApp</p>
+            {footer.about && <p className="max-w-[300px] text-sm leading-relaxed text-white/60">{footer.about}</p>}
+            {social.length > 0 && (
+              <div className="flex gap-2.5">
+                {social.map(([name, url]) => (
+                  <a key={name} href={url} target="_blank" rel="noreferrer" aria-label={name} title={name} className="grid size-9 place-items-center rounded-full border border-white/25 text-gold transition hover:border-gold hover:bg-gold hover:text-espresso">
+                    <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden="true"><path d={SOCIAL_ICONS[name]} /></svg>
+                  </a>
+                ))}
+              </div>
+            )}
           </div>
-          {G.map(([h, items]) => (
-            <details key={h} className="group border-b border-white/10 lg:border-0" open>
-              <summary className="flex cursor-pointer list-none items-center justify-between py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold lg:pointer-events-none lg:py-0 lg:pb-4">{h}<Plus className="size-4 text-white lg:hidden" /></summary>
-              <ul className="space-y-3 pb-4 text-sm text-white/70">{items.map((i) => <li key={i}>{links[i] ? <Link to={links[i]} className="hover:text-white">{i}</Link> : <Link to="/shop" className="hover:text-white">{i}</Link>}</li>)}</ul>
+          {columns.map((col, ci) => (
+            <details key={ci} className="group border-b border-white/10 lg:border-0" open>
+              <summary className="flex cursor-pointer list-none items-center justify-between py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold lg:pointer-events-none lg:py-0 lg:pb-4">{col.title}<Plus className="size-4 text-white lg:hidden" /></summary>
+              <ul className="space-y-3 pb-4 text-sm text-white/70">{col.links.map((l, i) => <li key={i}>{l.link ? <FooterLink to={l.link}>{l.label}</FooterLink> : l.label}</li>)}</ul>
             </details>
           ))}
         </div>
         <div className="flex flex-col gap-4 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-white/50">© 2026 XERQO. All rights reserved.</p>
-          <div className="flex flex-wrap gap-1.5">{['COD', 'bKash', 'Rocket', 'Nagad', 'Bank / Card'].map((p) => <span key={p} className="rounded-sm border border-white/25 px-2 py-1 text-[11px] font-semibold text-white/80">{p}</span>)}</div>
+          <p className="text-xs text-white/50">{copyright}</p>
+          <div className="flex flex-wrap gap-1.5">{payments.map((p) => <span key={p} className="rounded-sm border border-white/25 px-2 py-1 text-[11px] font-semibold text-white/80">{p}</span>)}</div>
         </div>
       </div>
     </footer>

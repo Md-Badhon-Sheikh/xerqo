@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
+use App\Models\ContactMessage;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
@@ -92,6 +93,7 @@ class DashboardController extends Controller
             'returns' => $can('returns') ? ReturnRequest::where('status', 'pending')->count() : null,
             'reviews' => $can('reviews') ? Review::where('status', Review::STATUS_PENDING)->count() : null,
             'payments' => $can('payments') ? Payment::where('status', Payment::STATUS_PENDING)->count() : null,
+            'messages' => $can('customers') ? ContactMessage::whereNull('read_at')->count() : null,
             'shipments' => $can('shipments') ? Order::whereIn('status', ['confirmed', 'processing'])->count() : null,
             'notifications' => $request->user()->unreadNotifications()->count(),
         ], fn ($v) => $v !== null)]);

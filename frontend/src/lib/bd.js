@@ -13,3 +13,9 @@ export const zoneFor = (district) => (district === 'Dhaka' ? 'inside_dhaka' : 'o
 
 // "01712345678" -> "01712-345678"
 export const prettyPhone = (p) => (p && p.length === 11 ? `${p.slice(0, 5)}-${p.slice(5)}` : p || '')
+
+// "+880 1712-345678" / "01712345678" -> "https://wa.me/8801712345678" (null when empty)
+export const waLink = (p) => {
+  const d = String(p || '').replace(/\D/g, '')
+  return d ? `https://wa.me/${d.startsWith('0') ? `88${d}` : d}` : null
+}

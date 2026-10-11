@@ -14,7 +14,7 @@ use Illuminate\Validation\Rule;
  */
 class NotificationController extends Controller
 {
-    private const CATEGORIES = ['orders', 'reviews', 'returns', 'stock', 'system'];
+    private const CATEGORIES = ['orders', 'reviews', 'returns', 'messages', 'stock', 'system'];
 
     /**
      * GET /api/admin/notifications?category=&unread=1&page=

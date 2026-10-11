@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bell, Check, ClipboardList, Layers, MessageSquare, Star, Undo2, Wallet, X } from 'lucide-react'
+import { Bell, Check, ClipboardList, Layers, Mail, MessageSquare, Star, Undo2, Wallet, X } from 'lucide-react'
 import { Btn, Card, Col, PageHead, Tabs, Two, cx } from '../../components/admin/ui'
 import { EmptyBlock, LoadingBlock, Paginator, Spin } from '../../components/admin/form'
 import { ago } from '../../components/admin/orderUi'
@@ -10,8 +10,8 @@ import { toast } from '../../lib/alert'
 import { useAdminList, useAdminMutation } from '../../lib/adminQueries'
 
 const TILE = { tan: 'bg-tan/12 text-tan', amber: 'bg-amber/12 text-amber', red: 'bg-bad/10 text-bad', green: 'bg-ok/10 text-ok', blue: 'bg-info/10 text-info' }
-const ICON = { new_order: ClipboardList, payment: Wallet, review: Star, return: Undo2, low_stock: Layers, sms_balance: MessageSquare }
-const TABS = [['All', ''], ['Orders', 'orders'], ['Reviews', 'reviews'], ['Returns', 'returns'], ['Stock', 'stock'], ['System', 'system']]
+const ICON = { new_order: ClipboardList, payment: Wallet, review: Star, return: Undo2, low_stock: Layers, sms_balance: MessageSquare, contact: Mail }
+const TABS = [['All', ''], ['Orders', 'orders'], ['Reviews', 'reviews'], ['Returns', 'returns'], ['Messages', 'messages'], ['Stock', 'stock'], ['System', 'system']]
 const isToday = (iso) => new Date(iso).toDateString() === new Date().toDateString()
 
 function Feed({ list, onOpen, onDismiss }) {
@@ -117,7 +117,7 @@ export default function AdminNotifications() {
     <>
       <PageHead
         title="Notifications"
-        sub={data ? `${data.unread} unread · alerts for orders, payments, reviews, returns and stock` : 'Loading…'}
+        sub={data ? `${data.unread} unread · alerts for orders, payments, reviews, returns, messages and stock` : 'Loading…'}
         actions={<Btn v="white" icon={Check} onClick={markAll} disabled={!data?.unread}><span className="sm:hidden">Mark read</span><span className="max-sm:hidden">Mark all as read</span></Btn>}
       />
       <Tabs items={TABS.map(([l, k]) => [l, k ? data?.counts?.[k] : data?.counts?.all, k])} active={f.category} onChange={(category) => setF({ category, page: 1 })} />

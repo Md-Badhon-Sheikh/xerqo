@@ -8,10 +8,14 @@ use Illuminate\Database\Seeder;
 
 class SettingSeeder extends Seeder
 {
-    public function run(): void
+    /**
+     * key => [value, group, is_public]
+     *
+     * @return array<string, array{0: mixed, 1: string, 2: bool}>
+     */
+    public static function defaults(): array
     {
-        // key => [value, group, is_public]
-        $settings = [
+        return [
             'store' => [[
                 'name' => 'XERQO',
                 'tagline' => 'Genuine leather, handcrafted in Bangladesh',
@@ -87,6 +91,88 @@ class SettingSeeder extends Seeder
                     ['title' => 'Cash on Delivery', 'subtitle' => 'Plus bKash, Rocket & Nagad'],
                     ['title' => '7-Day Easy Return', 'subtitle' => 'Free exchange'],
                 ],
+            ], 'content', true],
+
+            // Admin → Pages (images are "/images/…" from the React build or "/storage/content/…" uploads)
+            'about' => [[
+                'hero' => [
+                    'eyebrow' => 'Our story',
+                    'title' => 'Crafted for class. Made to last.',
+                    'text' => 'XERQO started in Dhaka with one idea — everyday leather goods that feel premium, age beautifully and are priced honestly for Bangladesh.',
+                    'image' => '/images/tools-hand.jpg',
+                ],
+                'values' => [
+                    ['title' => 'Premium Leather', 'subtitle' => 'Genuine cow & crocodile-embossed hides'],
+                    ['title' => 'Expertly Crafted', 'subtitle' => 'Hand-cut, saddle-stitched, burnished'],
+                    ['title' => 'Built for Durability', 'subtitle' => '1-year stitching warranty'],
+                    ['title' => 'Timeless Design', 'subtitle' => 'Minimal shapes that never date'],
+                ],
+                'story' => [
+                    ['title' => 'From hide to heirloom', 'text' => 'Every XERQO piece begins with a hide chosen for grain and thickness. We cut each panel by hand, saddle-stitch with waxed thread, and burnish the edges until they shine.', 'image' => '/images/workshop.jpg'],
+                    ['title' => 'Leather that tells your story', 'text' => 'Full-grain leather darkens and softens with use. Scratches become character. That’s why we say our products get better with age — just like you.', 'image' => '/images/leather-close.jpg'],
+                    ['title' => 'Personal by design', 'text' => 'Free name engraving on wallets, passport covers and key holders — because a gift should feel like it was made for one person.', 'image' => '/images/fb-passport-hand.jpg'],
+                ],
+                'stats' => [
+                    ['value' => '12,000+', 'label' => 'Happy customers'],
+                    ['value' => '64', 'label' => 'Districts delivered'],
+                    ['value' => '4.9 ★', 'label' => 'Average rating'],
+                    ['value' => '2025', 'label' => 'Founded in Dhaka'],
+                ],
+                'cta' => ['enabled' => true, 'title' => 'Carry something that lasts.', 'button_text' => 'Shop the collection', 'link' => '/shop', 'image' => '/images/cover.jpg'],
+            ], 'content', true],
+
+            // phone, WhatsApp, email and Facebook come from "store"
+            'contact_page' => [[
+                'hero' => [
+                    'title' => 'We’re here to help',
+                    'subtitle' => 'Questions about an order, custom engraving or corporate gifting? Reach us any way you like.',
+                    'image' => '/images/keys-flower.jpg',
+                ],
+                'hours' => 'Sat–Thu · 10am–8pm',
+                'whatsapp_note' => 'Replies in ~5 min',
+                'email_note' => 'Reply within 24h',
+                'showroom' => ['enabled' => true, 'area' => 'Dhanmondi, Dhaka', 'note' => 'By appointment', 'map_link' => 'https://maps.google.com/?q=Dhanmondi+Dhaka'],
+                'subjects' => ['Order support', 'Custom engraving', 'Corporate gifting', 'Returns & exchange', 'Other'],
+                'promo' => [
+                    'enabled' => true,
+                    'eyebrow' => 'Corporate gifting',
+                    'text' => 'Branded wallets & passport covers for your team — logo debossing from 25 pcs.',
+                    'button_text' => 'Request a quote',
+                    'link' => '/contact',
+                    'image' => '/images/briefcase.jpg',
+                ],
+            ], 'content', true],
+
+            'footer' => [[
+                'about' => 'Genuine leather wallets, bags and travel goods — crafted for class, made to last.',
+                'newsletter' => ['enabled' => true, 'title' => 'Join the XERQO circle', 'text' => 'New drops, care tips and member-only offers.'],
+                'columns' => [
+                    ['title' => 'Shop', 'links' => [
+                        ['label' => 'Wallets', 'link' => '/shop?c=wallets'],
+                        ['label' => 'Long Wallets', 'link' => '/shop?c=long-wallets'],
+                        ['label' => 'Card Holders', 'link' => '/shop?c=card-holders'],
+                        ['label' => 'Passport Covers', 'link' => '/shop?c=passport-covers'],
+                        ['label' => 'Key Holders', 'link' => '/shop?c=key-holders'],
+                        ['label' => "Women's Purses", 'link' => '/shop?c=womens-purses'],
+                        ['label' => 'Bags', 'link' => '/shop?c=bags'],
+                        ['label' => 'Belts', 'link' => '/shop?c=belts'],
+                    ]],
+                    ['title' => 'Help', 'links' => [
+                        ['label' => 'Track Order', 'link' => '/track'],
+                        ['label' => 'Shipping & Delivery', 'link' => '/policy'],
+                        ['label' => 'Returns & Exchange', 'link' => '/policy'],
+                        ['label' => 'FAQs', 'link' => '/faq'],
+                        ['label' => 'Contact Us', 'link' => '/contact'],
+                    ]],
+                    ['title' => 'Company', 'links' => [
+                        ['label' => 'Our Story', 'link' => '/about'],
+                        ['label' => 'Corporate Gifting', 'link' => '/contact'],
+                        ['label' => 'Wholesale', 'link' => '/contact'],
+                        ['label' => 'Privacy Policy', 'link' => '/policy'],
+                        ['label' => 'Terms', 'link' => '/policy'],
+                    ]],
+                ],
+                'copyright' => '© {year} XERQO. All rights reserved.',
             ], 'content', true],
 
             'reviews' => [[
@@ -176,6 +262,11 @@ class SettingSeeder extends Seeder
                 'admin_email' => 'orders@xerqo.com',
             ], 'notifications', false],
         ];
+    }
+
+    public function run(): void
+    {
+        $settings = self::defaults();
 
         foreach ($settings as $key => [$value, $group, $isPublic]) {
             Setting::setValue($key, $value, $group, $isPublic);

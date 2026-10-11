@@ -23,6 +23,7 @@ class AdminNotifier
         'review' => ['New review', 'reviews', 'reviews', 'amber', false],
         'return' => ['Return request', 'returns', 'returns', 'amber', false],
         'low_stock' => ['Low stock', 'inventory', 'stock', 'red', false],
+        'contact' => ['Contact message', 'customers', 'messages', 'blue', false],
         'sms_balance' => ['SMS balance low', null, 'system', 'red', false], // Super Admins only (they also get the low-balance email)
     ];
 

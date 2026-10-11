@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BannerController;
 use App\Http\Controllers\Api\BrandController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Api\HomeController;
@@ -29,6 +30,7 @@ Route::get('products/{slug}', [ProductController::class, 'show']);
 Route::get('products/{slug}/reviews', [ProductController::class, 'reviews']);
 Route::get('banners', [BannerController::class, 'index']);
 Route::get('settings', [SettingController::class, 'index']);
+Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:5,1');
 
 // uptime / deploy check: database reachable, queue backlog, scheduler alive
 Route::get('health', function () {
@@ -161,10 +163,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
     Route::middleware('admin:customers')->group(function () {
         Route::get('customers', [Admin\CustomerController::class, 'index']);
         Route::get('customers/{customer}', [Admin\CustomerController::class, 'show']);
+        Route::get('messages', [Admin\ContactMessageController::class, 'index']);
     });
     Route::middleware('admin:customers,edit')->group(function () {
         Route::patch('customers/{customer}', [Admin\CustomerController::class, 'update']);
         Route::post('customers/{customer}/sms', [Admin\CustomerController::class, 'sms'])->middleware('throttle:20,1');
+        Route::patch('messages/{message}', [Admin\ContactMessageController::class, 'update']);
     });
 
     Route::middleware('admin:reviews')->group(function () {
@@ -222,4 +226,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
     Route::apiResource('banners', Admin\BannerController::class)->middleware('admin:content');
     Route::put('content/announcement', [Admin\SettingController::class, 'announcement'])->middleware('admin:content,edit');
     Route::put('content/highlights', [Admin\SettingController::class, 'highlights'])->middleware('admin:content,edit');
+    Route::put('content/pages/{page}', [Admin\PageContentController::class, 'update'])->whereIn('page', ['about', 'contact', 'footer'])->middleware('admin:content,edit');
+    Route::post('content/images', [Admin\PageContentController::class, 'uploadImage'])->middleware('admin:content,edit');
+    Route::delete('messages/{message}', [Admin\ContactMessageController::class, 'destroy'])->middleware('admin:customers,delete');
 });
