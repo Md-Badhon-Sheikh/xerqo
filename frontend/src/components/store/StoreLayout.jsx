@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { Search, Heart, User, ShoppingBag, Menu, X, ChevronUp, MessageCircle, Home, LayoutGrid, Plus, Trash2, Truck, ChevronDown, GitCompareArrows } from 'lucide-react'
 import { tk } from '../../data/store'
 import { Button, Qty, cx } from './ui'
@@ -19,6 +19,24 @@ const useFreeDelivery = () => useSettings().data?.delivery?.free_delivery_thresh
 export const Logo = ({ light, className }) => (
   <Link to="/" aria-label="XERQO home" className={cx('block shrink-0', className)}>
     <img src={light ? '/images/logo-light.png' : '/images/logo-dark.png'} alt="XERQO" className="h-10 w-auto sm:h-12 lg:h-[52px]" />
+  </Link>
+)
+
+// "xerqo" wordmark (same drawing as the page-load intro in index.html) — used in the mobile header
+const Wordmark = ({ className }) => (
+  <Link to="/" aria-label="XERQO home" className={cx('block shrink-0', className)}>
+    <svg viewBox="100 655 1310 300" className="h-[22px] w-auto text-ink sm:h-7" role="img" aria-label="XERQO">
+      <defs><clipPath id="xq-wordmark-x"><rect x="110" y="688" width="278" height="252" /></clipPath></defs>
+      <g fill="none" stroke="currentColor" strokeWidth="36">
+        <g clipPath="url(#xq-wordmark-x)"><path d="M127 668 L370 960" /><path d="M370 668 L127 960" /></g>
+        <path d="M403 814.5 H622 V738 A32 32 0 0 0 590 706 H435 A32 32 0 0 0 403 738 V890 A32 32 0 0 0 435 922 H640" />
+        <path d="M698 940 V738 A32 32 0 0 1 730 706 H874" />
+        <path d="M943 726.7 A104 104 0 1 0 1031 726.7" />
+        <path d="M1058 886 L1110 940" />
+        <path d="M1188 706 H1344 A32 32 0 0 1 1376 738 V890 A32 32 0 0 1 1344 922 H1188 A32 32 0 0 1 1156 890 V738 A32 32 0 0 1 1188 706 Z" />
+      </g>
+      <rect x="968" y="680" width="41" height="122" fill="currentColor" />
+    </svg>
   </Link>
 )
 
@@ -61,31 +79,51 @@ function AnnouncementBar() {
   )
 }
 
+// Search box between the logo and the cart on mobile / tablet; opens the search page with the query
+function MobileSearch() {
+  const navigate = useNavigate()
+  const [q, setQ] = useState('')
+  const submit = (e) => {
+    e.preventDefault()
+    const term = q.trim()
+    navigate(term ? `/search?q=${encodeURIComponent(term)}` : '/search')
+  }
+  return (
+    <form role="search" onSubmit={submit} className="relative min-w-0 flex-1 lg:hidden">
+      <input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search products…" aria-label="Search products" className="h-9 w-full rounded-full border border-line bg-cream pl-3.5 pr-9 text-[13px] outline-none placeholder:text-mute focus:border-ink [&::-webkit-search-cancel-button]:hidden" />
+      <button type="submit" aria-label="Search" className="absolute inset-y-0 right-0 grid w-9 place-items-center"><Search className="size-[18px]" /></button>
+    </form>
+  )
+}
+
 function Header() {
   const { setDrawer, setMenu } = useUI()
   return (
     <header className="sticky top-0 z-40">
       <AnnouncementBar />
       <div className="border-b border-line bg-white">
-        <div className="container-x flex items-center justify-between gap-6 py-2 lg:py-3">
+        <div className="container-x flex items-center justify-between gap-3 py-2 sm:gap-5 lg:gap-6 lg:py-3">
           {/* mobile / tablet left */}
-          <div className="flex items-center gap-4 lg:hidden">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4 lg:hidden">
             <button onClick={() => setMenu(true)} aria-label="Menu"><Menu className="size-[22px]" /></button>
-            <Link to="/search" aria-label="Search" className="hidden sm:block"><Search className="size-5" /></Link>
+            <Wordmark />
           </div>
-          <Logo className="lg:order-none" />
+          <MobileSearch />
+          <div className="hidden lg:block"><Logo /></div>
           <nav className="hidden items-center gap-6 lg:flex xl:gap-8">
             {NAV.map(([n, to]) => (
               <NavLink key={n} to={to} end className={({ isActive }) => cx('text-sm font-medium transition hover:text-tan', isActive && to === '/' && 'text-tan')}>{n}</NavLink>
             ))}
           </nav>
-          <div className="flex items-center gap-4 sm:gap-5">
+          <div className="flex shrink-0 items-center gap-4 sm:gap-5">
             <Link to="/search" className="hidden items-center gap-2 rounded-full bg-cream px-4 py-2.5 text-[13px] text-mute xl:flex"><Search className="size-4" /> Search products…</Link>
-            <Link to="/search" aria-label="Search" className="sm:hidden xl:hidden lg:block"><Search className="size-5" /></Link>
+            <Link to="/search" aria-label="Search" className="hidden lg:block xl:hidden"><Search className="size-5" /></Link>
             <CompareIcon />
             <Link to="/account/wishlist" aria-label="Wishlist" className="hidden sm:block"><Heart className="size-5" strokeWidth={1.7} /></Link>
-            <Link to="/account" aria-label="Account" className="hidden sm:block"><User className="size-5" strokeWidth={1.7} /></Link>
+            <Link to="/account" aria-label="Account" className="hidden lg:block"><User className="size-5" strokeWidth={1.7} /></Link>
             <CartIcon onClick={() => setDrawer(true)} />
+            {/* mobile / tablet: account sits after the cart */}
+            <Link to="/account" aria-label="Account" className="lg:hidden"><User className="size-[22px]" strokeWidth={1.7} /></Link>
           </div>
         </div>
       </div>
