@@ -251,11 +251,13 @@ function Personalise() {
   )
 }
 
+// Approved product reviews; heading, count and which reviews: Admin › Content & banners › Testimonials
 function Reviews({ reviews }) {
-  if (!reviews?.length) return null
+  const t = useSettings().data?.testimonials
+  if (!reviews?.length || t?.enabled === false) return null
   return (
     <section className="container-x pb-14 sm:pb-20">
-      <SectionHead eyebrow="Verified buyers" title="What our customers say" className="mb-6 sm:mb-8" />
+      <SectionHead eyebrow={t ? t.eyebrow : 'Verified buyers'} title={t?.title || 'What our customers say'} className="mb-6 sm:mb-8" />
       <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:px-0">
         {reviews.map((r) => {
           const name = r.author?.name || 'XERQO customer'

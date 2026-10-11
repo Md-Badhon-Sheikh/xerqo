@@ -120,4 +120,34 @@ class ReviewTest extends TestCase
             ->assertJsonPath('summary.latest_comment.comment', 'Fast')
             ->assertJsonPath('data.0.order_number', 'XQ-50001');
     }
+
+    public function test_homepage_testimonials_follow_the_content_settings(): void
+    {
+        $second = Product::create(['category_id' => $this->product->category_id, 'name' => 'Card Holder', 'slug' => 'card', 'sku' => 'C1', 'price' => 500, 'stock' => 5, 'status' => 'active']);
+        $make = fn (Product $p, int $rating, string $body, bool $featured = false) => Review::create([
+            'user_id' => $this->customer->id, 'product_id' => $p->id, 'order_id' => $this->order->id,
+            'rating' => $rating, 'body' => $body, 'status' => 'approved', 'is_featured' => $featured,
+        ]);
+        $make($this->product, 5, 'Lovely leather');
+        $make($second, 3, 'Okay', true);
+
+        $this->getJson('/api/home')->assertOk()->assertJsonCount(1, 'reviews')->assertJsonPath('reviews.0.body', 'Lovely leather');
+
+        Sanctum::actingAs($this->staff());
+        $set = fn (array $patch) => $this->putJson('/api/admin/content/testimonials', [
+            'enabled' => true, 'eyebrow' => 'Verified buyers', 'title' => 'Loved by Bangladesh', 'count' => 3, 'source' => 'auto', 'min_rating' => 4, ...$patch,
+        ]);
+
+        $set(['min_rating' => 3, 'source' => 'featured'])->assertOk();
+        $this->getJson('/api/home')->assertJsonCount(1, 'reviews')->assertJsonPath('reviews.0.body', 'Okay');
+        $this->getJson('/api/settings')->assertJsonPath('data.testimonials.title', 'Loved by Bangladesh');
+
+        $set(['min_rating' => 1, 'count' => 1])->assertOk();
+        $this->getJson('/api/home')->assertJsonCount(1, 'reviews')->assertJsonPath('reviews.0.body', 'Okay'); // featured first
+
+        $set(['enabled' => false])->assertOk();
+        $this->getJson('/api/home')->assertJsonCount(0, 'reviews');
+
+        $set(['count' => 20, 'source' => 'all'])->assertUnprocessable()->assertJsonValidationErrors(['count', 'source']);
+    }
 }

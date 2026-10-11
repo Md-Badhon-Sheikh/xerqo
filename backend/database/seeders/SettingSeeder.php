@@ -83,6 +83,16 @@ class SettingSeeder extends Seeder
             ], 'content', true],
 
             // the numbered strip under "Featured categories" on the homepage
+            // "What our customers say" on the homepage — built from approved product reviews
+            'testimonials' => [[
+                'enabled' => true,
+                'eyebrow' => 'Verified buyers',
+                'title' => 'What our customers say',
+                'count' => 3,
+                'source' => 'auto',   // auto = featured first, then the latest; featured = only reviews marked "Featured"
+                'min_rating' => 4,
+            ], 'content', true],
+
             'highlights' => [[
                 'enabled' => true,
                 'items' => [

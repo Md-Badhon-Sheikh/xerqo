@@ -34,6 +34,25 @@ class SettingController extends Controller
     }
 
     /**
+     * PUT /api/admin/content/testimonials — the "What our customers say" section on the homepage.
+     */
+    public function testimonials(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'eyebrow' => ['nullable', 'string', 'max:40'],
+            'title' => ['required', 'string', 'max:80'],
+            'count' => ['required', 'integer', 'between:1,9'],
+            'source' => ['required', 'in:auto,featured'],
+            'min_rating' => ['required', 'integer', 'between:1,5'],
+        ]);
+
+        Setting::setValue('testimonials', $data, 'content', true);
+
+        return response()->json(['data' => Setting::getValue('testimonials')]);
+    }
+
+    /**
      * PUT /api/admin/content/highlights — the numbered strip under "Featured categories" on the homepage.
      */
     public function highlights(Request $request): JsonResponse
@@ -101,7 +120,7 @@ class SettingController extends Controller
     }
 
     // settings the storefront reads through GET /api/settings
-    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'highlights', 'about', 'contact_page', 'footer', 'seo', 'maintenance'];
+    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'highlights', 'testimonials', 'about', 'contact_page', 'footer', 'seo', 'maintenance'];
 
     /**
      * Objects merge key by key; lists (e.g. the courier names) are replaced as a whole.

@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Eye, Plus, Trash2 } from 'lucide-react'
-import { Badge, Btn, Card, PageHead, cx } from '../../components/admin/ui'
+import { Badge, Btn, Card, PageHead, Select, cx } from '../../components/admin/ui'
 import { FormField, ImagePicker, Spin, Switch, SwitchRow, TextInput, toFormData } from '../../components/admin/form'
 import { useAdminAuth } from '../../context/AuthContext'
 import { adminApi, api } from '../../lib/api'
@@ -53,6 +54,39 @@ const DEFAULT_HIGHLIGHTS = [
   { title: 'Cash on Delivery', subtitle: 'Plus bKash, Rocket & Nagad' },
   { title: '7-Day Easy Return', subtitle: 'Free exchange' },
 ]
+
+const COUNT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({ value: String(n), label: `${n} review${n > 1 ? 's' : ''}` }))
+const SOURCE_OPTIONS = [{ value: 'auto', label: 'Featured first, then the latest' }, { value: 'featured', label: 'Only featured reviews' }]
+const RATING_OPTIONS = [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: n === 5 ? '5★ only' : `${n}★ and up` }))
+
+// "What our customers say" on the homepage — the reviews themselves come from Reviews (approved, with text)
+function Testimonials() {
+  const { can } = useAdminAuth()
+  const canEdit = can('content', 'edit')
+  const { data, isPending } = useQuery({ queryKey: ['settings'], queryFn: () => api.get('/settings').then((r) => r.data) })
+  const current = data?.testimonials
+  const [form, setForm] = useState(null)
+  const f = form ?? { enabled: true, eyebrow: 'Verified buyers', title: 'What our customers say', count: 3, source: 'auto', min_rating: 4, ...current }
+  const set = (patch) => setForm({ ...f, ...patch })
+  const save = useAdminMutation((body) => adminApi.put('/admin/content/testimonials', body), { success: 'Testimonials updated', onSuccess: () => setForm(null) })
+  const fieldErr = (k) => save.error?.fields?.[k]
+  if (isPending) return <Card title="Testimonials"><div className="h-24 animate-pulse rounded-md bg-asoft" /></Card>
+  return (
+    <Card title="Testimonials" sub="“What our customers say” on the homepage · built from approved reviews that have text" right={<Switch checked={!!f.enabled} onChange={(enabled) => set({ enabled })} label="Show testimonials" disabled={!canEdit} />}>
+      <div className="grid gap-3.5 md:grid-cols-2">
+        <FormField label="Small heading" error={fieldErr('eyebrow')}><TextInput value={f.eyebrow ?? ''} onChange={(e) => set({ eyebrow: e.target.value })} maxLength={40} disabled={!canEdit} /></FormField>
+        <FormField label="Title *" error={fieldErr('title')}><TextInput value={f.title ?? ''} onChange={(e) => set({ title: e.target.value })} maxLength={80} disabled={!canEdit} /></FormField>
+      </div>
+      <div className="grid gap-3.5 md:grid-cols-3">
+        <FormField label="Which reviews" error={fieldErr('source')}><Select search={false} options={SOURCE_OPTIONS} value={f.source} onChange={(source) => set({ source })} disabled={!canEdit} /></FormField>
+        <FormField label="How many" error={fieldErr('count')}><Select search={false} options={COUNT_OPTIONS} value={String(f.count)} onChange={(v) => set({ count: Number(v) })} disabled={!canEdit} /></FormField>
+        <FormField label="Minimum rating" error={fieldErr('min_rating')}><Select search={false} options={RATING_OPTIONS} value={String(f.min_rating)} onChange={(v) => set({ min_rating: Number(v) })} disabled={!canEdit} /></FormField>
+      </div>
+      <p className="text-[11px] text-amute">Pick the reviews to show with the “Feature” button in <Link to="/admin/reviews" className="font-semibold text-tan">Reviews</Link>. The section hides itself when no review matches.</p>
+      {form && <div className="flex justify-end gap-2"><Btn v="white" sm onClick={() => setForm(null)}>Discard</Btn><Btn sm disabled={save.isPending || !canEdit} onClick={() => save.mutate(f)}>{save.isPending && <Spin />}Save</Btn></div>}
+    </Card>
+  )
+}
 
 function Highlights() {
   const { can } = useAdminAuth()
@@ -168,13 +202,14 @@ export default function AdminContent() {
     <>
       <PageHead
         title="Content & banners"
-        sub="Announcement bar, homepage slider, promo tiles and highlights · changes go live immediately"
+        sub="Announcement bar, homepage slider, promo tiles, highlights and testimonials · changes go live immediately"
         actions={<Btn v="white" icon={Eye} onClick={() => window.open('/', '_blank')}>View store</Btn>}
       />
       <Announcement />
       <BannerGroup position="home_hero" banners={banners} />
       <BannerGroup position="home_side" banners={banners} />
       <Highlights />
+      <Testimonials />
       <Card title="Homepage product sliders">
         <p className="text-[13px] text-amute">Choose which categories get a product slider on the homepage from <a href="/admin/categories" className="font-semibold text-tan">Categories</a> (the “On homepage” switch). The flash sale section is managed in <a href="/admin/flash-sales" className="font-semibold text-tan">Flash sales</a>.</p>
       </Card>

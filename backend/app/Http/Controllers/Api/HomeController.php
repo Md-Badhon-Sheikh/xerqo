@@ -13,6 +13,7 @@ use App\Models\Category;
 use App\Models\FlashSale;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\Setting;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,15 +67,18 @@ class HomeController extends Controller
             ->limit(4)
             ->get();
 
-        $reviews = Review::query()
+        // "What our customers say" — Admin › Content & banners › Testimonials
+        $t = (array) Setting::getValue('testimonials', []);
+        $reviews = ($t['enabled'] ?? true) ? Review::query()
             ->where('status', Review::STATUS_APPROVED)
-            ->where('rating', '>=', 4)
-            ->whereNotNull('body')
+            ->where('rating', '>=', (int) ($t['min_rating'] ?? 4))
+            ->whereNotNull('body')->where('body', '!=', '')
+            ->when(($t['source'] ?? 'auto') === 'featured', fn (Builder $q) => $q->where('is_featured', true))
             ->with(['user:id,name', 'user.addresses:id,user_id,district'])
             ->orderByDesc('is_featured')
             ->latest()
-            ->limit(3)
-            ->get();
+            ->limit((int) ($t['count'] ?? 3))
+            ->get() : collect();
 
         return response()->json([
             'banners' => BannerResource::collection(Banner::live()->where('position', 'home_hero')->orderBy('sort_order')->get()),
