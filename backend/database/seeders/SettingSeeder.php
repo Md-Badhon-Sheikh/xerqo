@@ -78,6 +78,17 @@ class SettingSeeder extends Seeder
                 'link' => '/shop',
             ], 'content', true],
 
+            // the numbered strip under "Featured categories" on the homepage
+            'highlights' => [[
+                'enabled' => true,
+                'items' => [
+                    ['title' => '100% Genuine Leather', 'subtitle' => 'Full-grain & top-grain'],
+                    ['title' => 'Hand-stitched', 'subtitle' => 'Built to last'],
+                    ['title' => 'Cash on Delivery', 'subtitle' => 'Plus bKash, Rocket & Nagad'],
+                    ['title' => '7-Day Easy Return', 'subtitle' => 'Free exchange'],
+                ],
+            ], 'content', true],
+
             'reviews' => [[
                 'auto_approve' => false, // true = reviews go live without moderation
             ], 'reviews', false],

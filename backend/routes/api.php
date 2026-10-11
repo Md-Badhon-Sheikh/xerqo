@@ -221,4 +221,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
 
     Route::apiResource('banners', Admin\BannerController::class)->middleware('admin:content');
     Route::put('content/announcement', [Admin\SettingController::class, 'announcement'])->middleware('admin:content,edit');
+    Route::put('content/highlights', [Admin\SettingController::class, 'highlights'])->middleware('admin:content,edit');
 });

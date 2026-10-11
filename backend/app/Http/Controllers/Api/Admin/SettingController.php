@@ -33,6 +33,30 @@ class SettingController extends Controller
         return response()->json(['data' => Setting::getValue('announcement')]);
     }
 
+    /**
+     * PUT /api/admin/content/highlights — the numbered strip under "Featured categories" on the homepage.
+     */
+    public function highlights(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'items' => ['required', 'array', 'min:1', 'max:4'],
+            'items.*.title' => ['required', 'string', 'max:40'],
+            'items.*.subtitle' => ['nullable', 'string', 'max:60'],
+        ], [
+            'items.*.title.required' => 'Enter a title.',
+        ]);
+
+        $data['items'] = array_map(fn ($item) => [
+            'title' => trim($item['title']),
+            'subtitle' => trim((string) ($item['subtitle'] ?? '')) ?: null,
+        ], array_values($data['items']));
+
+        Setting::setValue('highlights', $data, 'content', true);
+
+        return response()->json(['data' => Setting::getValue('highlights')]);
+    }
+
     public function index(): JsonResponse
     {
         $settings = Setting::orderBy('group')->orderBy('key')->get();
@@ -77,7 +101,7 @@ class SettingController extends Controller
     }
 
     // settings the storefront reads through GET /api/settings
-    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'seo', 'maintenance'];
+    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'highlights', 'seo', 'maintenance'];
 
     /**
      * Objects merge key by key; lists (e.g. the courier names) are replaced as a whole.

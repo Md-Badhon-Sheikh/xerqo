@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button, ProductCard, CatProductCard, TopProductCard, SectionHead, Stars, ProductCardSkeleton, CatCardSkeleton, Bone, cx } from '../../components/store/ui'
 import { Carousel, BP } from '../../components/store/Carousel'
 import { ErrorState } from '../../components/common/feedback'
-import { useHome } from '../../lib/queries'
+import { useHome, useSettings } from '../../lib/queries'
 
 // Internal paths use the router; anything else (https://…) opens normally
 const SmartLink = ({ to, ...rest }) => (/^https?:\/\//.test(to || '') ? <a href={to} {...rest} /> : <Link to={to || '/'} {...rest} />)
@@ -129,15 +129,27 @@ function FlashSale({ sale }) {
   )
 }
 
+// shown until the settings load, and on stores that haven't saved their own yet
+const DEFAULT_HIGHLIGHTS = [
+  { title: '100% Genuine Leather', subtitle: 'Full-grain & top-grain' },
+  { title: 'Hand-stitched', subtitle: 'Built to last' },
+  { title: 'Cash on Delivery', subtitle: 'Plus bKash, Rocket & Nagad' },
+  { title: '7-Day Easy Return', subtitle: 'Free exchange' },
+]
+const LG_COLS = { 1: 'lg:grid-cols-1', 2: 'lg:grid-cols-2', 3: 'lg:grid-cols-3', 4: 'lg:grid-cols-4' }
+
+// Numbered strip under the categories — edited in Admin › Content & banners
 function TrustStrip() {
-  const items = [['01', '100% Genuine Leather', 'Full-grain & top-grain'], ['02', 'Hand-stitched', 'Built to last'], ['03', 'Cash on Delivery', 'Plus bKash, Rocket & Nagad'], ['04', '7-Day Easy Return', 'Free exchange']]
+  const h = useSettings().data?.highlights
+  const items = h?.items?.length ? h.items : DEFAULT_HIGHLIGHTS
+  if (h?.enabled === false) return null
   return (
     <section className="bg-sand">
-      <div className="container-x grid grid-cols-2 gap-x-4 gap-y-5 py-6 sm:py-8 lg:grid-cols-4">
-        {items.map(([n, t, s]) => (
-          <div key={n} className="flex items-center gap-3">
-            <span className="font-display text-2xl italic text-tan sm:text-3xl">{n}</span>
-            <div><p className="text-[13px] font-semibold sm:text-sm">{t}</p><p className="text-[11px] text-mute sm:text-xs">{s}</p></div>
+      <div className={cx('container-x grid gap-x-4 gap-y-5 py-6 sm:py-8', items.length > 1 ? 'grid-cols-2' : 'grid-cols-1', LG_COLS[items.length])}>
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <span className="font-display text-2xl italic text-tan sm:text-3xl">{String(i + 1).padStart(2, '0')}</span>
+            <div><p className="text-[13px] font-semibold sm:text-sm">{item.title}</p>{item.subtitle && <p className="text-[11px] text-mute sm:text-xs">{item.subtitle}</p>}</div>
           </div>
         ))}
       </div>

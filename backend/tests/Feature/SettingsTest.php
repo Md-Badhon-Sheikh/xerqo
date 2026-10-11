@@ -144,6 +144,23 @@ class SettingsTest extends TestCase
         }
     }
 
+    public function test_homepage_highlights_are_edited_from_content(): void
+    {
+        $this->getJson('/api/settings')->assertOk()->assertJsonCount(4, 'data.highlights.items');
+
+        $this->putJson('/api/admin/content/highlights', ['enabled' => true, 'items' => [['title' => '', 'subtitle' => 'x']]])
+            ->assertUnprocessable()->assertJsonValidationErrors('items.0.title');
+        $this->putJson('/api/admin/content/highlights', ['enabled' => true, 'items' => array_fill(0, 5, ['title' => 'A'])])
+            ->assertUnprocessable()->assertJsonValidationErrors('items');
+
+        $this->putJson('/api/admin/content/highlights', ['enabled' => false, 'items' => [['title' => ' Free gift box ', 'subtitle' => ' '], ['title' => 'Lifetime stitching', 'subtitle' => 'On every wallet']]])
+            ->assertOk();
+
+        $this->getJson('/api/settings')->assertOk()
+            ->assertJsonPath('data.highlights.enabled', false)
+            ->assertJsonPath('data.highlights.items', [['title' => 'Free gift box', 'subtitle' => null], ['title' => 'Lifetime stitching', 'subtitle' => 'On every wallet']]);
+    }
+
     public function test_store_links_must_be_urls_and_return_window_bounds(): void
     {
         $this->save(['store' => ['facebook' => 'not a link'], 'returns' => ['window_days' => 99]])

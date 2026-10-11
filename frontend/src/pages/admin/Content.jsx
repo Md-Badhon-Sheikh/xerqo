@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Eye, Plus } from 'lucide-react'
+import { Eye, Plus, Trash2 } from 'lucide-react'
 import { Badge, Btn, Card, PageHead, cx } from '../../components/admin/ui'
 import { FormField, ImagePicker, Spin, Switch, SwitchRow, TextInput, toFormData } from '../../components/admin/form'
 import { useAdminAuth } from '../../context/AuthContext'
@@ -43,6 +43,44 @@ function Announcement() {
         <FormField label="Link"><TextInput value={f.link ?? ''} onChange={(e) => set({ link: e.target.value })} placeholder="/shop" /></FormField>
       </div>
       {form && <div className="flex justify-end gap-2"><Btn v="white" sm onClick={() => setForm(null)}>Discard</Btn><Btn sm disabled={save.isPending || !can('content', 'edit')} onClick={() => save.mutate(f)}>{save.isPending && <Spin />}Save</Btn></div>}
+    </Card>
+  )
+}
+
+const DEFAULT_HIGHLIGHTS = [
+  { title: '100% Genuine Leather', subtitle: 'Full-grain & top-grain' },
+  { title: 'Hand-stitched', subtitle: 'Built to last' },
+  { title: 'Cash on Delivery', subtitle: 'Plus bKash, Rocket & Nagad' },
+  { title: '7-Day Easy Return', subtitle: 'Free exchange' },
+]
+
+function Highlights() {
+  const { can } = useAdminAuth()
+  const canEdit = can('content', 'edit')
+  const { data, isPending } = useQuery({ queryKey: ['settings'], queryFn: () => api.get('/settings').then((r) => r.data) })
+  const current = data?.highlights
+  const [form, setForm] = useState(null)
+  const f = form ?? { enabled: current?.enabled !== false, items: current?.items?.length ? current.items : DEFAULT_HIGHLIGHTS }
+  const set = (patch) => setForm({ ...f, ...patch })
+  const setItem = (i, patch) => set({ items: f.items.map((it, j) => (j === i ? { ...it, ...patch } : it)) })
+  const save = useAdminMutation((body) => adminApi.put('/admin/content/highlights', body), { success: 'Homepage highlights updated', onSuccess: () => setForm(null) })
+  const fieldErr = (k) => save.error?.fields?.[k]
+  if (isPending) return <Card title="Homepage highlights"><div className="h-24 animate-pulse rounded-md bg-asoft" /></Card>
+  return (
+    <Card title="Homepage highlights" sub="The numbered strip under “Featured categories” · up to 4 · numbers follow the order" right={<Switch checked={!!f.enabled} onChange={(enabled) => set({ enabled })} label="Show highlights" disabled={!canEdit} />}>
+      <div className="space-y-2.5">
+        {f.items.map((it, i) => (
+          <div key={i} className="grid gap-2.5 rounded-xl border border-aline p-3 sm:grid-cols-[32px_1fr_1fr_32px] sm:items-start">
+            <span className="font-display text-xl italic text-tan sm:pt-1.5">{String(i + 1).padStart(2, '0')}</span>
+            <FormField label="Title" error={fieldErr(`items.${i}.title`)}><TextInput value={it.title ?? ''} onChange={(e) => setItem(i, { title: e.target.value })} maxLength={40} placeholder="e.g. Hand-stitched" disabled={!canEdit} /></FormField>
+            <FormField label="Subtitle" error={fieldErr(`items.${i}.subtitle`)}><TextInput value={it.subtitle ?? ''} onChange={(e) => setItem(i, { subtitle: e.target.value })} maxLength={60} placeholder="e.g. Built to last" disabled={!canEdit} /></FormField>
+            {canEdit && f.items.length > 1 && <button type="button" onClick={() => set({ items: f.items.filter((_, j) => j !== i) })} aria-label={`Remove highlight ${i + 1}`} className="grid size-8 place-items-center justify-self-end rounded-lg text-amute hover:bg-asoft hover:text-bad sm:mt-6"><Trash2 className="size-4" /></button>}
+          </div>
+        ))}
+      </div>
+      {fieldErr('items') && <p className="text-xs text-bad">{fieldErr('items')}</p>}
+      {canEdit && f.items.length < 4 && <Btn v="white" sm icon={Plus} onClick={() => set({ items: [...f.items, { title: '', subtitle: '' }] })}>Add highlight</Btn>}
+      {form && <div className="flex justify-end gap-2"><Btn v="white" sm onClick={() => setForm(null)}>Discard</Btn><Btn sm disabled={save.isPending || !canEdit} onClick={() => save.mutate(f)}>{save.isPending && <Spin />}Save</Btn></div>}
     </Card>
   )
 }
@@ -130,12 +168,13 @@ export default function AdminContent() {
     <>
       <PageHead
         title="Content & banners"
-        sub="Announcement bar, homepage slider and promo tiles · changes go live immediately"
+        sub="Announcement bar, homepage slider, promo tiles and highlights · changes go live immediately"
         actions={<Btn v="white" icon={Eye} onClick={() => window.open('/', '_blank')}>View store</Btn>}
       />
       <Announcement />
       <BannerGroup position="home_hero" banners={banners} />
       <BannerGroup position="home_side" banners={banners} />
+      <Highlights />
       <Card title="Homepage product sliders">
         <p className="text-[13px] text-amute">Choose which categories get a product slider on the homepage from <a href="/admin/categories" className="font-semibold text-tan">Categories</a> (the “On homepage” switch). The flash sale section is managed in <a href="/admin/flash-sales" className="font-semibold text-tan">Flash sales</a>.</p>
       </Card>
