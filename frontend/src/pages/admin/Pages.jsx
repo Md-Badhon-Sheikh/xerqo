@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowUp, Eye, Plus, Trash2 } from 'lucide-react'
-import { Btn, Card, PageHead, Tabs, Textarea, cx } from '../../components/admin/ui'
-import { FormField, ImagePicker, Spin, Switch, TextInput } from '../../components/admin/form'
+import { Eye } from 'lucide-react'
+import { Btn, Card, PageHead, Tabs, cx } from '../../components/admin/ui'
+import { FormField, Spin, Switch, TextInput } from '../../components/admin/form'
+import { ImageField, Rows, Text } from '../../components/admin/contentFields'
 import { useAdminAuth } from '../../context/AuthContext'
 import { toast } from '../../lib/alert'
 import { adminApi, api } from '../../lib/api'
@@ -16,50 +17,6 @@ import { useAdminMutation } from '../../lib/adminQueries'
 
 const TABS = [['About page', 'about', '/about'], ['Contact page', 'contact', '/contact'], ['Footer', 'footer', '/']]
 const SETTING = { about: 'about', contact: 'contact_page', footer: 'footer' }
-
-// Image field: the file is uploaded straight away and the field keeps its URL
-function ImageField({ value, onChange, disabled, aspect = 'aspect-[3/2]', size = 'w-[150px]', hint = 'JPG, PNG or WebP · max 5 MB' }) {
-  const upload = useAdminMutation((file) => {
-    const body = new FormData()
-    body.append('image', file)
-    return adminApi.post('/admin/content/images', body)
-  }, { onSuccess: (res) => onChange(res.data.url) })
-  return (
-    <div className="space-y-1">
-      <ImagePicker value={value || null} onChange={(f) => upload.mutate(f)} onRemove={value ? () => onChange('') : undefined} hint={hint} aspect={aspect} size={size} busy={upload.isPending} disabled={disabled} />
-      {upload.error?.fields?.image && <p className="text-xs text-bad">{upload.error.fields.image}</p>}
-    </div>
-  )
-}
-
-// Repeating rows (values, story blocks, links…): add, remove, move up
-function Rows({ items, onChange, max, blank, addLabel, disabled, children }) {
-  const move = (i) => { const next = [...items]; [next[i - 1], next[i]] = [next[i], next[i - 1]]; onChange(next) }
-  return (
-    <div className="space-y-2.5">
-      {items.map((item, i) => (
-        <div key={i} className="flex gap-2 rounded-xl border border-aline p-3">
-          <div className="min-w-0 flex-1">{children(item, (patch) => onChange(items.map((it, j) => (j === i ? (typeof patch === 'object' && patch !== null && !Array.isArray(patch) && typeof it === 'object' ? { ...it, ...patch } : patch) : it))), i)}</div>
-          {!disabled && (
-            <div className="flex shrink-0 flex-col gap-1">
-              {i > 0 && <button type="button" onClick={() => move(i)} aria-label="Move up" className="grid size-8 place-items-center rounded-lg text-amute hover:bg-asoft hover:text-ink"><ArrowUp className="size-4" /></button>}
-              <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))} aria-label="Remove" className="grid size-8 place-items-center rounded-lg text-amute hover:bg-asoft hover:text-bad"><Trash2 className="size-4" /></button>
-            </div>
-          )}
-        </div>
-      ))}
-      {!disabled && items.length < max && <Btn v="white" sm icon={Plus} onClick={() => onChange([...items, blank])}>{addLabel}</Btn>}
-    </div>
-  )
-}
-
-const Text = ({ label, value, onChange, err, help, area, rows = 3, ...props }) => (
-  <FormField label={label} error={err} help={help}>
-    {area
-      ? <Textarea rows={rows} value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...props} />
-      : <TextInput value={value ?? ''} onChange={(e) => onChange(e.target.value)} {...props} />}
-  </FormField>
-)
 
 const Section = ({ title, sub, on, onToggle, disabled, children }) => (
   <Card title={title} sub={sub} right={onToggle && <Switch checked={!!on} onChange={onToggle} label={`Show ${title.toLowerCase()}`} disabled={disabled} />}>

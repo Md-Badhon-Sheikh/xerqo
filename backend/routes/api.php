@@ -227,7 +227,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
     Route::put('content/announcement', [Admin\SettingController::class, 'announcement'])->middleware('admin:content,edit');
     Route::put('content/highlights', [Admin\SettingController::class, 'highlights'])->middleware('admin:content,edit');
     Route::put('content/testimonials', [Admin\SettingController::class, 'testimonials'])->middleware('admin:content,edit');
-    Route::put('content/pages/{page}', [Admin\PageContentController::class, 'update'])->whereIn('page', ['about', 'contact', 'footer'])->middleware('admin:content,edit');
+    Route::put('content/pages/{page}', [Admin\PageContentController::class, 'update'])->whereIn('page', ['about', 'contact', 'footer', 'craft'])->middleware('admin:content,edit');
     Route::post('content/images', [Admin\PageContentController::class, 'uploadImage'])->middleware('admin:content,edit');
     Route::delete('messages/{message}', [Admin\ContactMessageController::class, 'destroy'])->middleware('admin:customers,delete');
 });

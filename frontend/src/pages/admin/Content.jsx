@@ -8,6 +8,7 @@ import { useAdminAuth } from '../../context/AuthContext'
 import { adminApi, api } from '../../lib/api'
 import { confirmAndRun, toast } from '../../lib/alert'
 import { useAdminList, useAdminMutation } from '../../lib/adminQueries'
+import { ImageField, Rows, Text } from '../../components/admin/contentFields'
 
 const POSITIONS = {
   home_hero: { title: 'Hero slider', sub: 'Recommended 1983×793 · autoplay 5s · lower “Order” shows first', max: 8 },
@@ -55,7 +56,50 @@ const DEFAULT_HIGHLIGHTS = [
   { title: '7-Day Easy Return', subtitle: 'Free exchange' },
 ]
 
-const COUNT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({ value: String(n), label: `${n} review${n > 1 ? 's' : ''}` }))
+// "The XERQO way" — the dark section with two photos on the homepage
+function CraftStory() {
+  const { can } = useAdminAuth()
+  const ro = !can('content', 'edit')
+  const { data, isPending } = useQuery({ queryKey: ['settings'], queryFn: () => api.get('/settings').then((r) => r.data) })
+  const [form, setForm] = useState(null)
+  const f = form ?? data?.craft_story ?? {}
+  const set = (patch) => setForm({ ...f, ...patch })
+  const save = useAdminMutation((body) => adminApi.put('/admin/content/pages/craft', body), { success: '“The XERQO way” updated', onSuccess: () => setForm(null) })
+  const err = (k) => save.error?.fields?.[k]
+  if (isPending) return <Card title="The XERQO way"><div className="h-24 animate-pulse rounded-md bg-asoft" /></Card>
+  const badHighlight = f.highlight && f.title && !f.title.includes(f.highlight)
+  return (
+    <Card title="The XERQO way" sub="Dark section with two photos and numbers on the homepage" right={<Switch checked={!!f.enabled} onChange={(enabled) => set({ enabled })} label="Show “The XERQO way”" disabled={ro} />}>
+      <div className="grid gap-3.5 md:grid-cols-2">
+        <Text label="Small heading" value={f.eyebrow} onChange={(eyebrow) => set({ eyebrow })} err={err('eyebrow')} maxLength={40} disabled={ro} />
+        <Text label="Title *" value={f.title} onChange={(title) => set({ title })} err={err('title')} maxLength={120} disabled={ro} />
+        <Text label="Gold words in the title" value={f.highlight} onChange={(highlight) => set({ highlight })} err={err('highlight') || (badHighlight ? 'These words aren’t in the title, so nothing is highlighted.' : undefined)} maxLength={40} disabled={ro} placeholder="hand" help="Copy a word from the title — it is shown in gold italics" />
+      </div>
+      <Text label="Text" area value={f.text} onChange={(text) => set({ text })} err={err('text')} maxLength={600} disabled={ro} />
+      <FormField label="Numbers" help="Up to 4 · leave empty to hide">
+        <Rows items={f.stats ?? []} onChange={(stats) => set({ stats })} max={4} blank={{ value: '', label: '' }} addLabel="Add number" disabled={ro}>
+          {(it, up, i) => (
+            <div className="grid gap-2 sm:grid-cols-[150px_1fr]">
+              <TextInput value={it.value ?? ''} onChange={(e) => up({ value: e.target.value })} maxLength={20} placeholder="1,200+" aria-label="Number" disabled={ro} invalid={!!err(`stats.${i}.value`)} />
+              <TextInput value={it.label ?? ''} onChange={(e) => up({ label: e.target.value })} maxLength={40} placeholder="Stitches / wallet" aria-label="Label" disabled={ro} invalid={!!err(`stats.${i}.label`)} />
+            </div>
+          )}
+        </Rows>
+      </FormField>
+      <div className="grid gap-3.5 md:grid-cols-2">
+        <Text label="Button text" value={f.button_text} onChange={(button_text) => set({ button_text })} err={err('button_text')} maxLength={30} disabled={ro} help="Empty = no button" />
+        <Text label="Button link" value={f.link} onChange={(link) => set({ link })} err={err('link')} disabled={ro} placeholder="/about" />
+      </div>
+      <div className="grid gap-3.5 md:grid-cols-2">
+        <FormField label="Main photo" error={err('image')}><ImageField value={f.image} onChange={(image) => set({ image })} disabled={ro} aspect="aspect-[4/3]" /></FormField>
+        <FormField label="Small photo (corner)" error={err('image_small')}><ImageField value={f.image_small} onChange={(image_small) => set({ image_small })} disabled={ro} aspect="aspect-square" size="w-[100px]" hint="Optional · JPG, PNG or WebP" /></FormField>
+      </div>
+      {form && <div className="flex justify-end gap-2"><Btn v="white" sm onClick={() => { setForm(null); save.reset() }}>Discard</Btn><Btn sm disabled={save.isPending || ro} onClick={() => save.mutate(f)}>{save.isPending && <Spin />}Save</Btn></div>}
+    </Card>
+  )
+}
+
+const COUNT_OPTIONS =[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ({ value: String(n), label: `${n} review${n > 1 ? 's' : ''}` }))
 const SOURCE_OPTIONS = [{ value: 'auto', label: 'Featured first, then the latest' }, { value: 'featured', label: 'Only featured reviews' }]
 const RATING_OPTIONS = [5, 4, 3, 2, 1].map((n) => ({ value: String(n), label: n === 5 ? '5★ only' : `${n}★ and up` }))
 
@@ -202,13 +246,14 @@ export default function AdminContent() {
     <>
       <PageHead
         title="Content & banners"
-        sub="Announcement bar, homepage slider, promo tiles, highlights and testimonials · changes go live immediately"
+        sub="Announcement bar, homepage slider, promo tiles, highlights, “The XERQO way” and testimonials · changes go live immediately"
         actions={<Btn v="white" icon={Eye} onClick={() => window.open('/', '_blank')}>View store</Btn>}
       />
       <Announcement />
       <BannerGroup position="home_hero" banners={banners} />
       <BannerGroup position="home_side" banners={banners} />
       <Highlights />
+      <CraftStory />
       <Testimonials />
       <Card title="Homepage product sliders">
         <p className="text-[13px] text-amute">Choose which categories get a product slider on the homepage from <a href="/admin/categories" className="font-semibold text-tan">Categories</a> (the “On homepage” switch). The flash sale section is managed in <a href="/admin/flash-sales" className="font-semibold text-tan">Flash sales</a>.</p>

@@ -211,22 +211,39 @@ function SectionsSkeleton() {
     </>
   )
 }
+// title with the chosen words in gold italics
+function HighlightTitle({ title, highlight }) {
+  const at = highlight ? title.indexOf(highlight) : -1
+  if (at < 0) return title
+  return <>{title.slice(0, at)}<em className="text-gold">{highlight}</em>{title.slice(at + highlight.length)}</>
+}
+
+// "The XERQO way" — edited in Admin › Content & banners
 function CraftStory() {
+  const c = useSettings().data?.craft_story
+  if (!c?.enabled) return null
+  const external = /^https?:\/\//i.test(c.link || '')
   return (
     <section className="mt-10 bg-espresso text-white sm:mt-[72px]">
-      <div className="container-x grid items-center gap-10 py-14 sm:py-20 lg:grid-cols-2 lg:gap-16 lg:py-24">
-        <div className="relative pb-14 pr-14 sm:pb-20 sm:pr-24">
-          <img src="/images/tools-hand.jpg" alt="Hand stitching leather" className="aspect-[4/3] w-full rounded object-cover" />
-          <img src="/images/spools.jpg" alt="" className="absolute bottom-0 right-0 w-[45%] rounded border-[6px] border-espresso object-cover sm:border-8" />
-        </div>
-        <div className="space-y-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">The XERQO way</p>
-          <h2 className="h-display text-[34px] sm:text-5xl">Cut, stitched and burnished by <em className="text-gold">hand</em> — in Dhaka.</h2>
-          <p className="max-w-lg text-sm leading-relaxed text-white/70 sm:text-[15px]">Every piece starts as a hide selected for grain and thickness. Our artisans cut each panel by hand, saddle-stitch it with waxed thread and burnish the edges — so it only gets better with age.</p>
-          <div className="flex gap-8 sm:gap-12">
-            {[['Full-grain', 'Leather only'], ['1,200+', 'Stitches / wallet'], ['1 Year', 'Warranty']].map(([a, b]) => <div key={a}><p className="font-display text-2xl text-gold sm:text-3xl">{a}</p><p className="text-[11px] text-white/60 sm:text-xs">{b}</p></div>)}
+      <div className={cx('container-x grid items-center gap-10 py-14 sm:py-20 lg:gap-16 lg:py-24', c.image && 'lg:grid-cols-2')}>
+        {c.image && (
+          <div className={cx('relative', c.image_small && 'pb-14 pr-14 sm:pb-20 sm:pr-24')}>
+            <img src={c.image} alt="" loading="lazy" className="aspect-[4/3] w-full rounded object-cover" />
+            {c.image_small && <img src={c.image_small} alt="" loading="lazy" className="absolute bottom-0 right-0 w-[45%] rounded border-[6px] border-espresso object-cover sm:border-8" />}
           </div>
-          <Button to="/about" variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-ink">Read our story</Button>
+        )}
+        <div className="space-y-5">
+          {c.eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">{c.eyebrow}</p>}
+          <h2 className="h-display text-[34px] sm:text-5xl"><HighlightTitle title={c.title} highlight={c.highlight} /></h2>
+          {c.text && <p className="max-w-lg whitespace-pre-line text-sm leading-relaxed text-white/70 sm:text-[15px]">{c.text}</p>}
+          {c.stats?.length > 0 && (
+            <div className="flex flex-wrap gap-x-8 gap-y-4 sm:gap-x-12">
+              {c.stats.map((s, i) => <div key={i}><p className="font-display text-2xl text-gold sm:text-3xl">{s.value}</p><p className="text-[11px] text-white/60 sm:text-xs">{s.label}</p></div>)}
+            </div>
+          )}
+          {c.button_text && (
+            <Button {...(external ? { as: 'a', href: c.link, target: '_blank', rel: 'noreferrer' } : { to: c.link || '/about' })} variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-ink">{c.button_text}</Button>
+          )}
         </div>
       </div>
     </section>

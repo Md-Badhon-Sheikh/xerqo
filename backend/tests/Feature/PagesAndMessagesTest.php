@@ -64,6 +64,25 @@ class PagesAndMessagesTest extends TestCase
         $this->putJson('/api/admin/content/pages/blog', [])->assertNotFound();
     }
 
+    public function test_homepage_craft_story_is_editable(): void
+    {
+        $this->getJson('/api/settings')->assertOk()
+            ->assertJsonPath('data.craft_story.highlight', 'hand')
+            ->assertJsonCount(3, 'data.craft_story.stats');
+
+        Sanctum::actingAs($this->admin());
+        $craft = Setting::getValue('craft_story');
+        $craft['title'] = 'Made slowly, in Dhaka.';
+        $craft['highlight'] = 'slowly';
+        $craft['stats'] = [['value' => '10+', 'label' => 'Artisans']];
+        $this->putJson('/api/admin/content/pages/craft', $craft)->assertOk()->assertJsonPath('data.title', 'Made slowly, in Dhaka.');
+        $this->assertSame([['value' => '10+', 'label' => 'Artisans']], Setting::getValue('craft_story.stats'));
+
+        $craft['title'] = '';
+        $craft['stats'] = array_fill(0, 5, ['value' => '1', 'label' => 'x']);
+        $this->putJson('/api/admin/content/pages/craft', $craft)->assertUnprocessable()->assertJsonValidationErrors(['title', 'stats']);
+    }
+
     public function test_uploaded_page_images_are_removed_when_no_longer_used(): void
     {
         Storage::fake('public');

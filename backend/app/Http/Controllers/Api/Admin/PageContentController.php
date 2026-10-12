@@ -18,7 +18,7 @@ class PageContentController extends Controller
     private const IMAGE_PREFIX = '/storage/content/';
 
     // URL path (/admin/content/pages/{page}) => setting key
-    private const PAGES = ['about' => 'about', 'contact' => 'contact_page', 'footer' => 'footer'];
+    private const PAGES = ['about' => 'about', 'contact' => 'contact_page', 'footer' => 'footer', 'craft' => 'craft_story'];
 
     /**
      * PUT /api/admin/content/pages/{about|contact|footer}
@@ -110,6 +110,21 @@ class PageContentController extends Controller
                 'promo.button_text' => ['nullable', 'string', 'max:30'],
                 'promo.link' => $link,
                 'promo.image' => $image,
+            ],
+            // "The XERQO way" on the homepage
+            'craft' => [
+                'enabled' => ['required', 'boolean'],
+                'eyebrow' => ['nullable', 'string', 'max:40'],
+                'title' => ['required', 'string', 'max:120'],
+                'highlight' => ['nullable', 'string', 'max:40'], // words of the title shown in gold italics
+                'text' => ['nullable', 'string', 'max:600'],
+                'stats' => ['present', 'array', 'max:4'],
+                'stats.*.value' => ['required', 'string', 'max:20'],
+                'stats.*.label' => ['required', 'string', 'max:40'],
+                'button_text' => ['nullable', 'string', 'max:30'],
+                'link' => $link,
+                'image' => $image,
+                'image_small' => $image,
             ],
             'footer' => [
                 'about' => ['nullable', 'string', 'max:250'],

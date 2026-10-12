@@ -84,6 +84,24 @@ class SettingSeeder extends Seeder
 
             // the numbered strip under "Featured categories" on the homepage
             // "What our customers say" on the homepage — built from approved product reviews
+            // "The XERQO way" section on the homepage (Admin › Content & banners)
+            'craft_story' => [[
+                'enabled' => true,
+                'eyebrow' => 'The XERQO way',
+                'title' => 'Cut, stitched and burnished by hand — in Dhaka.',
+                'highlight' => 'hand',
+                'text' => 'Every piece starts as a hide selected for grain and thickness. Our artisans cut each panel by hand, saddle-stitch it with waxed thread and burnish the edges — so it only gets better with age.',
+                'stats' => [
+                    ['value' => 'Full-grain', 'label' => 'Leather only'],
+                    ['value' => '1,200+', 'label' => 'Stitches / wallet'],
+                    ['value' => '1 Year', 'label' => 'Warranty'],
+                ],
+                'button_text' => 'Read our story',
+                'link' => '/about',
+                'image' => '/images/tools-hand.jpg',
+                'image_small' => '/images/spools.jpg',
+            ], 'content', true],
+
             'testimonials' => [[
                 'enabled' => true,
                 'eyebrow' => 'Verified buyers',
