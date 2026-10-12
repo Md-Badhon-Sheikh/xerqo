@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Check, GitCompareArrows, Heart, ImagePlus, Maximize2, MessageCircle, PackageX, Phone, Play, Timer, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, ChevronRight, GitCompareArrows, Heart, ImagePlus, Maximize2, MessageCircle, PackageX, Phone, Play, Timer, X } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
 import { tk } from '../../data/store'
 import { cartLine } from '../../lib/product'
@@ -18,6 +18,7 @@ import { useToast } from '../../context/ToastContext'
 import { useUI } from '../../context/StoreUIContext'
 import { Breadcrumb, Button, Checkbox, Field, Stars, Qty, CatProductCard, EmptyState, Bone, cx } from '../../components/store/ui'
 import { Carousel, BP } from '../../components/store/Carousel'
+import Lightbox from '../../components/store/Lightbox'
 import { ErrorState, Spinner } from '../../components/common/feedback'
 
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('')
@@ -54,16 +55,22 @@ function Countdown({ endsAt }) {
 function Gallery({ p, images, video, active, setActive }) {
   const total = images.length + (video ? 1 : 0)
   const showVideo = video && active >= images.length
-  const mediaCls = 'aspect-square w-full sm:aspect-[4/3] lg:aspect-[10/11]'
+  const mediaCls = 'aspect-square w-full'
+  const [viewer, setViewer] = useState(false)
+  const items = [...images.map((src) => ({ src })), ...(video ? [{ src: video, video: true }] : [])]
   return (
-    <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row-reverse">
-      <div className="relative flex-1 overflow-hidden bg-tile max-sm:-mx-4 sm:rounded-lg">
+    <div className="flex flex-col gap-3 sm:mx-auto sm:max-w-[560px] sm:gap-4 lg:mx-0 lg:max-w-[600px] lg:flex-row-reverse">
+      <div className="group relative flex-1 overflow-hidden bg-tile max-sm:-mx-4 sm:rounded-lg">
         {showVideo
           ? <video key={video} src={video} controls autoPlay muted playsInline preload="metadata" className={cx(mediaCls, 'bg-black object-contain')} />
-          : <img src={images[active]} alt={p.name} className={cx(mediaCls, 'object-cover')} />}
+          : <button type="button" onClick={() => setViewer(true)} aria-label="View larger photo" className="block w-full cursor-zoom-in"><img src={images[active]} alt={p.name} className={cx(mediaCls, 'object-cover')} /></button>}
         {p.discount_percent > 0 && !showVideo && <span className="absolute left-3 top-3 rounded-sm bg-tan px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white sm:left-5 sm:top-5 sm:text-[11px]">-{p.discount_percent}% {p.flash_sale ? p.flash_sale.title : 'off'}</span>}
         {total > 1 && <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold sm:hidden">{Math.min(active, total - 1) + 1} / {total}</span>}
-        {!showVideo && <a href={images[active]} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-medium shadow-sm sm:flex"><Maximize2 className="size-3.5" /> Zoom</a>}
+        {total > 1 && <>
+          <button type="button" onClick={() => setActive((i) => (Math.min(i, total - 1) - 1 + total) % total)} aria-label="Previous photo" className="absolute left-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-ink shadow-sm transition hover:bg-white sm:left-3 sm:size-10"><ChevronLeft className="size-5" /></button>
+          <button type="button" onClick={() => setActive((i) => (Math.min(i, total - 1) + 1) % total)} aria-label="Next photo" className="absolute right-2 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-ink shadow-sm transition hover:bg-white sm:right-3 sm:size-10"><ChevronRight className="size-5" /></button>
+        </>}
+        {!showVideo && <button type="button" onClick={() => setViewer(true)} className="absolute bottom-4 right-4 hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-medium shadow-sm sm:flex"><Maximize2 className="size-3.5" /> Zoom</button>}
       </div>
       {total > 1 && (
         <div className="no-scrollbar flex gap-2.5 overflow-x-auto lg:w-[84px] lg:shrink-0 lg:flex-col lg:overflow-visible">
@@ -81,6 +88,7 @@ function Gallery({ p, images, video, active, setActive }) {
           )}
         </div>
       )}
+      {viewer && items.length > 0 && <Lightbox items={items} index={Math.min(active, items.length - 1)} onIndex={setActive} onClose={() => setViewer(false)} alt={p.name} />}
     </div>
   )
 }
@@ -488,8 +496,8 @@ function StickyBar({ buy }) {
 
 function ProductSkeleton() {
   return (
-    <div className="container-x grid gap-6 pt-10 sm:gap-10 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-12">
-      <Bone className="aspect-square sm:aspect-[4/3] lg:aspect-[10/11]" />
+    <div className="container-x grid gap-6 pt-10 sm:gap-10 lg:grid-cols-2 lg:gap-12">
+      <Bone className="aspect-square w-full sm:mx-auto sm:max-w-[560px]" />
       <div className="space-y-4"><Bone className="h-4 w-40" /><Bone className="h-12 w-4/5" /><Bone className="h-8 w-48" /><Bone className="h-20" /><Bone className="h-11" /><Bone className="h-11" /></div>
     </div>
   )
@@ -576,7 +584,7 @@ export default function Product() {
       <div className="container-x pt-4 sm:pt-6">
         <Breadcrumb items={[{ label: 'Home', to: '/' }, ...(p.category ? [{ label: p.category.name, to: `/shop?c=${p.category.slug}` }] : []), { label: p.name }]} />
       </div>
-      <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-6 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
+      <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-6 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} video={p.video} active={Math.min(active, gallery.length - (p.video ? 0 : 1))} setActive={setActive} /></div>
         <BuyBox p={p} buy={buy} settings={settings} openTab={openTab} />
       </section>
