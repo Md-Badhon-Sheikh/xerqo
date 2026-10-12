@@ -100,71 +100,84 @@ class ReviewController extends Controller
 
     /**
      * GET /api/products/{slug}/review-status — can the signed-in customer review this product from its page?
-     * Yes when a delivered order of theirs has it and that order item isn't reviewed yet.
-     * reason: not_bought | not_delivered | already_reviewed (null when they can review)
+     * Any customer can, once. When a delivered order of theirs has the product (not reviewed yet), the review is
+     * linked to it and shown as "Verified buyer".
      */
     public function status(Request $request, string $slug): JsonResponse
     {
         $user = $request->user();
         $product = Product::active()->where('slug', $slug)->firstOrFail();
-
-        $orders = $user->orders()
-            ->whereHas('items', fn ($q) => $q->where('product_id', $product->id))
-            ->latest('id')
-            ->get(['id', 'order_number', 'status', 'delivered_at']);
-        $reviewed = Review::where('user_id', $user->id)->where('product_id', $product->id)->pluck('order_id')->flip();
-
-        $open = $orders->first(fn (Order $o) => $o->isDelivered() && ! $reviewed->has($o->id));
-
-        $reason = match (true) {
-            $open !== null => null,
-            $orders->isEmpty() => 'not_bought',
-            $orders->contains(fn (Order $o) => $o->isDelivered()) => 'already_reviewed',
-            default => 'not_delivered',
-        };
+        $open = $this->openOrder($user->id, $product->id);
+        $reviewed = ! $open && Review::where('user_id', $user->id)->where('product_id', $product->id)->exists();
 
         return response()->json(['data' => [
-            'can_review' => $open !== null,
-            'order_number' => $open?->order_number,
-            'reason' => $reason,
+            'can_review' => ! $reviewed,
+            'verified' => $open !== null,
+            'reason' => $reviewed ? 'already_reviewed' : null,
         ]]);
     }
 
     /**
-     * POST /api/reviews — only for products in the customer's own DELIVERED orders, once per order item.
+     * The customer's latest delivered order with this product that has no review for it yet.
+     */
+    private function openOrder(int $userId, int $productId): ?Order
+    {
+        $reviewed = Review::where('user_id', $userId)->where('product_id', $productId)->whereNotNull('order_id')->pluck('order_id');
+
+        return Order::where('user_id', $userId)
+            ->where('status', 'delivered')
+            ->whereHas('items', fn ($q) => $q->where('product_id', $productId))
+            ->whereNotIn('id', $reviewed)
+            ->latest('id')
+            ->first();
+    }
+
+    /**
+     * POST /api/reviews
+     * - with order_number / order_id (the order review page): a product of the customer's own delivered order
+     * - without (the product page): any signed-in customer, once per product; linked to their delivered,
+     *   not-yet-reviewed order of the product when there is one ("Verified buyer")
      */
     public function store(StoreReviewRequest $request): JsonResponse
     {
         $user = $request->user();
         $data = $request->validated();
 
-        $order = $user->orders()
-            ->when(
-                ! empty($data['order_number']),
-                fn ($q) => $q->where('order_number', $data['order_number']),
-                fn ($q) => $q->whereKey($data['order_id']),
-            )
-            ->first();
+        if (empty($data['order_number']) && empty($data['order_id'])) {
+            $order = $this->openOrder($user->id, (int) $data['product_id']);
 
-        if (! $order) {
-            throw ValidationException::withMessages(['order_number' => 'Order not found in your account.']);
-        }
+            if (! $order && Review::where('user_id', $user->id)->where('product_id', $data['product_id'])->exists()) {
+                throw ValidationException::withMessages(['product_id' => 'You have already reviewed this product.']);
+            }
+        } else {
+            $order = $user->orders()
+                ->when(
+                    ! empty($data['order_number']),
+                    fn ($q) => $q->where('order_number', $data['order_number']),
+                    fn ($q) => $q->whereKey($data['order_id']),
+                )
+                ->first();
 
-        if (! $order->isDelivered()) {
-            throw ValidationException::withMessages(['order_number' => 'You can review products once your order has been delivered.']);
-        }
+            if (! $order) {
+                throw ValidationException::withMessages(['order_number' => 'Order not found in your account.']);
+            }
 
-        if (! $order->items()->where('product_id', $data['product_id'])->exists()) {
-            throw ValidationException::withMessages(['product_id' => 'This product is not part of the order.']);
-        }
+            if (! $order->isDelivered()) {
+                throw ValidationException::withMessages(['order_number' => 'You can review products once your order has been delivered.']);
+            }
 
-        $alreadyReviewed = Review::where('user_id', $user->id)
-            ->where('order_id', $order->id)
-            ->where('product_id', $data['product_id'])
-            ->exists();
+            if (! $order->items()->where('product_id', $data['product_id'])->exists()) {
+                throw ValidationException::withMessages(['product_id' => 'This product is not part of the order.']);
+            }
 
-        if ($alreadyReviewed) {
-            throw ValidationException::withMessages(['product_id' => 'You have already reviewed this product for this order.']);
+            $alreadyReviewed = Review::where('user_id', $user->id)
+                ->where('order_id', $order->id)
+                ->where('product_id', $data['product_id'])
+                ->exists();
+
+            if ($alreadyReviewed) {
+                throw ValidationException::withMessages(['product_id' => 'You have already reviewed this product for this order.']);
+            }
         }
 
         $photos = [];
@@ -175,7 +188,7 @@ class ReviewController extends Controller
         $review = Review::create([
             'user_id' => $user->id,
             'product_id' => $data['product_id'],
-            'order_id' => $order->id,
+            'order_id' => $order?->id, // null = not linked to an order (not shown as a verified buyer)
             'rating' => $data['rating'],
             'title' => $data['title'] ?? null,
             'body' => $data['body'] ?? null,
@@ -184,9 +197,9 @@ class ReviewController extends Controller
             'photos' => $photos ?: null,
             // published after admin approval, unless the store switched on auto-publish
             'status' => Setting::getValue('reviews.auto_approve') ? Review::STATUS_APPROVED : Review::STATUS_PENDING,
-            'delivery_rating' => $data['delivery_rating'] ?? null,
-            'courier_rating' => $data['courier_rating'] ?? null,
-            'packaging_rating' => $data['packaging_rating'] ?? null,
+            'delivery_rating' => $order ? ($data['delivery_rating'] ?? null) : null,
+            'courier_rating' => $order ? ($data['courier_rating'] ?? null) : null,
+            'packaging_rating' => $order ? ($data['packaging_rating'] ?? null) : null,
         ]);
 
         $review->load(self::WITH);

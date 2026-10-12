@@ -22,6 +22,7 @@ class ReviewResource extends JsonResource
             'body' => $this->body,
             'tags' => $this->tags ?? [],
             'is_anonymous' => (bool) $this->is_anonymous,
+            'verified' => $this->order_id !== null, // linked to a delivered order of the reviewer ("Verified buyer")
             'photos' => Media::urls($this->photos),
             'status' => $this->status,
             'is_featured' => (bool) $this->is_featured,

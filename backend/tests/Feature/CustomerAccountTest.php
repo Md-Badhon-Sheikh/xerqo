@@ -45,6 +45,27 @@ class CustomerAccountTest extends TestCase
             ->assertJsonPath('user.notify_order_sms', true);
     }
 
+    public function test_sign_up_with_mobile_code_only_or_with_email_and_password(): void
+    {
+        // mobile number + SMS code, no password
+        $this->postJson('/api/auth/otp/register', ['name' => 'Karim', 'phone' => '01712345679', 'otp' => '123456'])
+            ->assertUnprocessable()->assertJsonValidationErrors('otp'); // no code was sent
+        $code = $this->sendOtp('01712345679', 'register');
+        $this->postJson('/api/auth/otp/register', ['name' => 'Karim', 'phone' => '+880 1712-345679', 'otp' => $code])
+            ->assertCreated()->assertJsonPath('user.phone_verified', true)->assertJsonStructure(['token']);
+        $this->postJson('/api/auth/otp/register', ['name' => 'Karim', 'phone' => '01712345679', 'otp' => $code])
+            ->assertUnprocessable()->assertJsonValidationErrors('phone');
+
+        // email + password, no mobile number (and so no SMS code)
+        $this->postJson('/api/auth/register', ['name' => 'Mitu', 'email' => 'Mitu@Example.com', 'password' => 'secret123', 'password_confirmation' => 'secret123'])
+            ->assertCreated()->assertJsonPath('user.email', 'mitu@example.com');
+        $this->assertNull(User::where('email', 'mitu@example.com')->value('phone'));
+
+        // one of the two is needed
+        $this->postJson('/api/auth/register', ['name' => 'X', 'password' => 'secret123', 'password_confirmation' => 'secret123'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['phone', 'email']);
+    }
+
     public function test_otp_login_flow_and_resend_cooldown(): void
     {
         User::factory()->create(['phone' => '01812345678', 'is_active' => true]);

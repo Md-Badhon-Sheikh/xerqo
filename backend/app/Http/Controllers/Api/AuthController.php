@@ -20,8 +20,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Throwable;
@@ -131,6 +133,41 @@ class AuthController extends Controller
     }
 
     /**
+     * POST /api/auth/otp/register {"name", "phone", "otp", "marketing_sms"?} — sign up with a mobile number only.
+     * The SMS code proves the number; no password (the customer signs in with a code, Google, or sets a
+     * password later through "Forgot password").
+     */
+    public function otpRegister(Request $request, OtpService $otp): JsonResponse
+    {
+        $request->merge(['phone' => Phone::normalize((string) $request->input('phone'))]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'phone' => ['required', 'string', 'regex:'.Phone::REGEX, 'unique:users,phone'],
+            'otp' => ['required', 'string', 'digits:6'],
+            'marketing_sms' => ['sometimes', 'boolean'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ], [
+            'phone.regex' => 'Enter a valid Bangladeshi mobile number (01XXXXXXXXX).',
+            'phone.unique' => 'An account with this mobile number already exists. Sign in instead.',
+            'otp.required' => 'Enter the 6-digit code we sent to your phone.',
+        ]);
+
+        $otp->verify($data['phone'], 'register', $data['otp']);
+
+        $user = User::create([
+            'name' => $data['name'],
+            'phone' => $data['phone'],
+            'password' => Hash::make(Str::random(40)),
+            'is_active' => true,
+            'marketing_sms' => (bool) ($data['marketing_sms'] ?? false),
+        ]);
+        $user->forceFill(['phone_verified_at' => now(), 'last_login_at' => now()])->save();
+        $user->refresh();
+
+        return $this->tokenResponse($user, $this->issueToken($user, $data['device_name'] ?? null), 201);
+    }
+
+    /**
      * POST /api/auth/otp/login {"phone": "01712345678", "otp": "123456"}
      */
     public function otpLogin(Request $request, OtpService $otp): JsonResponse
@@ -155,6 +192,66 @@ class AuthController extends Controller
         ])->save();
 
         return $this->tokenResponse($user, $this->issueToken($user, $data['device_name'] ?? null));
+    }
+
+    /**
+     * POST /api/auth/google {"credential": "<Google ID token>"} — "Continue with Google" for customers.
+     * Signs in the account with this Google ID or email, or creates a new customer account.
+     */
+    public function google(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'credential' => ['required', 'string', 'max:4096'],
+            'device_name' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $clientId = config('services.google.client_id');
+        abort_unless($clientId, 404, 'Google sign-in is not set up.');
+
+        // Google checks the token's signature and expiry; we check it was issued for this site
+        try {
+            $info = Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', ['id_token' => $data['credential']]);
+        } catch (Throwable $e) {
+            report($e);
+            throw ValidationException::withMessages(['credential' => 'Could not reach Google. Please try again.']);
+        }
+        $claims = $info->ok() ? $info->json() : [];
+
+        $valid = ($claims['aud'] ?? null) === $clientId
+            && in_array($claims['iss'] ?? null, ['accounts.google.com', 'https://accounts.google.com'], true)
+            && filter_var($claims['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN)
+            && ! empty($claims['sub']) && ! empty($claims['email']);
+
+        if (! $valid) {
+            throw ValidationException::withMessages(['credential' => 'Google sign-in failed. Please try again.']);
+        }
+
+        $email = strtolower($claims['email']);
+        $user = User::where('google_id', $claims['sub'])->first() ?? User::where('email', $email)->first();
+
+        if ($user?->isStaff()) {
+            throw ValidationException::withMessages(['credential' => 'Staff accounts sign in from the admin login page.']);
+        }
+        if ($user && ! $user->is_active) {
+            throw ValidationException::withMessages(['credential' => 'Your account has been disabled. Please contact support.']);
+        }
+
+        if (! $user) {
+            $user = User::create([
+                'name' => $claims['name'] ?? strstr($email, '@', true),
+                'email' => $email,
+                'password' => Hash::make(Str::random(40)), // signs in with Google; can set a password via "Forgot password"
+                'is_active' => true,
+            ]);
+        }
+
+        $user->forceFill([
+            'google_id' => $user->google_id ?? $claims['sub'],
+            'email_verified_at' => $user->email_verified_at ?? now(),
+            'last_login_at' => now(),
+        ])->save();
+
+        return $this->tokenResponse($user, $this->issueToken($user, $data['device_name'] ?? null), $user->wasRecentlyCreated ? 201 : 200);
     }
 
     /**

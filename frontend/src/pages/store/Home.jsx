@@ -284,7 +284,7 @@ function Reviews({ reviews }) {
             <figure key={r.id} className="flex h-full flex-col gap-4 rounded-lg bg-white p-6">
               <Stars n={r.rating} />
               <blockquote className="flex-1 font-display text-lg italic leading-snug sm:text-xl">“{r.body}”</blockquote>
-              <figcaption className="flex items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold">{name.split(' ').map((x) => x[0]).join('').slice(0, 2)}</span><span><b className="block text-sm">{name}</b><span className="text-xs text-mute">{[r.city, 'Verified buyer'].filter(Boolean).join(' · ')}</span></span></figcaption>
+              <figcaption className="flex items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold">{name.split(' ').map((x) => x[0]).join('').slice(0, 2)}</span><span><b className="block text-sm">{name}</b><span className="text-xs text-mute">{[r.city, r.verified && 'Verified buyer'].filter(Boolean).join(' · ')}</span></span></figcaption>
             </figure>
           )
         })}

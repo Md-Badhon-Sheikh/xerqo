@@ -43,7 +43,7 @@ function ReviewCard({ r, name, onDeleted }) {
           <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold text-tan">{initials(name)}</span>
           <div>
             <p className="text-sm font-semibold">{r.is_anonymous ? 'Posted anonymously' : name}</p>
-            <p className="whitespace-nowrap text-[11px] text-leaf">✓ Verified buyer</p>
+            {r.verified && <p className="whitespace-nowrap text-[11px] text-leaf">✓ Verified buyer</p>}
           </div>
         </div>
         <div className="flex flex-col items-end gap-1.5">

@@ -35,7 +35,7 @@ function Steps({ current }) {
 export default function ForgotPassword() {
   const r = usePasswordReset('customer')
   return (
-    <AuthShell photo="/images/fb-passport-hand.jpg" quote="Locked out? We’ll get you back in under a minute.">
+    <AuthShell>
       <Steps current={r.step === 3 ? 4 : r.step} />
 
       {r.step === 1 && (

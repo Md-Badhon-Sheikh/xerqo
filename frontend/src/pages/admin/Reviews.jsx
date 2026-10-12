@@ -41,7 +41,7 @@ function ReviewCard({ r, active, onSelect, canEdit }) {
             <span className="flex gap-1.5">{r.is_featured && <Badge tone="tan">Featured</Badge>}<Badge tone={tone}>{label}</Badge></span>
           </div>
           <p className="text-[11px] text-amute">
-            by {r.customer?.name ?? r.author?.name}{r.is_anonymous && ' (posted anonymously)'} · ✓ Verified buyer · {r.order_number && <Link to={`/admin/orders/${r.order_number}`} onClick={(e) => e.stopPropagation()} className="hover:text-ink">#{r.order_number}</Link>} · {ago(r.created_at)}
+            by {r.customer?.name ?? r.author?.name}{r.is_anonymous && ' (posted anonymously)'} · {r.verified ? '✓ Verified buyer' : 'Not a verified buyer'} · {r.order_number && <Link to={`/admin/orders/${r.order_number}`} onClick={(e) => e.stopPropagation()} className="hover:text-ink">#{r.order_number}</Link>} · {ago(r.created_at)}
           </p>
         </div>
       </header>

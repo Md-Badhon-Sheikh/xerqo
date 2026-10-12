@@ -35,6 +35,12 @@ return [
         ],
     ],
 
+    // "Continue with Google" for customers (Google Cloud → APIs & Services → Credentials → OAuth client ID, type Web).
+    // Empty = the Google button is hidden.
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
     // SMS for OTPs and order notifications (Reve SMS, paid from the prepaid SMS wallet).
     'sms' => [
         // log | reve — credentials live in the sms_gateway table (Admin → Settings → SMS)

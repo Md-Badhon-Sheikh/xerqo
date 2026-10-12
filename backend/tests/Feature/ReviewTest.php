@@ -12,6 +12,7 @@ use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -124,31 +125,63 @@ class ReviewTest extends TestCase
     public function test_product_page_review_status_and_summary(): void
     {
         $this->getJson('/api/products/bifold/review-status')->assertUnauthorized();
+        $this->postJson('/api/reviews', ['product_id' => $this->product->id, 'rating' => 5, 'body' => 'Hi'])->assertUnauthorized();
 
-        // someone who never bought it
-        Sanctum::actingAs(User::factory()->create(['is_active' => true]));
+        // a customer who never bought it can review once, not as a verified buyer
+        $visitor = User::factory()->create(['is_active' => true]);
+        Sanctum::actingAs($visitor);
         $this->getJson('/api/products/bifold/review-status')->assertOk()
-            ->assertJsonPath('data.can_review', false)->assertJsonPath('data.reason', 'not_bought');
-
-        // the buyer with a delivered order
-        Sanctum::actingAs($this->customer);
-        $this->getJson('/api/products/bifold/review-status')->assertOk()
-            ->assertJsonPath('data.can_review', true)->assertJsonPath('data.order_number', 'XQ-50001');
-
-        $this->postJson('/api/reviews', ['order_number' => 'XQ-50001', 'product_id' => $this->product->id, 'rating' => 5, 'body' => 'Lovely'])->assertCreated();
+            ->assertJsonPath('data.can_review', true)->assertJsonPath('data.verified', false);
+        $this->postJson('/api/reviews', ['product_id' => $this->product->id, 'rating' => 2, 'body' => 'Meh'])
+            ->assertCreated()->assertJsonPath('data.verified', false);
+        $this->assertNull(Review::where('user_id', $visitor->id)->value('order_id'));
         $this->getJson('/api/products/bifold/review-status')
             ->assertJsonPath('data.can_review', false)->assertJsonPath('data.reason', 'already_reviewed');
+        $this->postJson('/api/reviews', ['product_id' => $this->product->id, 'rating' => 5, 'body' => 'Again'])
+            ->assertUnprocessable()->assertJsonValidationErrors('product_id');
 
-        // a new order that hasn't arrived yet doesn't open another review
-        $this->order->update(['status' => 'shipped']);
-        $this->getJson('/api/products/bifold/review-status')->assertJsonPath('data.reason', 'not_delivered');
+        // the buyer: the review from the product page is linked to their delivered order
+        Sanctum::actingAs($this->customer);
+        $this->getJson('/api/products/bifold/review-status')->assertOk()
+            ->assertJsonPath('data.can_review', true)->assertJsonPath('data.verified', true);
+        $this->postJson('/api/reviews', ['product_id' => $this->product->id, 'rating' => 5, 'body' => 'Lovely', 'delivery_rating' => 4])
+            ->assertCreated()->assertJsonPath('data.verified', true);
+        $this->assertSame($this->order->id, Review::where('user_id', $this->customer->id)->value('order_id'));
+        $this->getJson('/api/products/bifold/review-status')->assertJsonPath('data.reason', 'already_reviewed');
 
         Review::query()->update(['status' => 'approved']);
-        Review::create(['user_id' => User::factory()->create()->id, 'product_id' => $this->product->id, 'order_id' => $this->order->id, 'rating' => 2, 'body' => 'Meh', 'status' => 'approved']);
         $this->getJson('/api/products/bifold/reviews')->assertOk()
             ->assertJsonPath('summary.count', 2)
             ->assertJsonPath('summary.recommended', 1)
             ->assertJsonPath('summary.recommended_percent', 50);
+    }
+
+    public function test_customers_can_sign_in_with_google(): void
+    {
+        $this->postJson('/api/auth/google', ['credential' => 'x'])->assertNotFound(); // not set up
+
+        config(['services.google.client_id' => 'client-123.apps.googleusercontent.com']);
+        $this->getJson('/api/settings')->assertJsonPath('data.auth.google_client_id', 'client-123.apps.googleusercontent.com');
+
+        $claims = ['aud' => 'client-123.apps.googleusercontent.com', 'iss' => 'https://accounts.google.com', 'sub' => 'g-1', 'email' => 'Nadia@Example.com', 'email_verified' => 'true', 'name' => 'Nadia Islam'];
+        Http::fake(['oauth2.googleapis.com/*' => Http::sequence()
+            ->push($claims)                                    // new account
+            ->push($claims)                                    // same person again
+            ->push([...$claims, 'aud' => 'someone-else'])      // token for another site
+            ->push([...$claims, 'sub' => 'g-2', 'email' => 'staff@xerqo.test'])]);
+
+        $this->postJson('/api/auth/google', ['credential' => 'token'])->assertCreated()
+            ->assertJsonPath('user.name', 'Nadia Islam')->assertJsonStructure(['token']);
+        $user = User::where('email', 'nadia@example.com')->sole();
+        $this->assertSame('g-1', $user->google_id);
+
+        $this->postJson('/api/auth/google', ['credential' => 'token'])->assertOk();
+        $this->assertSame(1, User::where('email', 'nadia@example.com')->count());
+
+        $this->postJson('/api/auth/google', ['credential' => 'token'])->assertUnprocessable()->assertJsonValidationErrors('credential');
+
+        User::factory()->create(['email' => 'staff@xerqo.test', 'role_id' => Role::where('slug', Role::ADMIN)->value('id')]);
+        $this->postJson('/api/auth/google', ['credential' => 'token'])->assertUnprocessable()->assertJsonValidationErrors('credential');
     }
 
     public function test_homepage_testimonials_follow_the_content_settings(): void

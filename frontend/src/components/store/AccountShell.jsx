@@ -62,20 +62,30 @@ export function AccountShell({ title, hideUser, children }) {
 }
 
 /* Split auth layout: brand photo (desktop) + form card */
-export function AuthShell({ photo = '/images/workshop.jpg', quote = 'Leather that ages beautifully — just like your story.', children }) {
+// Sign-in / sign-up / password pages: one centred card
+export function AuthShell({ wide, children }) {
   return (
-    <div className="flex min-h-[calc(100vh-110px)] items-stretch">
-      <div className="relative hidden w-[46%] overflow-hidden lg:block">
-        <img src={photo} alt="" className="absolute inset-0 size-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-espresso/10 to-espresso/85" />
-        <div className="absolute inset-x-14 bottom-14 space-y-3 text-white">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">XERQO Members</p>
-          <p className="h-display text-[38px]">{quote}</p>
-        </div>
-      </div>
-      <div className="flex flex-1 items-center justify-center px-4 py-8 sm:px-8 sm:py-16">
-        <div className="w-full max-w-[460px] space-y-5 rounded-xl bg-white p-6 sm:p-10">{children}</div>
-      </div>
+    <div className="flex min-h-[calc(100vh-110px)] items-start justify-center px-4 py-8 sm:px-8 sm:py-14">
+      <div className={cx('w-full space-y-5 rounded-xl border border-line bg-white p-5 shadow-[0_8px_30px_rgba(35,26,21,0.06)] sm:p-9', wide ? 'max-w-[960px]' : 'max-w-[480px]')}>{children}</div>
     </div>
   )
 }
+
+// Two sign-in / sign-up options side by side on desktop (stacked on phones) with an "or" between them
+export const AuthSplit = ({ left, right }) => (
+  <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-10">
+    <div className="min-w-0">{left}</div>
+    <div className="flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-mute lg:flex-col">
+      <span className="h-px flex-1 bg-line lg:h-auto lg:w-px" />or<span className="h-px flex-1 bg-line lg:h-auto lg:w-px" />
+    </div>
+    <div className="min-w-0">{right}</div>
+  </div>
+)
+
+// Heading for one sign-in / sign-up option inside the card
+export const AuthSection = ({ title, children }) => (
+  <section className="space-y-3.5">
+    <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-tan">{title}</h2>
+    {children}
+  </section>
+)

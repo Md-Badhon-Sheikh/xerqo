@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Check, GitCompareArrows, Heart, ImagePlus, Maximize2, MessageCircle, PackageX, Phone, Play, Timer, X } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
@@ -10,6 +10,7 @@ import { api } from '../../lib/api'
 import { alertSuccess, toast } from '../../lib/alert'
 import { useAuth } from '../../context/AuthContext'
 import Select2 from '../../components/common/Select2'
+import LoginModal from '../../components/store/LoginModal'
 import { useProduct, useProductReviews, useSettings } from '../../lib/queries'
 import { useCart } from '../../context/CartContext'
 import { useCompare } from '../../context/CompareContext'
@@ -272,7 +273,7 @@ function ReviewCard({ r }) {
         <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold text-tan">{initials(name)}</span>
         <div className="flex-1">
           <p className="text-sm font-semibold">{name}</p>
-          <p className="flex items-center gap-1 text-[11px] text-mute"><Check className="size-3 text-leaf" /> Verified buyer</p>
+          {r.verified && <p className="flex items-center gap-1 text-[11px] text-mute"><Check className="size-3 text-leaf" /> Verified buyer</p>}
         </div>
         <span className="text-[11px] text-mute">{ago(r.created_at)}</span>
       </header>
@@ -301,26 +302,24 @@ const RATING_OPTIONS = [
   { value: '1', label: '★  Poor' },
 ]
 const MAX_PHOTOS = 3
-const BLOCKED = {
-  not_bought: 'Only customers who bought this product can review it. Once your order is delivered, you can review it right here.',
-  not_delivered: 'Your order with this product is on its way — you can review it here once it has been delivered.',
-}
+const BLANK_REVIEW = { rating: '', body: '', anonymous: false }
 
-// "Submit your review" — signed-in customers with a delivered order of this product
+// "Submit your review" — open to everyone; posting asks guests to sign in (phone code or Google) first
 function ReviewForm({ p }) {
   const { user } = useAuth()
-  const location = useLocation()
   const qc = useQueryClient()
   const status = useQuery({
     queryKey: ['product', p.slug, 'review-status', user?.id],
     queryFn: () => api.get(`/products/${p.slug}/review-status`).then((r) => r.data),
     enabled: !!user,
   })
-  const [f, setF] = useState({ rating: '', body: '', anonymous: false })
+  const [f, setF] = useState(BLANK_REVIEW)
   const [photos, setPhotos] = useState([])
   const [errors, setErrors] = useState({})
   const [busy, setBusy] = useState(false)
   const [over, setOver] = useState(false)
+  const [askLogin, setAskLogin] = useState(false)
+  const [pending, setPending] = useState(false) // submit as soon as the sign-in finishes
   const previews = useMemo(() => photos.map((file) => ({ file, url: URL.createObjectURL(file) })), [photos])
   useEffect(() => () => previews.forEach((x) => URL.revokeObjectURL(x.url)), [previews])
 
@@ -330,15 +329,8 @@ function ReviewForm({ p }) {
     setPhotos((list) => [...list, ...ok.filter((file) => file.size <= 4 * 1024 * 1024)].slice(0, MAX_PHOTOS))
   }
 
-  const submit = async (e) => {
-    e.preventDefault()
-    const errs = {}
-    if (!f.rating) errs.rating = 'Choose a rating.'
-    if (!f.body.trim()) errs.body = 'Write a few words about the product.'
-    setErrors(errs)
-    if (Object.keys(errs).length) return
+  const send = async () => {
     const body = new FormData()
-    body.append('order_number', status.data.order_number)
     body.append('product_id', p.id)
     body.append('rating', f.rating)
     body.append('body', f.body.trim())
@@ -347,77 +339,91 @@ function ReviewForm({ p }) {
     setBusy(true)
     try {
       const res = await api.post('/reviews', body)
-      setF({ rating: '', body: '', anonymous: false })
+      setF(BLANK_REVIEW)
       setPhotos([])
       qc.invalidateQueries({ queryKey: ['product', p.slug] })
       alertSuccess('Thank you!', res?.message)
     } catch (err) {
       const fields = err.fields ?? {}
       setErrors({ ...fields, photos: fields.photos || fields['photos.0'] })
-      if (!Object.keys(fields).length || fields.order_number || fields.product_id) toast.error(fields.order_number || fields.product_id || err.message)
+      if (fields.product_id) qc.invalidateQueries({ queryKey: ['product', p.slug, 'review-status'] })
+      if (!Object.keys(fields).length || fields.product_id) toast.error(fields.product_id || err.message)
     } finally {
       setBusy(false)
     }
   }
 
-  const box = (children) => (
+  // signed in from the popup: post the review that was waiting
+  useEffect(() => {
+    if (pending && user) { setPending(false); setAskLogin(false); send() }
+  }, [pending, user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const submit = (e) => {
+    e.preventDefault()
+    const errs = {}
+    if (!f.rating) errs.rating = 'Choose a rating.'
+    if (!f.body.trim()) errs.body = 'Write a few words about the product.'
+    setErrors(errs)
+    if (Object.keys(errs).length) return
+    if (!user) { setPending(true); setAskLogin(true); return }
+    send()
+  }
+
+  const reviewed = user && status.data?.can_review === false
+  return (
     <div className="space-y-4 rounded-lg border border-line bg-white p-5 sm:p-7">
       <h3 className="h-display text-2xl sm:text-[28px]">Submit your review</h3>
-      {children}
-    </div>
-  )
-
-  if (!user) {
-    return box(<>
-      <p className="text-sm text-mute">Bought this product? Log in to share how you like it.</p>
-      <Button to="/login" state={{ from: location }} variant="outline" size="sm" className="sm:!px-5">Log in to review</Button>
-    </>)
-  }
-  if (status.isPending) return box(<Bone className="h-24" />)
-  if (status.error) return box(<p className="text-sm text-mute">{status.error.message}</p>)
-  if (!status.data?.can_review) {
-    return box(status.data?.reason === 'already_reviewed'
-      ? <p className="text-sm text-mute">Thanks — you've already reviewed this product. You can edit it from <Link to="/account/reviews" className="font-semibold text-tan underline underline-offset-2">My reviews</Link>.</p>
-      : <p className="text-sm text-mute">{BLOCKED[status.data?.reason] ?? BLOCKED.not_bought}</p>)
-  }
-
-  return box(
-    <form onSubmit={submit} noValidate className="space-y-4">
-      <p className="text-xs text-mute">Your phone number and email are never shown. Required fields are marked *</p>
-      <Field label="Your rating *" error={errors.rating} className="sm:max-w-xs">
-        <Select2 variant="store" options={RATING_OPTIONS} value={f.rating} onChange={(rating) => setF((x) => ({ ...x, rating }))} placeholder="Select a rating" search={false} invalid={!!errors.rating} />
-      </Field>
-      <Field label="Your review *" error={errors.body}>
-        <textarea rows={5} value={f.body} onChange={(e) => setF((x) => ({ ...x, body: e.target.value }))} maxLength={3000} placeholder="What did you like? How do the leather, stitching and finish feel?" className={cx('input resize-y', errors.body && 'border-rust')} />
-      </Field>
-      <div className="space-y-2">
-        <p className="text-[13px] font-semibold">Photos <span className="font-normal text-mute">(optional · up to {MAX_PHOTOS})</span></p>
-        <div className="flex flex-wrap gap-2.5">
-          {previews.map((x, i) => (
-            <div key={x.url} className="relative size-20 overflow-hidden rounded border border-line">
-              <img src={x.url} alt="" className="size-full object-cover" />
-              <button type="button" onClick={() => setPhotos((list) => list.filter((_, j) => j !== i))} aria-label="Remove photo" className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-white shadow"><X className="size-3" /></button>
+      {reviewed ? (
+        <p className="text-sm text-mute">Thanks — you've already reviewed this product. You can see it in <Link to="/account/reviews" className="font-semibold text-tan underline underline-offset-2">My reviews</Link>.</p>
+      ) : (
+        <form onSubmit={submit} noValidate className="space-y-4">
+          <p className="text-xs text-mute">
+            {user ? (status.data?.verified ? 'You bought this — your review will show as a verified buyer. ' : '') : 'You’ll be asked to log in with your mobile number or Google when you submit. '}
+            Your phone number and email are never shown. Required fields are marked *
+          </p>
+          <Field label="Your rating *" error={errors.rating} className="sm:max-w-xs">
+            <Select2 variant="store" options={RATING_OPTIONS} value={f.rating} onChange={(rating) => setF((x) => ({ ...x, rating }))} placeholder="Select a rating" search={false} invalid={!!errors.rating} />
+          </Field>
+          <Field label="Your review *" error={errors.body}>
+            <textarea rows={5} value={f.body} onChange={(e) => setF((x) => ({ ...x, body: e.target.value }))} maxLength={3000} placeholder="What did you like? How do the leather, stitching and finish feel?" className={cx('input resize-y', errors.body && 'border-rust')} />
+          </Field>
+          <div className="space-y-2">
+            <p className="text-[13px] font-semibold">Photos <span className="font-normal text-mute">(optional · up to {MAX_PHOTOS})</span></p>
+            <div className="flex flex-wrap gap-2.5">
+              {previews.map((x, i) => (
+                <div key={x.url} className="relative size-20 overflow-hidden rounded border border-line">
+                  <img src={x.url} alt="" className="size-full object-cover" />
+                  <button type="button" onClick={() => setPhotos((list) => list.filter((_, j) => j !== i))} aria-label="Remove photo" className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-white shadow"><X className="size-3" /></button>
+                </div>
+              ))}
+              {photos.length < MAX_PHOTOS && (
+                <label
+                  onDragOver={(e) => { e.preventDefault(); setOver(true) }}
+                  onDragLeave={() => setOver(false)}
+                  onDrop={(e) => { e.preventDefault(); setOver(false); addPhotos(e.dataTransfer.files) }}
+                  className={cx('flex min-h-20 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded border border-dashed px-4 py-3 text-center text-xs text-mute transition sm:min-w-64', over ? 'border-tan bg-tan/5' : 'border-line hover:border-tan')}
+                >
+                  <ImagePlus className="size-5 text-tan" />
+                  <span><b className="text-ink">Drop photos here</b> or click to choose</span>
+                  <span className="text-[11px]">JPG, PNG or WebP · max 4 MB each</span>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(e) => { addPhotos(e.target.files); e.target.value = '' }} />
+                </label>
+              )}
             </div>
-          ))}
-          {photos.length < MAX_PHOTOS && (
-            <label
-              onDragOver={(e) => { e.preventDefault(); setOver(true) }}
-              onDragLeave={() => setOver(false)}
-              onDrop={(e) => { e.preventDefault(); setOver(false); addPhotos(e.dataTransfer.files) }}
-              className={cx('flex min-h-20 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded border border-dashed px-4 py-3 text-center text-xs text-mute transition sm:min-w-64', over ? 'border-tan bg-tan/5' : 'border-line hover:border-tan')}
-            >
-              <ImagePlus className="size-5 text-tan" />
-              <span><b className="text-ink">Drop photos here</b> or click to choose</span>
-              <span className="text-[11px]">JPG, PNG or WebP · max 4 MB each</span>
-              <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(e) => { addPhotos(e.target.files); e.target.value = '' }} />
-            </label>
-          )}
-        </div>
-        {errors.photos && <p className="text-xs text-rust">{errors.photos}</p>}
-      </div>
-      <Checkbox label="Post without my name" checked={f.anonymous} onChange={(e) => setF((x) => ({ ...x, anonymous: e.target.checked }))} />
-      <Button disabled={busy} className="max-sm:w-full">{busy && <Spinner className="size-4 text-current" />}Submit review</Button>
-    </form>,
+            {errors.photos && <p className="text-xs text-rust">{errors.photos}</p>}
+          </div>
+          <Checkbox label="Post without my name" checked={f.anonymous} onChange={(e) => setF((x) => ({ ...x, anonymous: e.target.checked }))} />
+          <Button disabled={busy} className="max-sm:w-full">{busy && <Spinner className="size-4 text-current" />}Submit review</Button>
+        </form>
+      )}
+      <LoginModal
+        open={askLogin}
+        onClose={() => { setAskLogin(false); setPending(false) }}
+        onDone={() => setAskLogin(false)}
+        title="Log in to post your review"
+        text="Your review is saved here — it posts as soon as you’re signed in."
+      />
+    </div>
   )
 }
 

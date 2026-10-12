@@ -15,6 +15,9 @@ class SettingController extends Controller
     {
         $settings = Setting::withImageUrls(Setting::where('is_public', true)->get()->pluck('value', 'key')->all());
 
+        // the public OAuth client ID for "Continue with Google" (null = button hidden)
+        $settings['auth'] = [...(array) ($settings['auth'] ?? []), 'google_client_id' => config('services.google.client_id') ?: null];
+
         return response()->json(['data' => $settings]);
     }
 }
