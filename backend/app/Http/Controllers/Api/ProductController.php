@@ -159,6 +159,9 @@ class ProductController extends Controller
             'summary' => [
                 'average' => $average,
                 'count' => $count,
+                // 4★ and 5★ reviews count as "recommended"
+                'recommended' => (int) (($breakdown[5] ?? 0) + ($breakdown[4] ?? 0)),
+                'recommended_percent' => $count > 0 ? (int) round((($breakdown[5] ?? 0) + ($breakdown[4] ?? 0)) / $count * 100) : 0,
                 'breakdown' => collect([5, 4, 3, 2, 1])->mapWithKeys(fn ($star) => [$star => (int) ($breakdown[$star] ?? 0)]),
             ],
         ]);

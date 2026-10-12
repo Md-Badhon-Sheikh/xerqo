@@ -1,18 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Check, GitCompareArrows, Heart, Maximize2, MessageCircle, PackageX, Phone, Play, Timer } from 'lucide-react'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowRight, Check, GitCompareArrows, Heart, ImagePlus, Maximize2, MessageCircle, PackageX, Phone, Play, Timer, X } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
 import { tk } from '../../data/store'
 import { cartLine } from '../../lib/product'
 import { waLink } from '../../lib/bd'
+import { api } from '../../lib/api'
+import { alertSuccess, toast } from '../../lib/alert'
+import { useAuth } from '../../context/AuthContext'
+import Select2 from '../../components/common/Select2'
 import { useProduct, useProductReviews, useSettings } from '../../lib/queries'
 import { useCart } from '../../context/CartContext'
 import { useCompare } from '../../context/CompareContext'
 import { useToast } from '../../context/ToastContext'
 import { useUI } from '../../context/StoreUIContext'
-import { Breadcrumb, Button, Stars, Qty, CatProductCard, EmptyState, Bone, cx } from '../../components/store/ui'
+import { Breadcrumb, Button, Checkbox, Field, Stars, Qty, CatProductCard, EmptyState, Bone, cx } from '../../components/store/ui'
 import { Carousel, BP } from '../../components/store/Carousel'
-import { ErrorState } from '../../components/common/feedback'
+import { ErrorState, Spinner } from '../../components/common/feedback'
 
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('')
 const ago = (iso) => {
@@ -217,7 +222,7 @@ function DetailTabs({ p, settings, tab, setTab }) {
             </div>
           </div>
         )}
-        {tab === 'reviews' && <Reviews slug={p.slug} />}
+        {tab === 'reviews' && <Reviews p={p} />}
         {tab === 'shipping' && (
           <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-mute sm:text-[15px]">
             {delivery && <p>Inside Dhaka delivery in {delivery.inside_dhaka_eta} ({tk(delivery.inside_dhaka)}), outside Dhaka in {delivery.outside_dhaka_eta} ({tk(delivery.outside_dhaka)}){delivery.free_delivery_threshold > 0 && <> — free on orders over {tk(delivery.free_delivery_threshold)}</>}. Cash on delivery all over Bangladesh.</p>}
@@ -230,22 +235,27 @@ function DetailTabs({ p, settings, tab, setTab }) {
 }
 
 /* ---------- Reviews ---------- */
+// Average, how many recommend it (4★ and 5★) and a bar per star level
 function RatingSummary({ summary }) {
-  const max = Math.max(1, ...Object.values(summary.breakdown || {}))
+  const count = summary?.count ?? 0
   return (
-    <div className="rounded-lg bg-white p-5 sm:p-6">
-      <div className="flex items-center gap-4">
-        <span className="font-display text-[56px] font-semibold leading-none">{summary.average ?? '–'}</span>
-        <div><Stars n={summary.average || 0} className="text-sm" /><p className="text-xs text-mute">Based on {summary.count} {summary.count === 1 ? 'review' : 'reviews'}</p></div>
+    <div className="grid gap-6 rounded-lg bg-white p-5 sm:grid-cols-[220px_1fr] sm:items-center sm:gap-10 sm:p-7">
+      <div className="space-y-1.5 text-center sm:border-r sm:border-line sm:pr-8">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-mute">Average rating</p>
+        <p className="font-display text-[56px] font-semibold leading-none">{summary?.average != null ? Number(summary.average).toFixed(1) : '0.0'}</p>
+        <Stars n={summary?.average || 0} className="text-sm" />
+        <p className="text-xs text-mute">({count} {count === 1 ? 'review' : 'reviews'})</p>
+        {count > 0 && <p className="text-[13px] font-semibold text-leaf">{summary.recommended_percent}% recommend it <span className="font-normal text-mute">({summary.recommended} of {count})</span></p>}
       </div>
-      <div className="mt-5 space-y-2">
+      <div className="space-y-2.5">
         {[5, 4, 3, 2, 1].map((star) => {
-          const n = summary.breakdown?.[star] ?? 0
+          const n = summary?.breakdown?.[star] ?? 0
+          const pct = count ? Math.round((n / count) * 100) : 0
           return (
             <div key={star} className="flex items-center gap-3 text-xs">
-              <span className="w-7 shrink-0">{star} ★</span>
-              <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-sand"><span className="block h-full rounded-full bg-tan" style={{ width: `${n ? Math.max(3, (n / max) * 100) : 0}%` }} /></span>
-              <span className="w-7 shrink-0 text-right text-mute">{n}</span>
+              <span className="w-8 shrink-0 font-medium">{star} ★</span>
+              <span className="h-2 flex-1 overflow-hidden rounded-full bg-sand"><span className="block h-full rounded-full bg-tan transition-all" style={{ width: `${pct}%` }} /></span>
+              <span className="w-16 shrink-0 text-right text-mute">{pct}% <span className="text-[10px]">({n})</span></span>
             </div>
           )
         })}
@@ -268,7 +278,7 @@ function ReviewCard({ r }) {
       </header>
       <Stars n={r.rating} />
       {r.title && <p className="text-sm font-semibold">{r.title}</p>}
-      {r.body && <p className="text-sm leading-relaxed">{r.body}</p>}
+      {r.body && <p className="whitespace-pre-line text-sm leading-relaxed">{r.body}</p>}
       {r.tags?.length > 0 && <div className="flex flex-wrap gap-1.5">{r.tags.map((t) => <span key={t} className="rounded-full bg-cream px-2.5 py-1 text-[11px]">{t}</span>)}</div>}
       {r.photos?.length > 0 && (
         <div className="flex gap-2">{r.photos.map((src) => <a key={src} href={src} target="_blank" rel="noreferrer"><img src={src} alt="Customer photo" loading="lazy" className="size-16 rounded object-cover" /></a>)}</div>
@@ -283,43 +293,156 @@ function ReviewCard({ r }) {
   )
 }
 
-function Reviews({ slug }) {
+const RATING_OPTIONS = [
+  { value: '5', label: '★★★★★  Excellent' },
+  { value: '4', label: '★★★★  Good' },
+  { value: '3', label: '★★★  Average' },
+  { value: '2', label: '★★  Below average' },
+  { value: '1', label: '★  Poor' },
+]
+const MAX_PHOTOS = 3
+const BLOCKED = {
+  not_bought: 'Only customers who bought this product can review it. Once your order is delivered, you can review it right here.',
+  not_delivered: 'Your order with this product is on its way — you can review it here once it has been delivered.',
+}
+
+// "Submit your review" — signed-in customers with a delivered order of this product
+function ReviewForm({ p }) {
+  const { user } = useAuth()
+  const location = useLocation()
+  const qc = useQueryClient()
+  const status = useQuery({
+    queryKey: ['product', p.slug, 'review-status', user?.id],
+    queryFn: () => api.get(`/products/${p.slug}/review-status`).then((r) => r.data),
+    enabled: !!user,
+  })
+  const [f, setF] = useState({ rating: '', body: '', anonymous: false })
+  const [photos, setPhotos] = useState([])
+  const [errors, setErrors] = useState({})
+  const [busy, setBusy] = useState(false)
+  const [over, setOver] = useState(false)
+  const previews = useMemo(() => photos.map((file) => ({ file, url: URL.createObjectURL(file) })), [photos])
+  useEffect(() => () => previews.forEach((x) => URL.revokeObjectURL(x.url)), [previews])
+
+  const addPhotos = (files) => {
+    const ok = Array.from(files || []).filter((file) => /^image\/(jpeg|png|webp)$/.test(file.type))
+    if (ok.some((file) => file.size > 4 * 1024 * 1024)) toast.error('Each photo can be at most 4 MB.')
+    setPhotos((list) => [...list, ...ok.filter((file) => file.size <= 4 * 1024 * 1024)].slice(0, MAX_PHOTOS))
+  }
+
+  const submit = async (e) => {
+    e.preventDefault()
+    const errs = {}
+    if (!f.rating) errs.rating = 'Choose a rating.'
+    if (!f.body.trim()) errs.body = 'Write a few words about the product.'
+    setErrors(errs)
+    if (Object.keys(errs).length) return
+    const body = new FormData()
+    body.append('order_number', status.data.order_number)
+    body.append('product_id', p.id)
+    body.append('rating', f.rating)
+    body.append('body', f.body.trim())
+    body.append('is_anonymous', f.anonymous ? '1' : '0')
+    photos.forEach((file, i) => body.append(`photos[${i}]`, file))
+    setBusy(true)
+    try {
+      const res = await api.post('/reviews', body)
+      setF({ rating: '', body: '', anonymous: false })
+      setPhotos([])
+      qc.invalidateQueries({ queryKey: ['product', p.slug] })
+      alertSuccess('Thank you!', res?.message)
+    } catch (err) {
+      const fields = err.fields ?? {}
+      setErrors({ ...fields, photos: fields.photos || fields['photos.0'] })
+      if (!Object.keys(fields).length || fields.order_number || fields.product_id) toast.error(fields.order_number || fields.product_id || err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const box = (children) => (
+    <div className="space-y-4 rounded-lg border border-line bg-white p-5 sm:p-7">
+      <h3 className="h-display text-2xl sm:text-[28px]">Submit your review</h3>
+      {children}
+    </div>
+  )
+
+  if (!user) {
+    return box(<>
+      <p className="text-sm text-mute">Bought this product? Log in to share how you like it.</p>
+      <Button to="/login" state={{ from: location }} variant="outline" size="sm" className="sm:!px-5">Log in to review</Button>
+    </>)
+  }
+  if (status.isPending) return box(<Bone className="h-24" />)
+  if (status.error) return box(<p className="text-sm text-mute">{status.error.message}</p>)
+  if (!status.data?.can_review) {
+    return box(status.data?.reason === 'already_reviewed'
+      ? <p className="text-sm text-mute">Thanks — you've already reviewed this product. You can edit it from <Link to="/account/reviews" className="font-semibold text-tan underline underline-offset-2">My reviews</Link>.</p>
+      : <p className="text-sm text-mute">{BLOCKED[status.data?.reason] ?? BLOCKED.not_bought}</p>)
+  }
+
+  return box(
+    <form onSubmit={submit} noValidate className="space-y-4">
+      <p className="text-xs text-mute">Your phone number and email are never shown. Required fields are marked *</p>
+      <Field label="Your rating *" error={errors.rating} className="sm:max-w-xs">
+        <Select2 variant="store" options={RATING_OPTIONS} value={f.rating} onChange={(rating) => setF((x) => ({ ...x, rating }))} placeholder="Select a rating" search={false} invalid={!!errors.rating} />
+      </Field>
+      <Field label="Your review *" error={errors.body}>
+        <textarea rows={5} value={f.body} onChange={(e) => setF((x) => ({ ...x, body: e.target.value }))} maxLength={3000} placeholder="What did you like? How do the leather, stitching and finish feel?" className={cx('input resize-y', errors.body && 'border-rust')} />
+      </Field>
+      <div className="space-y-2">
+        <p className="text-[13px] font-semibold">Photos <span className="font-normal text-mute">(optional · up to {MAX_PHOTOS})</span></p>
+        <div className="flex flex-wrap gap-2.5">
+          {previews.map((x, i) => (
+            <div key={x.url} className="relative size-20 overflow-hidden rounded border border-line">
+              <img src={x.url} alt="" className="size-full object-cover" />
+              <button type="button" onClick={() => setPhotos((list) => list.filter((_, j) => j !== i))} aria-label="Remove photo" className="absolute right-1 top-1 grid size-5 place-items-center rounded-full bg-white shadow"><X className="size-3" /></button>
+            </div>
+          ))}
+          {photos.length < MAX_PHOTOS && (
+            <label
+              onDragOver={(e) => { e.preventDefault(); setOver(true) }}
+              onDragLeave={() => setOver(false)}
+              onDrop={(e) => { e.preventDefault(); setOver(false); addPhotos(e.dataTransfer.files) }}
+              className={cx('flex min-h-20 flex-1 cursor-pointer flex-col items-center justify-center gap-1 rounded border border-dashed px-4 py-3 text-center text-xs text-mute transition sm:min-w-64', over ? 'border-tan bg-tan/5' : 'border-line hover:border-tan')}
+            >
+              <ImagePlus className="size-5 text-tan" />
+              <span><b className="text-ink">Drop photos here</b> or click to choose</span>
+              <span className="text-[11px]">JPG, PNG or WebP · max 4 MB each</span>
+              <input type="file" accept="image/jpeg,image/png,image/webp" multiple className="sr-only" onChange={(e) => { addPhotos(e.target.files); e.target.value = '' }} />
+            </label>
+          )}
+        </div>
+        {errors.photos && <p className="text-xs text-rust">{errors.photos}</p>}
+      </div>
+      <Checkbox label="Post without my name" checked={f.anonymous} onChange={(e) => setF((x) => ({ ...x, anonymous: e.target.checked }))} />
+      <Button disabled={busy} className="max-sm:w-full">{busy && <Spinner className="size-4 text-current" />}Submit review</Button>
+    </form>,
+  )
+}
+
+function Reviews({ p }) {
   const [perPage, setPerPage] = useState(6)
-  const { data, isPending, isFetching } = useProductReviews(slug, perPage)
+  const { data, isPending, isFetching } = useProductReviews(p.slug, perPage)
   const summary = data?.summary
   const reviews = data?.data ?? []
-  const photos = reviews.flatMap((r) => r.photos || []).slice(0, 8)
   if (isPending) return <Bone className="h-40" />
   return (
     <div className="space-y-6 sm:space-y-8">
-      <div className="flex items-center justify-between gap-4">
-        <p className="eyebrow">{summary?.count ? `${summary.count} verified ${summary.count === 1 ? 'review' : 'reviews'}` : 'Customer reviews'}</p>
-        <Button to="/account" variant="outline" size="sm" className="max-sm:hidden sm:!px-5 sm:!py-3">Write a review</Button>
-      </div>
-
-      {!summary?.count ? (
-        <p className="rounded-lg bg-white px-6 py-10 text-center text-sm text-mute">No reviews yet. Bought this piece? Review it from your <Link to="/account" className="font-semibold text-tan underline underline-offset-2">orders</Link> after delivery.</p>
-      ) : (
+      <RatingSummary summary={summary} />
+      {reviews.length > 0 ? (
         <>
-          <div className="grid gap-6 lg:grid-cols-[360px_1fr] lg:gap-10">
-            <RatingSummary summary={summary} />
-            {photos.length > 0 && (
-              <div className="min-w-0 space-y-4">
-                <p className="text-[13px] font-semibold">Photos from customers</p>
-                <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-                  {photos.map((src) => <img key={src} src={src} alt="Customer photo" loading="lazy" className="size-[72px] shrink-0 rounded object-cover sm:size-[104px]" />)}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="grid items-start gap-4 lg:grid-cols-3 lg:gap-5">
+          <div className="grid items-start gap-4 md:grid-cols-2 lg:gap-5">
             {reviews.map((r) => <ReviewCard key={r.id} r={r} />)}
           </div>
           {data.meta && data.meta.total > reviews.length && (
             <Button variant="outline" className="max-sm:w-full" disabled={isFetching} onClick={() => setPerPage((n) => n + 6)}>{isFetching ? 'Loading…' : 'Load more reviews'}</Button>
           )}
         </>
+      ) : (
+        <p className="rounded-lg bg-white px-6 py-8 text-center text-sm text-mute">No reviews yet — be the first to share your thoughts.</p>
       )}
+      <ReviewForm p={p} />
     </div>
   )
 }

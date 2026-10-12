@@ -7,6 +7,7 @@ use App\Http\Requests\Customer\StoreReviewRequest;
 use App\Http\Resources\ReviewResource;
 use App\Models\Order;
 use App\Models\OrderFeedback;
+use App\Models\Product;
 use App\Models\Review;
 use App\Models\Setting;
 use App\Services\AdminNotifier;
@@ -95,6 +96,38 @@ class ReviewController extends Controller
                 'tags' => Review::TAGS,
             ],
         ]);
+    }
+
+    /**
+     * GET /api/products/{slug}/review-status — can the signed-in customer review this product from its page?
+     * Yes when a delivered order of theirs has it and that order item isn't reviewed yet.
+     * reason: not_bought | not_delivered | already_reviewed (null when they can review)
+     */
+    public function status(Request $request, string $slug): JsonResponse
+    {
+        $user = $request->user();
+        $product = Product::active()->where('slug', $slug)->firstOrFail();
+
+        $orders = $user->orders()
+            ->whereHas('items', fn ($q) => $q->where('product_id', $product->id))
+            ->latest('id')
+            ->get(['id', 'order_number', 'status', 'delivered_at']);
+        $reviewed = Review::where('user_id', $user->id)->where('product_id', $product->id)->pluck('order_id')->flip();
+
+        $open = $orders->first(fn (Order $o) => $o->isDelivered() && ! $reviewed->has($o->id));
+
+        $reason = match (true) {
+            $open !== null => null,
+            $orders->isEmpty() => 'not_bought',
+            $orders->contains(fn (Order $o) => $o->isDelivered()) => 'already_reviewed',
+            default => 'not_delivered',
+        };
+
+        return response()->json(['data' => [
+            'can_review' => $open !== null,
+            'order_number' => $open?->order_number,
+            'reason' => $reason,
+        ]]);
     }
 
     /**

@@ -85,6 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('me/wishlist/{product}', [Customer\WishlistController::class, 'destroy']);
 
     Route::get('me/reviews', [Customer\ReviewController::class, 'index']);
+    Route::get('products/{slug}/review-status', [Customer\ReviewController::class, 'status']);
     Route::post('reviews', [Customer\ReviewController::class, 'store'])->middleware('throttle:20,1');
     Route::put('reviews/{review}', [Customer\ReviewController::class, 'update'])->middleware('throttle:20,1');
     Route::delete('reviews/{review}', [Customer\ReviewController::class, 'destroy']);

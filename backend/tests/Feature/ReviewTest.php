@@ -121,6 +121,36 @@ class ReviewTest extends TestCase
             ->assertJsonPath('data.0.order_number', 'XQ-50001');
     }
 
+    public function test_product_page_review_status_and_summary(): void
+    {
+        $this->getJson('/api/products/bifold/review-status')->assertUnauthorized();
+
+        // someone who never bought it
+        Sanctum::actingAs(User::factory()->create(['is_active' => true]));
+        $this->getJson('/api/products/bifold/review-status')->assertOk()
+            ->assertJsonPath('data.can_review', false)->assertJsonPath('data.reason', 'not_bought');
+
+        // the buyer with a delivered order
+        Sanctum::actingAs($this->customer);
+        $this->getJson('/api/products/bifold/review-status')->assertOk()
+            ->assertJsonPath('data.can_review', true)->assertJsonPath('data.order_number', 'XQ-50001');
+
+        $this->postJson('/api/reviews', ['order_number' => 'XQ-50001', 'product_id' => $this->product->id, 'rating' => 5, 'body' => 'Lovely'])->assertCreated();
+        $this->getJson('/api/products/bifold/review-status')
+            ->assertJsonPath('data.can_review', false)->assertJsonPath('data.reason', 'already_reviewed');
+
+        // a new order that hasn't arrived yet doesn't open another review
+        $this->order->update(['status' => 'shipped']);
+        $this->getJson('/api/products/bifold/review-status')->assertJsonPath('data.reason', 'not_delivered');
+
+        Review::query()->update(['status' => 'approved']);
+        Review::create(['user_id' => User::factory()->create()->id, 'product_id' => $this->product->id, 'order_id' => $this->order->id, 'rating' => 2, 'body' => 'Meh', 'status' => 'approved']);
+        $this->getJson('/api/products/bifold/reviews')->assertOk()
+            ->assertJsonPath('summary.count', 2)
+            ->assertJsonPath('summary.recommended', 1)
+            ->assertJsonPath('summary.recommended_percent', 50);
+    }
+
     public function test_homepage_testimonials_follow_the_content_settings(): void
     {
         $second = Product::create(['category_id' => $this->product->category_id, 'name' => 'Card Holder', 'slug' => 'card', 'sku' => 'C1', 'price' => 500, 'stock' => 5, 'status' => 'active']);
