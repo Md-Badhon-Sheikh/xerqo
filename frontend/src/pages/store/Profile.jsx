@@ -7,6 +7,7 @@ import { AccountShell } from '../../components/store/AccountShell'
 import { Button, Field, Checkbox, cx } from '../../components/store/ui'
 import { OtpInput, useCountdown, mmss } from '../../components/store/OtpInput'
 import Select2 from '../../components/common/Select2'
+import AreaSelect from '../../components/common/AreaSelect'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
 import { confirmAndRun, toast } from '../../lib/alert'
@@ -203,10 +204,10 @@ function AddressForm({ initial, user, onDone }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Recipient name" placeholder="Full name" value={f.name} onChange={(e) => set({ name: e.target.value })} error={errors.name} />
           <Field label="Phone" inputMode="tel" placeholder="01XXXXXXXXX" value={f.phone} onChange={(e) => set({ phone: e.target.value.replace(/\D/g, '').slice(0, 11) })} error={errors.phone} />
-          <Field label="District" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={f.district} onChange={(district) => set({ district })} invalid={!!errors.district} /></Field>
-          <Field label="Area / Thana" placeholder="e.g. Dhanmondi" value={f.area} onChange={(e) => set({ area: e.target.value })} error={errors.area} />
+          <Field label="District" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={f.district} onChange={(district) => set({ district, ...(district !== f.district ? { area: '' } : {}) })} invalid={!!errors.district} /></Field>
+          <Field label="Area / Thana" error={errors.area}><AreaSelect district={f.district} value={f.area} onChange={(area) => set({ area })} invalid={!!errors.area} /></Field>
         </div>
-        <Field label="Full address" placeholder="House, road, landmark" value={f.address_line} onChange={(e) => set({ address_line: e.target.value })} error={errors.address_line} />
+        <Field label="Full address" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, landmark" value={f.address_line} onChange={(e) => set({ address_line: e.target.value })} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>
         <Checkbox label="Set as default address" checked={f.is_default} onChange={(e) => set({ is_default: e.target.checked })} />
         <div className="flex gap-2">
           <Button size="sm" className="sm:!px-4 sm:!py-3" disabled={save.isPending}>{save.isPending && <Spinner />}Save address</Button>

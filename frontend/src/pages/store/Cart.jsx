@@ -102,7 +102,7 @@ function Summary({ cart, zone, setZone, delivery, couponQ, totals }) {
       </dl>
       <div className="flex items-baseline justify-between border-t border-line pt-4">
         <span className="font-semibold">Total</span>
-        <span className="font-display text-[34px] font-semibold leading-none">{tk(totals.total)}</span>
+        <span className="text-[28px] font-bold leading-none tracking-tight tabular-nums">{tk(totals.total)}</span>
       </div>
       <Button to="/checkout" size="lg" className="w-full">Proceed to checkout</Button>
       <PayChips />

@@ -45,6 +45,8 @@
   .container-x { @apply mx-auto w-full max-w-[1440px] px-4 sm:px-8 lg:px-12 xl:px-20; }
   .eyebrow { @apply text-[11px] sm:text-xs font-semibold uppercase tracking-[0.2em] text-tan; }
   .h-display { @apply font-display font-semibold leading-[1.1]; }
+  /* Cormorant's default old-style figures make "1" look like "I" — use its lining figures everywhere */
+  .h-display, .font-display, .swal2-title { font-variant-numeric: lining-nums; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
   .input {

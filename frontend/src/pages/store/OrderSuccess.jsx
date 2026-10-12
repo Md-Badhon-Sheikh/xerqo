@@ -110,7 +110,7 @@ export default function OrderSuccess() {
         </dl>
         <div className="flex items-baseline justify-between border-t border-line pt-4">
           <span className="font-semibold">Total</span>
-          <span className="font-display text-[34px] font-semibold leading-none">{tk(o.total)}</span>
+          <span className="text-[28px] font-bold leading-none tracking-tight tabular-nums">{tk(o.total)}</span>
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import { useAdminAuth } from '../../context/AuthContext'
 import { adminApi } from '../../lib/api'
 import { confirm, toast } from '../../lib/alert'
 import { DISTRICTS } from '../../lib/bd'
+import AreaSelect from '../../components/common/AreaSelect'
 import { useAdminMutation } from '../../lib/adminQueries'
 
 const METHOD_NAME = { cod: 'Cash on Delivery', bkash: 'bKash', rocket: 'Rocket', nagad: 'Nagad', bank: 'Bank transfer / card' }
@@ -94,8 +95,8 @@ function AddressCard({ order, canEdit, save }) {
             <FormField label="Name" error={save.error?.fields?.name}><TextInput value={f.name} onChange={(e) => setF((x) => ({ ...x, name: e.target.value }))} /></FormField>
             <FormField label="Phone" error={save.error?.fields?.phone}><TextInput value={f.phone} onChange={(e) => setF((x) => ({ ...x, phone: e.target.value.replace(/\D/g, '').slice(0, 11) }))} /></FormField>
           </div>
-          <FormField label="District"><Select search options={DISTRICTS} value={f.district} onChange={(district) => setF((x) => ({ ...x, district }))} /></FormField>
-          <FormField label="Area"><TextInput value={f.area} onChange={(e) => setF((x) => ({ ...x, area: e.target.value }))} /></FormField>
+          <FormField label="District"><Select search options={DISTRICTS} value={f.district} onChange={(district) => setF((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} /></FormField>
+          <FormField label="Area / Thana"><AreaSelect variant="admin" district={f.district} value={f.area} onChange={(area) => setF((x) => ({ ...x, area }))} /></FormField>
           <FormField label="Address" error={save.error?.fields?.address_line}><TextInput value={f.address_line} onChange={(e) => setF((x) => ({ ...x, address_line: e.target.value }))} /></FormField>
           <p className="text-[11px] text-amute">The delivery charge is not recalculated when the district changes.</p>
           <div className="flex justify-end gap-2"><Btn v="white" sm type="button" onClick={() => setEdit(false)}>Cancel</Btn><Btn sm disabled={save.isPending}>{save.isPending && <Spin />}Save</Btn></div>

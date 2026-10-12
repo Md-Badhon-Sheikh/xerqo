@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, ChevronDown, Copy, FileUp, Loader2, Lock, X } from 'lucide-react'
+import { Banknote, Check, ChevronDown, Copy, CreditCard, FileUp, Loader2, Lock, Smartphone, X } from 'lucide-react'
 import { tk } from '../../data/store'
 import { Button, Checkbox, Field, cx } from '../../components/store/ui'
 import Select2 from '../../components/common/Select2'
+import AreaSelect from '../../components/common/AreaSelect'
 import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { api } from '../../lib/api'
@@ -15,11 +16,11 @@ import { useCouponCheck, useSettings } from '../../lib/queries'
 const STEPS = ['Cart', 'Information', 'Payment', 'Done']
 // chip colours are static class strings so Tailwind can see them
 const METHOD_STYLE = {
-  cod: { chip: 'COD', cls: 'bg-leaf', sub: 'Pay the rider when you receive it' },
-  bkash: { chip: 'bKash', cls: 'bg-bkash', sub: 'Pay now, then enter the Transaction ID' },
-  rocket: { chip: 'Rocket', cls: 'bg-[#8C3494]', sub: 'Pay now, then enter the TxnId' },
-  nagad: { chip: 'Nagad', cls: 'bg-nagad', sub: 'Pay now, then enter the TxnID' },
-  bank: { chip: 'Bank', cls: 'bg-[#2B3240]', sub: 'Bank transfer or card via internet banking — upload the slip' },
+  cod: { icon: Banknote, cls: 'bg-leaf', sub: 'Pay the rider when you receive it' },
+  bkash: { icon: Smartphone, cls: 'bg-bkash', sub: 'Pay now, then enter the Transaction ID' },
+  rocket: { icon: Smartphone, cls: 'bg-[#8C3494]', sub: 'Pay now, then enter the TxnId' },
+  nagad: { icon: Smartphone, cls: 'bg-nagad', sub: 'Pay now, then enter the TxnID' },
+  bank: { icon: CreditCard, cls: 'bg-[#2B3240]', sub: 'Bank transfer or card via internet banking — upload the slip' },
 }
 const WALLETS = ['bkash', 'rocket', 'nagad']
 
@@ -54,6 +55,20 @@ function RadioCard({ checked, onChange, title, sub, right, name }) {
       </span>
       <span className="min-w-0 flex-1"><b className="block text-sm font-semibold">{title}</b><span className="text-xs text-mute">{sub}</span></span>
       {right}
+    </label>
+  )
+}
+
+// Small payment option tile: brand-coloured icon, name, tick when chosen
+function PayTile({ m, checked, onPick }) {
+  const st = METHOD_STYLE[m.id] ?? { icon: CreditCard, cls: 'bg-ink' }
+  const Icon = st.icon
+  return (
+    <label className={cx('flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2.5 transition sm:gap-3 sm:px-3.5', checked ? 'border-ink bg-sand ring-1 ring-ink' : 'border-line bg-white hover:border-mute')}>
+      <input type="radio" name="payment" checked={checked} onChange={onPick} className="sr-only" />
+      <span className={cx('grid size-8 shrink-0 place-items-center rounded-md text-white', st.cls)}><Icon className="size-4" /></span>
+      <span className="min-w-0 flex-1 truncate text-[13px] font-semibold sm:text-sm">{m.label}</span>
+      <span className={cx('grid size-5 shrink-0 place-items-center rounded-full', checked ? 'bg-ink text-white' : 'border border-line')}>{checked && <Check className="size-3" strokeWidth={3} />}</span>
     </label>
   )
 }
@@ -143,7 +158,7 @@ function Summary({ cart, fee, discount, total, couponQ, placing, onPlace }) {
       </dl>
       <div className="flex items-baseline justify-between border-t border-line pt-4">
         <span className="font-semibold">Total</span>
-        <span className="font-display text-[34px] font-semibold leading-none">{tk(total)}</span>
+        <span className="text-[28px] font-bold leading-none tracking-tight tabular-nums">{tk(total)}</span>
       </div>
       <Button size="lg" className="w-full max-sm:hidden" disabled={placing} onClick={onPlace}>{placing && <Loader2 className="size-4 animate-spin" />}{placing ? 'Placing order…' : `Place order — ${tk(total)}`}</Button>
       <p className="text-center text-xs leading-relaxed text-mute">By placing your order you agree to our <Link to="/policy" className="underline">Terms</Link> &amp; <Link to="/policy" className="underline">Return Policy</Link>. You'll receive an SMS confirmation.</p>
@@ -199,7 +214,6 @@ export default function Checkout() {
 
   if (!cart.items.length && !placing) return <Navigate to="/cart" replace />
 
-  const pickMethod = (m) => { setMethod(m); setErrors({}); paymentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
 
   const place = async () => {
     const local = {}
@@ -270,15 +284,6 @@ export default function Checkout() {
 
           <div className="space-y-4">
             <h1 className="h-display text-[34px] max-sm:hidden sm:text-5xl lg:text-[56px]">Checkout</h1>
-            {methods.some((m) => m.id === 'bkash' || m.id === 'nagad') && (
-              <>
-                <p className="eyebrow !text-mute">Express checkout</p>
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                  {methods.some((m) => m.id === 'bkash') && <button type="button" onClick={() => pickMethod('bkash')} className="rounded bg-bkash py-3.5 text-sm font-semibold text-white transition hover:opacity-90">Pay with bKash</button>}
-                  {methods.some((m) => m.id === 'nagad') && <button type="button" onClick={() => pickMethod('nagad')} className="rounded bg-nagad py-3.5 text-sm font-semibold text-white transition hover:opacity-90">Pay with Nagad</button>}
-                </div>
-              </>
-            )}
           </div>
 
           {/* 1. Contact */}
@@ -306,9 +311,9 @@ export default function Checkout() {
             )}
             {usingNew && !addressesLoading && (
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district }))} invalid={!!errors.district} /></Field>
-                <Field label="Area / Thana" placeholder="e.g. Dhanmondi" value={addr.area} onChange={(e) => setAddr((x) => ({ ...x, area: e.target.value }))} error={errors.area} />
-                <Field label="Full address *" placeholder="House, road, block, landmark" className="sm:col-span-2" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} error={errors.address_line} />
+                <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
+                <Field label="Area / Thana" error={errors.area}><AreaSelect district={addr.district} value={addr.area} onChange={(area) => setAddr((x) => ({ ...x, area }))} invalid={!!errors.area} /></Field>
+                <Field label="Full address *" className="sm:col-span-2" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, block, landmark" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>
                 <Checkbox label="Save this address to my account" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
               </div>
             )}
@@ -336,15 +341,10 @@ export default function Checkout() {
           {/* 4. Payment */}
           <fieldset ref={paymentRef} className="scroll-mt-28 space-y-4">
             <SectionTitle n={4}>Payment method</SectionTitle>
-            <div className="space-y-3">
-              {methods.map((m) => {
-                const st = METHOD_STYLE[m.id] ?? { chip: m.label, cls: 'bg-ink', sub: '' }
-                return (
-                  <RadioCard key={m.id} name="payment" checked={method === m.id} onChange={() => { setMethod(m.id); setErrors({}) }} title={m.label} sub={st.sub}
-                    right={<span className={cx('rounded px-2.5 py-1 text-[11px] font-bold text-white', st.cls)}>{st.chip}</span>} />
-                )
-              })}
+            <div className="grid grid-cols-2 gap-2.5 sm:gap-3" role="radiogroup" aria-label="Payment method">
+              {methods.map((m) => <PayTile key={m.id} m={m} checked={method === m.id} onPick={() => { setMethod(m.id); setErrors({}) }} />)}
             </div>
+            {method && METHOD_STYLE[method] && <p className="text-xs text-mute">{METHOD_STYLE[method].sub}</p>}
             {errors.payment_method && <p className="text-xs text-rust">{errors.payment_method}</p>}
             {cfg && <PaymentDetails method={method} cfg={cfg} total={total} pay={pay} setPay={setPay} errors={errors} />}
             <Field label="Order note (optional)">
