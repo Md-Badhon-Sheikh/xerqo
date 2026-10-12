@@ -56,6 +56,7 @@ class ProductResource extends JsonResource
             'badge' => $this->badge,
             'image' => Media::url($image),
             'images' => ProductImageResource::collection($this->whenLoaded('images')),
+            'video' => Media::url($this->video),
             'variants' => ProductVariantResource::collection($this->whenLoaded('variants')),
             // cards use this to send shoppers to the product page to pick a colour first
             'has_variants' => $this->when(

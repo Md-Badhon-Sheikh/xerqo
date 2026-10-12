@@ -148,6 +148,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
         Route::post('products/{product}/images', [Admin\ProductController::class, 'uploadImages']);
         Route::patch('products/{product}/images/reorder', [Admin\ProductController::class, 'reorderImages']);
         Route::delete('products/{product}/images/{image}', [Admin\ProductController::class, 'destroyImage']);
+        Route::post('products/{product}/video', [Admin\ProductController::class, 'uploadVideo']);
+        Route::delete('products/{product}/video', [Admin\ProductController::class, 'destroyVideo']);
         Route::post('products/{product}/variants/{variant}/image', [Admin\ProductController::class, 'uploadVariantImage']);
         Route::delete('products/{product}/variants/{variant}/image', [Admin\ProductController::class, 'destroyVariantImage']);
     });

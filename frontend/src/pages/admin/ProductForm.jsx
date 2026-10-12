@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, ImagePlus, Plus, Star, Trash2, Upload, X } from 'lucide-react'
+import { ArrowLeft, Film, ImagePlus, Plus, Star, Trash2, Upload, X } from 'lucide-react'
 import { Btn, Card, Col, KV, Select, Textarea, Two, cx } from '../../components/admin/ui'
 import { FormField, MoneyInput, Spin, SwitchRow, Switch, TextInput, LoadingBlock, toFormData } from '../../components/admin/form'
 import { adminApi } from '../../lib/api'
@@ -80,6 +80,9 @@ export default function ProductForm() {
   const [images, setImages] = useState([]) // saved: [{ id, url }]
   const [newFiles, setNewFiles] = useState([]) // File[]
   const [cover, setCover] = useState(null) // saved image id chosen as cover
+  const [video, setVideo] = useState(null) // saved video URL
+  const [newVideo, setNewVideo] = useState(null) // File waiting to be uploaded on save
+  const [removeVideo, setRemoveVideo] = useState(false)
   const [slugTouched, setSlugTouched] = useState(false)
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
@@ -89,6 +92,7 @@ export default function ProductForm() {
   if (product && product.id !== loadedId) {
     const s = fromProduct(product)
     setLoadedId(product.id); setForm(s.form); setVariants(s.variants); setImages(s.images); setCover(s.images[0]?.id ?? null); setSlugTouched(true)
+    setVideo(product.video ?? null); setNewVideo(null); setRemoveVideo(false)
   }
 
   const set = (patch) => setForm((f) => ({ ...f, ...patch }))
@@ -101,6 +105,20 @@ export default function ProductForm() {
 
   const previews = useMemo(() => newFiles.map((f) => ({ file: f, url: URL.createObjectURL(f) })), [newFiles])
   useEffect(() => () => previews.forEach((p) => URL.revokeObjectURL(p.url)), [previews])
+  const newVideoUrl = useMemo(() => (newVideo ? URL.createObjectURL(newVideo) : null), [newVideo])
+  useEffect(() => () => { if (newVideoUrl) URL.revokeObjectURL(newVideoUrl) }, [newVideoUrl])
+  const videoSrc = newVideoUrl || (removeVideo ? null : video)
+
+  const pickVideo = (file) => {
+    if (!file) return
+    if (file.size > 50 * 1024 * 1024) { toast.error('The video can be at most 50 MB.'); return }
+    setNewVideo(file)
+    setErrors((e) => ({ ...e, video: undefined }))
+  }
+  const dropVideo = async () => {
+    if (newVideo) { setNewVideo(null); return }
+    if (await confirm({ title: 'Remove the video?', text: 'It is deleted when you save the product.', confirmText: 'Remove', danger: true })) setRemoveVideo(true)
+  }
 
   const removeSavedImage = async (img) => {
     if (!(await confirm({ title: 'Delete this image?', confirmText: 'Delete', danger: true }))) return
@@ -138,6 +156,10 @@ export default function ProductForm() {
         await adminApi.patch(`/admin/products/${pid}/images/reorder`, { order: [cover, ...images.filter((i) => i.id !== cover).map((i) => i.id)] })
       }
 
+      // optional product video
+      if (newVideo) await adminApi.post(`/admin/products/${pid}/video`, toFormData({ video: newVideo }))
+      else if (removeVideo && video) await adminApi.del(`/admin/products/${pid}/video`)
+
       // colour photos: existing rows keep their id; new rows get ids in the order they were added
       const oldIds = new Set(variants.filter((v) => v.id).map((v) => v.id))
       const createdIds = (saved.variants ?? []).map((v) => v.id).filter((vid) => !oldIds.has(vid))
@@ -152,6 +174,8 @@ export default function ProductForm() {
       qc.invalidateQueries({ queryKey: ['admin'] })
       ;['home', 'products', 'product'].forEach((k) => qc.invalidateQueries({ queryKey: [k] }))
       setNewFiles([])
+      setNewVideo(null)
+      setRemoveVideo(false)
       if (isEdit) {
         setLoadedId(null) // reload fresh values from the server
         toast.success('Product saved')
@@ -199,7 +223,7 @@ export default function ProductForm() {
             </FormField>
           </Card>
 
-          <Card title="Media" sub="First image is the cover · JPG, PNG or WebP · max 4 MB each">
+          <Card title="Media" sub="First image is the cover · JPG, PNG or WebP · max 4 MB each · plus one optional video">
             <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3">
               {images.map((img) => (
                 <div key={img.id} className={cx('relative aspect-square overflow-hidden rounded-lg', cover === img.id && 'ring-2 ring-tan ring-offset-2')}>
@@ -227,6 +251,25 @@ export default function ProductForm() {
               )}
             </div>
             {(errors.images || errors['images.0']) && <p className="text-[11px] text-bad">{errors.images || errors['images.0']}</p>}
+            <div className="space-y-2 border-t border-aline pt-4">
+              <p className="text-[13px] font-semibold">Video <span className="font-normal text-amute">(optional) · shown after the photos on the product page</span></p>
+              {videoSrc ? (
+                <div className="relative w-full max-w-xs overflow-hidden rounded-lg bg-black">
+                  <video src={videoSrc} controls playsInline preload="metadata" className="aspect-video w-full" />
+                  {newVideo && <span className="absolute bottom-1.5 left-1.5 rounded bg-tan px-1.5 py-0.5 text-[10px] font-bold text-white">New</span>}
+                  <button type="button" onClick={dropVideo} className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-white text-ink shadow" aria-label="Remove video"><X className="size-3.5" /></button>
+                </div>
+              ) : (
+                <label className="flex w-full max-w-xs cursor-pointer items-center gap-3 rounded-lg border border-dashed border-tan/60 bg-asoft/60 p-3.5 text-tan">
+                  <input type="file" accept="video/mp4,video/webm,video/quicktime" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; pickVideo(f) }} />
+                  <Film className="size-5 shrink-0" />
+                  <span><span className="block text-xs font-semibold">Add video</span><span className="block text-[11px] text-amute">MP4 (best), WebM or MOV · max 50 MB</span></span>
+                </label>
+              )}
+              {newVideo && <p className="text-[11px] text-amute">{newVideo.name} · {(newVideo.size / 1024 / 1024).toFixed(1)} MB — uploads when you save</p>}
+              {removeVideo && !newVideo && <p className="text-[11px] text-amute">The video is removed when you save.</p>}
+              {errors.video && <p className="text-[11px] text-bad">{errors.video}</p>}
+            </div>
           </Card>
 
           <Card title="Pricing" sub="During a flash sale the store shows the sale price automatically">

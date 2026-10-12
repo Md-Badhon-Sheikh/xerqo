@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Check, GitCompareArrows, Heart, Maximize2, MessageCircle, Minus, PackageX, Plus, Timer } from 'lucide-react'
+import { ArrowRight, Check, GitCompareArrows, Heart, Maximize2, MessageCircle, Minus, PackageX, Play, Plus, Timer } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
 import { tk } from '../../data/store'
 import { cartLine } from '../../lib/product'
@@ -28,22 +28,35 @@ const timeLeft = (iso) => {
 }
 
 /* ---------- Gallery ---------- */
-function Gallery({ p, images, active, setActive }) {
+// photos first, then the product video (if any) as the last slide
+function Gallery({ p, images, video, active, setActive }) {
+  const total = images.length + (video ? 1 : 0)
+  const showVideo = video && active >= images.length
+  const mediaCls = 'aspect-square w-full sm:aspect-[4/3] lg:aspect-[10/11]'
   return (
     <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row-reverse">
       <div className="relative flex-1 overflow-hidden bg-tile max-sm:-mx-4 sm:rounded-lg">
-        <img src={images[active]} alt={p.name} className="aspect-square w-full object-cover sm:aspect-[4/3] lg:aspect-[10/11]" />
-        {p.discount_percent > 0 && <span className="absolute left-3 top-3 rounded-sm bg-tan px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white sm:left-5 sm:top-5 sm:text-[11px]">-{p.discount_percent}% {p.flash_sale ? p.flash_sale.title : 'off'}</span>}
-        {images.length > 1 && <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold sm:hidden">{active + 1} / {images.length}</span>}
-        <a href={images[active]} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-medium shadow-sm sm:flex"><Maximize2 className="size-3.5" /> Zoom</a>
+        {showVideo
+          ? <video key={video} src={video} controls autoPlay muted playsInline preload="metadata" className={cx(mediaCls, 'bg-black object-contain')} />
+          : <img src={images[active]} alt={p.name} className={cx(mediaCls, 'object-cover')} />}
+        {p.discount_percent > 0 && !showVideo && <span className="absolute left-3 top-3 rounded-sm bg-tan px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-white sm:left-5 sm:top-5 sm:text-[11px]">-{p.discount_percent}% {p.flash_sale ? p.flash_sale.title : 'off'}</span>}
+        {total > 1 && <span className="absolute right-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold sm:hidden">{Math.min(active, total - 1) + 1} / {total}</span>}
+        {!showVideo && <a href={images[active]} target="_blank" rel="noreferrer" className="absolute bottom-4 right-4 hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-medium shadow-sm sm:flex"><Maximize2 className="size-3.5" /> Zoom</a>}
       </div>
-      {images.length > 1 && (
+      {total > 1 && (
         <div className="no-scrollbar flex gap-2.5 overflow-x-auto lg:w-[84px] lg:shrink-0 lg:flex-col lg:overflow-visible">
           {images.map((src, i) => (
             <button key={src + i} onClick={() => setActive(i)} aria-label={`View image ${i + 1}`} aria-current={i === active} className={cx('aspect-square w-[68px] shrink-0 overflow-hidden rounded bg-tile transition sm:w-20 lg:w-full', i === active ? 'ring-2 ring-tan ring-offset-2 ring-offset-cream' : 'opacity-75 hover:opacity-100')}>
               <img src={src} alt="" className="size-full object-cover" />
             </button>
           ))}
+          {video && (
+            <button onClick={() => setActive(images.length)} aria-label="Play video" aria-current={!!showVideo} className={cx('relative aspect-square w-[68px] shrink-0 overflow-hidden rounded bg-black transition sm:w-20 lg:w-full', showVideo ? 'ring-2 ring-tan ring-offset-2 ring-offset-cream' : 'opacity-75 hover:opacity-100')}>
+              {/* #t=0.1 makes phones show the first frame instead of a black box */}
+              <video src={`${video}#t=0.1`} muted playsInline preload="metadata" className="pointer-events-none size-full object-cover" />
+              <span className="absolute inset-0 grid place-items-center"><span className="grid size-7 place-items-center rounded-full bg-white/90 text-ink shadow"><Play className="ml-0.5 size-3.5 fill-current" /></span></span>
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -396,7 +409,7 @@ export default function Product() {
         <Breadcrumb items={[{ label: 'Home', to: '/' }, ...(p.category ? [{ label: p.category.name, to: `/shop?c=${p.category.slug}` }] : []), { label: p.name }]} />
       </div>
       <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-6 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
-        <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} active={Math.min(active, gallery.length - 1)} setActive={setActive} /></div>
+        <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} video={p.video} active={Math.min(active, gallery.length - (p.video ? 0 : 1))} setActive={setActive} /></div>
         <BuyBox p={p} buy={buy} settings={settings} />
       </section>
       <Reviews slug={slug} />

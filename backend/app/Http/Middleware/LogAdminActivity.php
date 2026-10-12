@@ -153,6 +153,10 @@ class LogAdminActivity
             case 'POST products/{product}/variants/{variant}/image':
             case 'DELETE products/{product}/variants/{variant}/image':
                 return ['catalog', 'Updated photos of '.$p('product')?->name, $p('product')];
+            case 'POST products/{product}/video':
+                return ['catalog', 'Uploaded a video for '.$p('product')?->name, $p('product')];
+            case 'DELETE products/{product}/video':
+                return ['catalog', 'Removed the video of '.$p('product')?->name, $p('product')];
         }
 
         // plain create / update / delete of a resource

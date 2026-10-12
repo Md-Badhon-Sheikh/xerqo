@@ -111,7 +111,7 @@ class ProductController extends Controller
      */
     public function destroy(Product $product): JsonResponse
     {
-        $paths = $product->images()->pluck('path');
+        $paths = $product->images()->pluck('path')->push($product->video);
 
         $product->delete();
 
@@ -163,6 +163,37 @@ class ProductController extends Controller
         $image->delete();
 
         return response()->json(['message' => 'Image deleted.']);
+    }
+
+    /**
+     * POST /api/admin/products/{id}/video (multipart: video) — one optional video, replaces the old one.
+     */
+    public function uploadVideo(Request $request, Product $product): ProductResource
+    {
+        $request->validate([
+            'video' => ['required', 'file', 'mimetypes:video/mp4,video/x-m4v,video/webm,video/quicktime', 'max:51200'],
+        ], [
+            'video.mimetypes' => 'Upload an MP4, WebM or MOV video (MP4 plays everywhere).',
+            'video.max' => 'The video can be at most 50 MB.',
+            'video.uploaded' => 'The video could not be uploaded — it may be bigger than the server allows.',
+        ]);
+
+        $old = $product->video;
+        $product->update(['video' => Media::store($request->file('video'), 'products/videos')]);
+        Media::delete($old);
+
+        return new ProductResource($this->loadDetail($product));
+    }
+
+    /**
+     * DELETE /api/admin/products/{id}/video
+     */
+    public function destroyVideo(Product $product): ProductResource
+    {
+        Media::delete($product->video);
+        $product->update(['video' => null]);
+
+        return new ProductResource($this->loadDetail($product));
     }
 
     /**

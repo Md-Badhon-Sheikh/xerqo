@@ -25,6 +25,7 @@ class Product extends Model
         'low_stock_threshold',
         'is_engravable',
         'badge',
+        'video', // set only through the video upload endpoint (not in ProductRequest)
         'status',
         'meta_title',
         'meta_description',

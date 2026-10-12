@@ -12,6 +12,8 @@ use App\Models\User;
 use App\Services\OrderStatusService;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -73,6 +75,34 @@ class AdminCatalogTest extends TestCase
             ->assertJsonPath('data.variants.1.color_hex', '#B9874E');
 
         $this->assertDatabaseHas('stock_movements', ['product_id' => $response->json('data.id'), 'change' => 10, 'type' => 'edit']);
+    }
+
+    public function test_product_video_upload_replace_and_remove(): void
+    {
+        Storage::fake('public');
+        $product = $this->product();
+        $upload = fn ($file) => $this->post("/api/admin/products/{$product->id}/video", ['video' => $file], ['Accept' => 'application/json']);
+
+        $upload(UploadedFile::fake()->create('clip.gif', 100, 'image/gif'))->assertUnprocessable()->assertJsonValidationErrors('video');
+        $upload(UploadedFile::fake()->create('big.mp4', 52000, 'video/mp4'))->assertUnprocessable()->assertJsonValidationErrors('video');
+
+        $upload(UploadedFile::fake()->create('clip.mp4', 900, 'video/mp4'))->assertOk()->assertJsonPath('data.video', fn ($url) => str_contains($url, 'products/videos/'));
+        $first = $product->fresh()->video;
+        Storage::disk('public')->assertExists($first);
+
+        // the storefront gets the video; the card image is still the first photo
+        $this->getJson('/api/products/bifold-wallet')->assertOk()->assertJsonPath('data.video', Storage::disk('public')->url($first));
+
+        $upload(UploadedFile::fake()->create('new.webm', 500, 'video/webm'))->assertOk();
+        Storage::disk('public')->assertMissing($first);
+
+        $second = $product->fresh()->video;
+        $this->deleteJson("/api/admin/products/{$product->id}/video")->assertOk()->assertJsonPath('data.video', null);
+        Storage::disk('public')->assertMissing($second);
+
+        // the product form can't set the path directly
+        $this->putJson("/api/admin/products/{$product->id}", ['name' => 'Bifold Wallet', 'slug' => 'bifold-wallet', 'sku' => 'XQ-1', 'price' => 1500, 'stock' => 10, 'status' => 'active', 'category_id' => $this->category->id, 'video' => '/etc/passwd']);
+        $this->assertNull($product->fresh()->video);
     }
 
     public function test_invalid_colour_code_is_rejected(): void
