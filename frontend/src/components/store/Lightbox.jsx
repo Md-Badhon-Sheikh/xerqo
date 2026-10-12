@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { ArrowLeft, ArrowRight, LayoutGrid, Pause, Play, Search, X } from 'lucide-react'
 import { cx } from './ui'
 
@@ -61,7 +62,8 @@ export default function Lightbox({ items, index, onIndex, onClose, alt = '' }) {
   }
 
   const tool = 'grid size-10 place-items-center text-white/80 transition hover:bg-white/10 hover:text-white sm:size-11'
-  return (
+  // rendered on <body>: the gallery sits in a sticky box, which would keep the viewer's z-index below the page
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex flex-col bg-[#1b1714]/95 text-white" role="dialog" aria-modal="true" aria-label="Product photos">
       {/* top bar: counter left, tools right */}
       <div className="flex h-12 shrink-0 items-center justify-between pl-4 sm:h-14">
@@ -106,6 +108,7 @@ export default function Lightbox({ items, index, onIndex, onClose, alt = '' }) {
         </div>
       )}
       <style>{'@keyframes xq-lb-progress { from { transform: scaleX(0) } to { transform: scaleX(1) } }'}</style>
-    </div>
+    </div>,
+    document.body,
   )
 }

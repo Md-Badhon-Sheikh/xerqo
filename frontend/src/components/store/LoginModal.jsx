@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Link, useLocation } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { GoogleSection } from './GoogleButton'
@@ -23,7 +24,8 @@ export default function LoginModal({ open, onClose, onDone, title = 'Log in to c
   }, [open, onClose])
 
   if (!open) return null
-  return (
+  // rendered on <body> so no sticky / transformed parent can put the page above it
+  return createPortal(
     <div className="fixed inset-0 z-[60] grid place-items-end sm:place-items-center" role="dialog" aria-modal="true" aria-labelledby="login-modal-title">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
       <div className="relative max-h-[92vh] w-full space-y-5 overflow-y-auto rounded-t-2xl bg-white p-5 shadow-xl sm:max-w-md sm:rounded-xl sm:p-7">
@@ -40,6 +42,7 @@ export default function LoginModal({ open, onClose, onDone, title = 'Log in to c
           <Link to="/register" state={{ from: location }} className="font-semibold text-ink hover:underline">Create an account</Link>
         </p>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
