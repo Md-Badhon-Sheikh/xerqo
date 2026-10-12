@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Check, GitCompareArrows, Heart, Maximize2, MessageCircle, Minus, PackageX, Play, Plus, Timer } from 'lucide-react'
+import { ArrowRight, Check, GitCompareArrows, Heart, Maximize2, MessageCircle, PackageX, Phone, Play, Timer } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
 import { tk } from '../../data/store'
 import { cartLine } from '../../lib/product'
+import { waLink } from '../../lib/bd'
 import { useProduct, useProductReviews, useSettings } from '../../lib/queries'
 import { useCart } from '../../context/CartContext'
 import { useCompare } from '../../context/CompareContext'
@@ -21,10 +22,25 @@ const ago = (iso) => {
   if (days < 30) return `${Math.floor(days / 7)} week${days >= 14 ? 's' : ''} ago`
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
 }
-const timeLeft = (iso) => {
-  const s = Math.max(0, Math.floor((new Date(iso).getTime() - Date.now()) / 1000))
-  const d = Math.floor(s / 86400), h = Math.floor(s / 3600) % 24, m = Math.floor(s / 60) % 60
-  return d > 0 ? `${d}d ${h}h` : h > 0 ? `${h}h ${m}m` : `${m}m`
+// Live "Days · Hours · Min · Sec" boxes for a flash sale
+function Countdown({ endsAt }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const s = Math.max(0, Math.floor((new Date(endsAt).getTime() - now) / 1000))
+  const parts = [['Days', Math.floor(s / 86400)], ['Hours', Math.floor(s / 3600) % 24], ['Min', Math.floor(s / 60) % 60], ['Sec', s % 60]]
+  return (
+    <div className="flex gap-2" role="timer" aria-label="Time left in this offer">
+      {parts.map(([label, n]) => (
+        <span key={label} className="grid w-12 place-items-center rounded bg-espresso py-1.5 text-white sm:w-14">
+          <b className="text-base tabular-nums leading-tight sm:text-lg">{String(n).padStart(2, '0')}</b>
+          <span className="text-[9px] uppercase tracking-wider text-white/60 sm:text-[10px]">{label}</span>
+        </span>
+      ))}
+    </div>
+  )
 }
 
 /* ---------- Gallery ---------- */
@@ -64,29 +80,19 @@ function Gallery({ p, images, video, active, setActive }) {
 }
 
 /* ---------- Buy box ---------- */
-function Accordion({ title, defaultOpen, children }) {
-  const [open, setOpen] = useState(!!defaultOpen)
-  return (
-    <div className="border-b border-line">
-      <button onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold sm:py-5">
-        {title}{open ? <Minus className="size-4" /> : <Plus className="size-4" />}
-      </button>
-      {open && <div className="pb-5 text-[13px] leading-relaxed text-mute sm:text-sm">{children}</div>}
-    </div>
-  )
-}
-
-function BuyBox({ p, buy, settings }) {
+function BuyBox({ p, buy, settings, openTab }) {
   const { variant, setVariant, qty, setQty, engrave, setEngrave, engraving, setEngraving, stock, price, add, buyNow } = buy
   const compare = useCompare()
   const wish = useWishlist()
   const toast = useToast()
-  const delivery = settings?.delivery
   const engravingCfg = settings?.engraving
   const canEngrave = p.is_engravable && engravingCfg?.enabled !== false
   const soldOut = stock <= 0
   const save = p.compare_price > price ? p.compare_price - price : 0
-  const whatsapp = (settings?.store?.whatsapp || '').replace(/\D/g, '')
+  const savePct = save > 0 ? Math.round((save / p.compare_price) * 100) : 0
+  const store = settings?.store ?? {}
+  const whatsapp = waLink(store.whatsapp)
+  const phone = (store.phone || '').replace(/[^\d+]/g, '')
   const toggleCompare = () => {
     if (!compare.toggle(p)) toast.error('You can compare up to 4 products. Remove one first.')
     else if (!compare.has(p.slug)) toast.success('Added to compare.')
@@ -94,21 +100,24 @@ function BuyBox({ p, buy, settings }) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="space-y-2.5">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <p className="eyebrow">{[p.category?.name?.replace(/s$/, ''), p.brand?.name].filter(Boolean).join(' · ')}</p>
-          {p.reviews_count > 0 && <a href="#reviews"><Stars n={p.rating} count={`${p.rating} · ${p.reviews_count}`} className="text-[11px]" /></a>}
+          {p.reviews_count > 0 && <button type="button" onClick={() => openTab('reviews')}><Stars n={p.rating} count={`${p.rating} · ${p.reviews_count}`} className="text-[11px]" /></button>}
         </div>
         <h1 className="h-display text-[32px] sm:text-[42px] lg:text-[44px]">{p.name}</h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-2xl font-bold sm:text-[28px]">{tk(price)}</span>
-          {p.compare_price > price && <span className="text-base text-mute line-through">{tk(p.compare_price)}</span>}
-          {save > 0 && <span className="rounded-sm bg-tan/12 px-2 py-1 text-[11px] font-semibold text-tan">Save {tk(save)}</span>}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <span className="text-2xl font-bold text-tan sm:text-[28px]">{tk(price)}</span>
+          {save > 0 && <span className="text-base text-mute line-through">{tk(p.compare_price)}</span>}
+          {savePct > 0 && <span className="rounded-full bg-rust px-2.5 py-1 text-[11px] font-bold text-white">{savePct}% OFF</span>}
+          {save > 0 && <span className="w-full text-[12px] text-leaf">You save {tk(save)}</span>}
         </div>
         {p.flash_sale && (
-          <p className="flex items-center gap-2 text-[13px] font-semibold text-rust"><Timer className="size-4" />{p.flash_sale.title} — ends in {timeLeft(p.flash_sale.ends_at)}</p>
+          <div className="flex flex-col gap-2.5 rounded border border-rust/30 bg-rust/5 p-3.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="flex items-center gap-2 text-[13px] font-semibold text-rust"><Timer className="size-4" />{p.flash_sale.title} ends in</p>
+            <Countdown endsAt={p.flash_sale.ends_at} />
+          </div>
         )}
-        {p.description && <p className="line-clamp-3 text-sm leading-relaxed text-mute">{p.description}</p>}
         <p className={cx('flex items-center gap-2 text-[13px] font-medium', soldOut ? 'text-rust' : 'text-leaf')}>
           <span className={cx('size-2 rounded-full', soldOut ? 'bg-rust' : 'bg-leaf')} />
           {soldOut ? (variant ? `${variant.name} is out of stock — try another colour` : 'Out of stock') : stock <= 5 ? `In stock — only ${stock} left` : 'In stock · Ships in 24h'}
@@ -142,13 +151,33 @@ function BuyBox({ p, buy, settings }) {
         </div>
       )}
 
-      {/* Actions (desktop/tablet — mobile uses the sticky bar) */}
-      <div className="space-y-3 max-sm:hidden">
-        <div className="flex gap-3">
-          <Qty value={qty} onChange={setQty} max={stock} />
-          <Button className="flex-1" disabled={soldOut} onClick={add}>Add to cart — {tk(price * qty)}</Button>
+      {/* Quantity + total, then the two main actions side by side */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-[13px] font-semibold">Quantity</span>
+            <Qty value={qty} onChange={setQty} max={stock} />
+          </div>
+          <p className="text-right text-[13px] text-mute">Total <b className="block text-lg text-ink sm:inline sm:pl-1.5">{tk(price * qty)}</b></p>
         </div>
-        <Button variant="tan" className="w-full" disabled={soldOut} onClick={buyNow}>Buy now · Cash on delivery</Button>
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+          <Button variant="outline" disabled={soldOut} onClick={add}>Add to cart</Button>
+          <Button variant="tan" disabled={soldOut} onClick={buyNow}>Buy now</Button>
+        </div>
+        {(whatsapp || phone) && (
+          <div className={cx('grid gap-2.5 sm:gap-3', whatsapp && phone && 'grid-cols-2')}>
+            {whatsapp && (
+              <a href={`${whatsapp}?text=${encodeURIComponent(`Hi! I'd like to order: ${p.name}${variant ? ` (${variant.name})` : ''} × ${qty}`)}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded bg-leaf px-3 py-3 text-[13px] font-semibold text-white transition hover:opacity-90">
+                <MessageCircle className="size-4" /> Order on WhatsApp
+              </a>
+            )}
+            {phone && (
+              <a href={`tel:${phone}`} className="flex items-center justify-center gap-2 rounded border border-ink px-3 py-3 text-[13px] font-semibold transition hover:bg-ink hover:text-white">
+                <Phone className="size-4" /> Call for order
+              </a>
+            )}
+          </div>
+        )}
       </div>
       <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
         <button type="button" onClick={() => wish?.toggle(p)} aria-pressed={!!wish?.has(p.id)} className={cx('flex items-center gap-1.5 text-[13px] font-semibold hover:underline', wish?.has(p.id) ? 'text-rust' : 'text-ink')}>
@@ -157,40 +186,46 @@ function BuyBox({ p, buy, settings }) {
         <button onClick={toggleCompare} className={cx('flex items-center gap-1.5 text-[13px] font-semibold hover:underline', compare.has(p.slug) ? 'text-tan' : 'text-ink')}>
           <GitCompareArrows className="size-4" /> {compare.has(p.slug) ? 'Added to compare' : 'Compare'}
         </button>
-        {whatsapp && (
-          <a href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(`Hi! I'd like to order: ${p.name}`)}`} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[13px] font-semibold text-leaf hover:underline">
-            <MessageCircle className="size-4" /> Order on WhatsApp <ArrowRight className="size-3.5" />
-          </a>
-        )}
       </div>
 
-      {/* Delivery table */}
-      {delivery && (
-        <dl className="divide-y divide-line rounded border border-line bg-white text-[13px]">
-          {[
-            ['Inside Dhaka', `${delivery.inside_dhaka_eta} · ${tk(delivery.inside_dhaka)}`],
-            ['Outside Dhaka', `${delivery.outside_dhaka_eta} · ${tk(delivery.outside_dhaka)}`],
-            ['Free delivery', `Orders over ${tk(delivery.free_delivery_threshold)}`],
-            ['Easy return', `${settings?.returns?.window_days ?? 7} days · free exchange`],
-          ].map(([k, v]) => (
-            <div key={k} className="flex justify-between gap-4 px-4 py-3"><dt className="font-medium">{k}</dt><dd className="text-mute">{v}</dd></div>
-          ))}
-        </dl>
-      )}
 
-      {/* Info accordions */}
-      <div>
-        {p.description && <Accordion title="Description" defaultOpen><p className="whitespace-pre-line">{p.description}</p></Accordion>}
-        <Accordion title="Leather & Care">
-          Genuine leather from Bangladeshi tanneries. Wipe with a dry cloth, condition every 3–4 months and keep away from direct heat. A natural patina develops over time — that's the leather getting better, not worse.
-        </Accordion>
-        {delivery && (
-          <Accordion title="Shipping & Returns">
-            Inside Dhaka delivery in {delivery.inside_dhaka_eta} ({tk(delivery.inside_dhaka)}), outside Dhaka in {delivery.outside_dhaka_eta} ({tk(delivery.outside_dhaka)}) — free on orders over {tk(delivery.free_delivery_threshold)}. {settings?.returns?.policy}
-          </Accordion>
-        )}
-      </div>
     </div>
+  )
+}
+
+/* ---------- Details tabs (full width under the product) ---------- */
+function DetailTabs({ p, settings, tab, setTab }) {
+  const delivery = settings?.delivery
+  const tabs = [['description', 'Description'], ['reviews', `Reviews (${p.reviews_count ?? 0})`], ['shipping', 'Shipping & Returns']]
+  return (
+    <section id="details" className="container-x scroll-mt-28 pt-10 sm:pt-14">
+      <div role="tablist" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-line sm:gap-10">
+        {tabs.map(([k, label]) => (
+          <button key={k} type="button" role="tab" aria-selected={tab === k} onClick={() => setTab(k)}
+            className={cx('-mb-px shrink-0 border-b-2 pb-3 text-sm font-semibold transition sm:text-[15px]', tab === k ? 'border-tan text-ink' : 'border-transparent text-mute hover:text-ink')}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" className="py-6 sm:py-8">
+        {tab === 'description' && (
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-12">
+            <p className="whitespace-pre-line text-sm leading-relaxed text-mute sm:text-[15px]">{p.description || 'No description yet.'}</p>
+            <div className="h-fit space-y-2 rounded-lg bg-sand p-5 text-[13px] leading-relaxed text-mute sm:text-sm">
+              <p className="font-semibold text-ink">Leather &amp; care</p>
+              <p>Genuine leather from Bangladeshi tanneries. Wipe with a dry cloth, condition every 3–4 months and keep away from direct heat. A natural patina develops over time — that's the leather getting better, not worse.</p>
+            </div>
+          </div>
+        )}
+        {tab === 'reviews' && <Reviews slug={p.slug} />}
+        {tab === 'shipping' && (
+          <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-mute sm:text-[15px]">
+            {delivery && <p>Inside Dhaka delivery in {delivery.inside_dhaka_eta} ({tk(delivery.inside_dhaka)}), outside Dhaka in {delivery.outside_dhaka_eta} ({tk(delivery.outside_dhaka)}){delivery.free_delivery_threshold > 0 && <> — free on orders over {tk(delivery.free_delivery_threshold)}</>}. Cash on delivery all over Bangladesh.</p>}
+            {settings?.returns?.policy && <p className="whitespace-pre-line">{settings.returns.policy}</p>}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -254,14 +289,11 @@ function Reviews({ slug }) {
   const summary = data?.summary
   const reviews = data?.data ?? []
   const photos = reviews.flatMap((r) => r.photos || []).slice(0, 8)
-  if (isPending) return <section id="reviews" className="container-x py-12"><Bone className="h-40" /></section>
+  if (isPending) return <Bone className="h-40" />
   return (
-    <section id="reviews" className="container-x scroll-mt-28 space-y-6 py-12 sm:space-y-8 sm:py-16">
-      <div className="flex items-end justify-between gap-4">
-        <div className="space-y-2">
-          <p className="eyebrow">{summary?.count ? `${summary.count} verified ${summary.count === 1 ? 'review' : 'reviews'}` : 'Reviews'}</p>
-          <h2 className="h-display text-[28px] sm:text-4xl lg:text-[44px]">Customer reviews</h2>
-        </div>
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex items-center justify-between gap-4">
+        <p className="eyebrow">{summary?.count ? `${summary.count} verified ${summary.count === 1 ? 'review' : 'reviews'}` : 'Customer reviews'}</p>
         <Button to="/account" variant="outline" size="sm" className="max-sm:hidden sm:!px-5 sm:!py-3">Write a review</Button>
       </div>
 
@@ -288,7 +320,7 @@ function Reviews({ slug }) {
           )}
         </>
       )}
-    </section>
+    </div>
   )
 }
 
@@ -377,6 +409,13 @@ export default function Product() {
   const p = data?.data
   const buy = useBuyState(p)
   const [active, setActive] = useState(0)
+  const [tab, setTab] = useState('description')
+  const [tabFor, setTabFor] = useState(slug)
+  if (tabFor !== slug) { setTabFor(slug); setTab('description') }
+  const openTab = (k) => {
+    setTab(k)
+    requestAnimationFrame(() => document.getElementById('details')?.scrollIntoView({ behavior: 'smooth' }))
+  }
 
   const images = useMemo(() => {
     const list = p?.images?.map((i) => i.url) ?? []
@@ -410,9 +449,9 @@ export default function Product() {
       </div>
       <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-6 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:gap-12 xl:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} video={p.video} active={Math.min(active, gallery.length - (p.video ? 0 : 1))} setActive={setActive} /></div>
-        <BuyBox p={p} buy={buy} settings={settings} />
+        <BuyBox p={p} buy={buy} settings={settings} openTab={openTab} />
       </section>
-      <Reviews slug={slug} />
+      <DetailTabs p={p} settings={settings} tab={tab} setTab={setTab} />
       <Related items={data.related} category={p.category} />
       <StickyBar buy={buy} />
     </div>
