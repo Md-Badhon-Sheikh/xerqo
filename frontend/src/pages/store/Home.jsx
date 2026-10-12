@@ -250,6 +250,7 @@ function CraftStory() {
   )
 }
 
+// "Perfect for gifting" — switched off for now (not rendered on the homepage); add <Personalise /> back in Home() to show it
 function Personalise() {
   return (
     <section className="container-x py-10 sm:py-16">
@@ -273,8 +274,8 @@ function Reviews({ reviews }) {
   const t = useSettings().data?.testimonials
   if (!reviews?.length || t?.enabled === false) return null
   return (
-    <section className="container-x pb-14 sm:pb-20">
-      <SectionHead eyebrow={t ? t.eyebrow : 'Verified buyers'} title={t?.title || 'What our customers say'} className="mb-6 sm:mb-8" />
+    <section className="container-x py-14 sm:py-20">
+      <SectionHead eyebrow={t ? t.eyebrow : 'Verified buyers'} title={t?.title || 'What our customers say'} center className="mb-6 sm:mb-8" />
       {/* auto-slides on every screen size: 1 card on phones, 2 on tablets, 3 on desktop */}
       <Carousel label="Customer reviews" breakpoints={BP.reviews} delay={5000} arrows={false}>
         {reviews.map((r) => {
@@ -304,7 +305,6 @@ export default function Home() {
       <TopSelling products={data?.top_selling} />
       {data?.sections.map((s, i) => <CategorySection key={s.category.id} {...s} delay={3500 + (i % 3) * 500} />)}
       <CraftStory />
-      <Personalise />
       <Reviews reviews={data?.reviews} />
     </>
   )
