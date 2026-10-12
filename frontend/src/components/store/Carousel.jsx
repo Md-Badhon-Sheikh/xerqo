@@ -9,6 +9,7 @@ export const BP = {
   one: { 0: { view: 1, gap: 0 } },
   categories: { 0: { view: 3, gap: 12 }, 640: { view: 5, gap: 16 }, 1024: { view: 6, gap: 20 }, 1280: { view: 8, gap: 24 } },
   products: { 0: { view: 2, gap: 12 }, 768: { view: 3, gap: 20 }, 1024: { view: 5, gap: 20 } },
+  reviews: { 0: { view: 1, gap: 12 }, 640: { view: 2, gap: 16 }, 1024: { view: 3, gap: 20 } },
 }
 
 const pickBp = (bp) => {

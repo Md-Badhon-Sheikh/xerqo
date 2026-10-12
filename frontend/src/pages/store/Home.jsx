@@ -275,18 +275,19 @@ function Reviews({ reviews }) {
   return (
     <section className="container-x pb-14 sm:pb-20">
       <SectionHead eyebrow={t ? t.eyebrow : 'Verified buyers'} title={t?.title || 'What our customers say'} className="mb-6 sm:mb-8" />
-      <div className="no-scrollbar -mx-4 flex snap-x gap-3 overflow-x-auto px-4 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:px-0">
+      {/* auto-slides on every screen size: 1 card on phones, 2 on tablets, 3 on desktop */}
+      <Carousel label="Customer reviews" breakpoints={BP.reviews} delay={5000} arrows={false}>
         {reviews.map((r) => {
           const name = r.author?.name || 'XERQO customer'
           return (
-            <figure key={r.id} className="w-[85%] shrink-0 snap-start space-y-4 rounded-lg bg-white p-6 sm:w-auto">
+            <figure key={r.id} className="flex h-full flex-col gap-4 rounded-lg bg-white p-6">
               <Stars n={r.rating} />
-              <blockquote className="font-display text-lg italic leading-snug sm:text-xl">“{r.body}”</blockquote>
-              <figcaption className="flex items-center gap-3"><span className="grid size-9 place-items-center rounded-full bg-sand text-xs font-bold">{name.split(' ').map((x) => x[0]).join('').slice(0, 2)}</span><span><b className="block text-sm">{name}</b><span className="text-xs text-mute">{[r.city, 'Verified buyer'].filter(Boolean).join(' · ')}</span></span></figcaption>
+              <blockquote className="flex-1 font-display text-lg italic leading-snug sm:text-xl">“{r.body}”</blockquote>
+              <figcaption className="flex items-center gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-full bg-sand text-xs font-bold">{name.split(' ').map((x) => x[0]).join('').slice(0, 2)}</span><span><b className="block text-sm">{name}</b><span className="text-xs text-mute">{[r.city, 'Verified buyer'].filter(Boolean).join(' · ')}</span></span></figcaption>
             </figure>
           )
         })}
-      </div>
+      </Carousel>
     </section>
   )
 }
