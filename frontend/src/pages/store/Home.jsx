@@ -143,15 +143,24 @@ function TrustStrip() {
   const h = useSettings().data?.highlights
   const items = h?.items?.length ? h.items : DEFAULT_HIGHLIGHTS
   if (h?.enabled === false) return null
+  const cell = (item, i) => (
+    <div key={i} className="flex items-center gap-3">
+      <span className="font-display text-2xl italic text-tan sm:text-3xl">{String(i + 1).padStart(2, '0')}</span>
+      <div><p className="text-[13px] font-semibold sm:text-sm">{item.title}</p>{item.subtitle && <p className="text-[11px] text-mute sm:text-xs">{item.subtitle}</p>}</div>
+    </div>
+  )
+  const slide = items.length > 2 // phones: auto-sliding row, 2 at a time (like the categories)
   return (
     <section className="bg-sand">
-      <div className={cx('container-x grid gap-x-4 gap-y-5 py-6 sm:py-8', items.length > 1 ? 'grid-cols-2' : 'grid-cols-1', LG_COLS[items.length])}>
-        {items.map((item, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="font-display text-2xl italic text-tan sm:text-3xl">{String(i + 1).padStart(2, '0')}</span>
-            <div><p className="text-[13px] font-semibold sm:text-sm">{item.title}</p>{item.subtitle && <p className="text-[11px] text-mute sm:text-xs">{item.subtitle}</p>}</div>
-          </div>
-        ))}
+      {slide && (
+        <div className="container-x py-5 sm:hidden">
+          <Carousel label="Why XERQO" breakpoints={BP.highlights} delay={2000} arrows={false} dotsClassName="!mt-3">
+            {items.map(cell)}
+          </Carousel>
+        </div>
+      )}
+      <div className={cx('container-x gap-x-4 gap-y-5 py-6 sm:py-8', slide ? 'hidden sm:grid' : 'grid', items.length > 1 ? 'grid-cols-2' : 'grid-cols-1', LG_COLS[items.length])}>
+        {items.map(cell)}
       </div>
     </section>
   )
