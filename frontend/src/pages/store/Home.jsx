@@ -248,12 +248,21 @@ function CraftStory() {
           <h2 className="h-display text-[34px] sm:text-5xl"><HighlightTitle title={c.title} highlight={c.highlight} /></h2>
           {c.text && <p className="max-w-lg whitespace-pre-line text-sm leading-relaxed text-white/70 sm:text-[15px]">{c.text}</p>}
           {c.stats?.length > 0 && (
-            <div className="flex flex-wrap gap-x-8 gap-y-4 sm:gap-x-12">
-              {c.stats.map((s, i) => <div key={i}><p className="font-display text-2xl text-gold sm:text-3xl">{s.value}</p><p className="text-[11px] text-white/60 sm:text-xs">{s.label}</p></div>)}
+            // all on one line: one column each, smaller type
+            <div className={cx('grid gap-x-4 sm:gap-x-6', ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'][c.stats.length - 1])}>
+              {c.stats.map((s, i) => (
+                <div key={i} className="min-w-0">
+                  <p className="font-display text-lg leading-tight text-gold sm:text-xl lg:text-[22px]">{s.value}</p>
+                  <p className="mt-0.5 text-[10px] text-white/60 sm:text-[11px]">{s.label}</p>
+                </div>
+              ))}
             </div>
           )}
           {c.button_text && (
-            <Button {...(external ? { as: 'a', href: c.link, target: '_blank', rel: 'noreferrer' } : { to: c.link || '/about' })} variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-ink">{c.button_text}</Button>
+            // centred on phones, left-aligned from tablet up
+            <div className="flex justify-center sm:justify-start">
+              <Button {...(external ? { as: 'a', href: c.link, target: '_blank', rel: 'noreferrer' } : { to: c.link || '/about' })} variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-ink">{c.button_text}</Button>
+            </div>
           )}
         </div>
       </div>
