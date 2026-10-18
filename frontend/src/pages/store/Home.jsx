@@ -235,24 +235,24 @@ function CraftStory() {
   if (!c?.enabled) return null
   const external = /^https?:\/\//i.test(c.link || '')
   return (
-    <section className="mt-10 bg-espresso text-white sm:mt-[72px]">
-      <div className={cx('container-x grid items-center gap-10 py-14 sm:py-20 lg:gap-16 lg:py-24', c.image && 'lg:grid-cols-2')}>
+    <section className="mt-8 bg-espresso text-white sm:mt-[72px]">
+      <div className={cx('container-x grid items-center gap-5 py-7 sm:gap-10 sm:py-20 lg:gap-16 lg:py-24', c.image && 'lg:grid-cols-2')}>
         {c.image && (
-          <div className={cx('relative', c.image_small && 'pb-14 pr-14 sm:pb-20 sm:pr-24')}>
-            <img src={c.image} alt="" loading="lazy" className="aspect-[4/3] w-full rounded object-cover" />
-            {c.image_small && <img src={c.image_small} alt="" loading="lazy" className="absolute bottom-0 right-0 w-[45%] rounded border-[6px] border-espresso object-cover sm:border-8" />}
+          <div className={cx('relative', c.image_small && 'pb-6 pr-10 sm:pb-20 sm:pr-24')}>
+            <img src={c.image} alt="" loading="lazy" className="aspect-[5/2] w-full rounded object-cover sm:aspect-[4/3]" />
+            {c.image_small && <img src={c.image_small} alt="" loading="lazy" className="absolute bottom-0 right-0 aspect-square w-[30%] rounded border-4 border-espresso object-cover sm:aspect-auto sm:w-[45%] sm:border-8" />}
           </div>
         )}
-        <div className="space-y-5">
-          {c.eyebrow && <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gold">{c.eyebrow}</p>}
-          <h2 className="h-display text-[34px] sm:text-5xl"><HighlightTitle title={c.title} highlight={c.highlight} /></h2>
-          {c.text && <p className="max-w-lg whitespace-pre-line text-sm leading-relaxed text-white/70 sm:text-[15px]">{c.text}</p>}
+        <div className="space-y-3 sm:space-y-5">
+          {c.eyebrow && <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold sm:text-xs">{c.eyebrow}</p>}
+          <h2 className="h-display text-[24px] sm:text-5xl"><HighlightTitle title={c.title} highlight={c.highlight} /></h2>
+          {c.text && <p className="max-w-lg whitespace-pre-line text-[12.5px] leading-snug text-white/70 sm:text-[15px] sm:leading-relaxed">{c.text}</p>}
           {c.stats?.length > 0 && (
             // all on one line: one column each, smaller type
             <div className={cx('grid gap-x-4 sm:gap-x-6', ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4'][c.stats.length - 1])}>
               {c.stats.map((s, i) => (
                 <div key={i} className="min-w-0">
-                  <p className="font-display text-lg leading-tight text-gold sm:text-xl lg:text-[22px]">{s.value}</p>
+                  <p className="font-display text-base leading-tight text-gold sm:text-xl lg:text-[22px]">{s.value}</p>
                   <p className="mt-0.5 text-[10px] text-white/60 sm:text-[11px]">{s.label}</p>
                 </div>
               ))}
@@ -261,7 +261,7 @@ function CraftStory() {
           {c.button_text && (
             // centred on phones, left-aligned from tablet up
             <div className="flex justify-center sm:justify-start">
-              <Button {...(external ? { as: 'a', href: c.link, target: '_blank', rel: 'noreferrer' } : { to: c.link || '/about' })} variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-ink">{c.button_text}</Button>
+              <Button {...(external ? { as: 'a', href: c.link, target: '_blank', rel: 'noreferrer' } : { to: c.link || '/about' })} variant="outline" className="!border-white !text-white hover:!bg-white hover:!text-ink max-sm:!px-5 max-sm:!py-2.5 max-sm:!text-[11px]">{c.button_text}</Button>
             </div>
           )}
         </div>
