@@ -58,14 +58,22 @@ class HomeController extends Controller
             $flash->setRelation('products', $products);
         }
 
-        // Best sellers by units sold (cancelled orders excluded); featured products fill any gap
-        $topSelling = Product::active()->forCard()
-            ->withSum(['orderItems as sold_qty' => fn (Builder $q) => $q->whereHas('order', fn (Builder $o) => $o->where('status', '!=', 'cancelled'))], 'qty')
-            ->orderByDesc('sold_qty')
-            ->orderByDesc('is_featured')
-            ->latest('id')
-            ->limit(4)
-            ->get();
+        // "Top Selling Products" — Admin › Top Selling: the picked products in that order, or (none picked)
+        // best sellers by units sold (cancelled orders excluded) with featured products filling any gap
+        $ts = (array) Setting::getValue('top_selling', []);
+        $picked = collect($ts['product_ids'] ?? []);
+        $topSelling = match (true) {
+            ! ($ts['enabled'] ?? true) => collect(),
+            $picked->isNotEmpty() => Product::active()->forCard()->whereIn('id', $picked)->get()
+                ->sortBy(fn (Product $p) => $picked->search($p->id))->values(),
+            default => Product::active()->forCard()
+                ->withSum(['orderItems as sold_qty' => fn (Builder $q) => $q->whereHas('order', fn (Builder $o) => $o->where('status', '!=', 'cancelled'))], 'qty')
+                ->orderByDesc('sold_qty')
+                ->orderByDesc('is_featured')
+                ->latest('id')
+                ->limit(4)
+                ->get(),
+        };
 
         // "What our customers say" — Admin › Content & banners › Testimonials
         $t = (array) Setting::getValue('testimonials', []);

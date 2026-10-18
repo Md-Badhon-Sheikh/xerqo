@@ -147,6 +147,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
 
     // Products + images (image management counts as editing the product)
     Route::apiResource('products', Admin\ProductController::class)->middleware('admin:products');
+    Route::get('top-selling', [Admin\TopSellingController::class, 'show'])->middleware('admin:products');
+    Route::put('top-selling', [Admin\TopSellingController::class, 'update'])->middleware('admin:products,edit');
     Route::middleware('admin:products,edit')->group(function () {
         Route::post('products/{product}/images', [Admin\ProductController::class, 'uploadImages']);
         Route::patch('products/{product}/images/reorder', [Admin\ProductController::class, 'reorderImages']);

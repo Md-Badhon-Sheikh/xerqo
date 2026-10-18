@@ -120,7 +120,7 @@ class SettingController extends Controller
     }
 
     // settings the storefront reads through GET /api/settings
-    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'highlights', 'testimonials', 'craft_story', 'about', 'contact_page', 'footer', 'seo', 'maintenance'];
+    private const PUBLIC_KEYS = ['store', 'delivery', 'payments', 'returns', 'engraving', 'auth', 'announcement', 'highlights', 'testimonials', 'craft_story', 'top_selling', 'about', 'contact_page', 'footer', 'seo', 'maintenance'];
 
     /**
      * Objects merge key by key; lists (e.g. the courier names) are replaced as a whole.

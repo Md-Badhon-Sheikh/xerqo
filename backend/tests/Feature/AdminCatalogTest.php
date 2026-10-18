@@ -11,6 +11,7 @@ use App\Models\StockMovement;
 use App\Models\User;
 use App\Services\OrderStatusService;
 use Database\Seeders\RoleSeeder;
+use Database\Seeders\SettingSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -103,6 +104,32 @@ class AdminCatalogTest extends TestCase
         // the product form can't set the path directly
         $this->putJson("/api/admin/products/{$product->id}", ['name' => 'Bifold Wallet', 'slug' => 'bifold-wallet', 'sku' => 'XQ-1', 'price' => 1500, 'stock' => 10, 'status' => 'active', 'category_id' => $this->category->id, 'video' => '/etc/passwd']);
         $this->assertNull($product->fresh()->video);
+    }
+
+    public function test_top_selling_section_can_be_picked_and_switched_off(): void
+    {
+        $this->seed(SettingSeeder::class);
+        $a = $this->product();
+        $b = $this->product(['name' => 'Card Holder', 'slug' => 'card-holder', 'sku' => 'XQ-2', 'is_featured' => true]);
+        $draft = $this->product(['name' => 'Draft Bag', 'slug' => 'draft-bag', 'sku' => 'XQ-3', 'status' => 'draft']);
+
+        // nothing picked: automatic (featured first while nothing has sold)
+        $this->getJson('/api/home')->assertOk()->assertJsonPath('top_selling.0.id', $b->id)->assertJsonCount(2, 'top_selling');
+
+        $save = fn (array $patch) => $this->putJson('/api/admin/top-selling', ['enabled' => true, 'eyebrow' => 'Loved by you', 'title' => 'Our picks', 'product_ids' => [], ...$patch]);
+
+        $save(['product_ids' => [$a->id, $draft->id, $b->id]])->assertOk()
+            ->assertJsonPath('data.products.0.id', $a->id)->assertJsonCount(3, 'data.products');
+        // picked order, drafts hidden on the storefront
+        $this->getJson('/api/home')->assertJsonCount(2, 'top_selling')
+            ->assertJsonPath('top_selling.0.id', $a->id)->assertJsonPath('top_selling.1.id', $b->id);
+        $this->getJson('/api/settings')->assertJsonPath('data.top_selling.title', 'Our picks');
+
+        $save(['enabled' => false])->assertOk();
+        $this->getJson('/api/home')->assertJsonCount(0, 'top_selling');
+
+        $save(['product_ids' => [$a->id, $a->id, 999999]])->assertUnprocessable()->assertJsonValidationErrors(['product_ids.0', 'product_ids.2']);
+        $this->getJson('/api/admin/top-selling')->assertOk()->assertJsonPath('data.enabled', false);
     }
 
     public function test_invalid_colour_code_is_rejected(): void

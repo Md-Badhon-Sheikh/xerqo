@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutGrid, ClipboardList, Undo2, Truck, Package, Tag, Layers, Users, Star, Percent, Image, Wallet, BarChart3, Shield, Settings,
-  Search, Eye, Bell, Menu, X, MoreHorizontal, MessageSquare, Lock, LogOut, ShieldOff, BadgeCheck, Zap, Landmark, Mail, FileText,
+  Search, Eye, Bell, Menu, X, MoreHorizontal, MessageSquare, Lock, LogOut, ShieldOff, BadgeCheck, Zap, Landmark, Mail, FileText, TrendingUp,
 } from 'lucide-react'
 import { cx, Btn } from './ui'
 import { useAdminAuth } from '../../context/AuthContext'
@@ -10,7 +10,7 @@ import { RequireAdmin } from '../common/guards'
 import { useAdminList } from '../../lib/adminQueries'
 
 // Permission module (Role::MODULES on the API) that guards an /admin/... path; null = every staff member
-const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders', brands: 'categories', 'flash-sales': 'coupons', accounts: 'reports', pages: 'content', messages: 'customers' }
+const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders', brands: 'categories', 'flash-sales': 'coupons', accounts: 'reports', pages: 'content', messages: 'customers', 'top-selling': 'products' }
 const MODULES = ['dashboard', 'orders', 'returns', 'shipments', 'products', 'categories', 'inventory', 'customers', 'reviews', 'coupons', 'content', 'payments', 'reports', 'staff', 'settings']
 export function moduleFor(path) {
   const seg = path.replace(/^\/admin\/?/, '').split(/[/#?]/)[0]
@@ -22,7 +22,7 @@ const initials = (name = '') => name.split(/\s+/).filter(Boolean).slice(0, 2).ma
 
 export const NAV = [
   ['MAIN', [['Dashboard', '/admin', LayoutGrid], ['Orders', '/admin/orders', ClipboardList, 'orders'], ['Returns', '/admin/returns', Undo2, 'returns'], ['Shipping', '/admin/shipments', Truck, 'shipments']]],
-  ['CATALOG', [['Products', '/admin/products', Package], ['Categories', '/admin/categories', Tag], ['Brands', '/admin/brands', BadgeCheck], ['Inventory', '/admin/inventory', Layers]]],
+  ['CATALOG', [['Products', '/admin/products', Package], ['Categories', '/admin/categories', Tag], ['Brands', '/admin/brands', BadgeCheck], ['Top Selling', '/admin/top-selling', TrendingUp], ['Inventory', '/admin/inventory', Layers]]],
   ['CUSTOMERS', [['Customers', '/admin/customers', Users], ['Reviews', '/admin/reviews', Star, 'reviews'], ['Messages', '/admin/messages', Mail, 'messages']]],
   ['MARKETING', [['Coupons', '/admin/coupons', Percent], ['Flash Sales', '/admin/flash-sales', Zap], ['Content & Banners', '/admin/content', Image], ['Pages', '/admin/pages', FileText]]],
   ['FINANCE', [['Payments & COD', '/admin/payments', Wallet, 'payments'], ['Accounts', '/admin/accounts', Landmark], ['Reports', '/admin/reports', BarChart3]]],

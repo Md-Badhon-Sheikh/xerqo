@@ -102,6 +102,14 @@ class SettingSeeder extends Seeder
                 'image_small' => '/images/spools.jpg',
             ], 'content', true],
 
+            // "Top Selling Products" on the homepage (Admin › Top Selling); no picked products = best sellers automatically
+            'top_selling' => [[
+                'enabled' => true,
+                'eyebrow' => 'Best sellers',
+                'title' => 'Top Selling Products',
+                'product_ids' => [],
+            ], 'content', true],
+
             'testimonials' => [[
                 'enabled' => true,
                 'eyebrow' => 'Verified buyers',

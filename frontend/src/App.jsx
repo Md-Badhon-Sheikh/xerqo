@@ -24,7 +24,7 @@ const Customers = A('Customers'), CustomerDetail = A('CustomerDetail'), Reviews 
 const Returns = A('Returns'), Shipments = A('Shipments'), Payments = A('Payments'), Reports = A('Reports'), Accounts = A('Accounts'), Staff = A('Staff'), RoleEdit = A('RoleEdit')
 const Settings = A('Settings'), SettingsGeneral = A('SettingsGeneral'), SettingsSms = A('SettingsSms'), SettingsSecurity = A('SettingsSecurity')
 const Notifications = A('Notifications'), AProfile = A('Profile'), Brands = A('Brands'), FlashSales = A('FlashSales')
-const Pages = A('Pages'), Messages = A('Messages')
+const Pages = A('Pages'), Messages = A('Messages'), TopSelling = A('TopSelling')
 
 // Admin session lives only under /admin so the storefront never loads it
 const AdminScope = () => <AdminAuthProvider><Outlet /></AdminAuthProvider>
@@ -108,6 +108,7 @@ export default function App() {
             <Route path="coupons" element={<Coupons />} />
             <Route path="content" element={<Content />} />
             <Route path="pages" element={<Pages />} />
+            <Route path="top-selling" element={<TopSelling />} />
             <Route path="messages" element={<Messages />} />
             <Route path="returns" element={<Returns />} />
             <Route path="shipments" element={<Shipments />} />

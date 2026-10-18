@@ -157,12 +157,14 @@ function TrustStrip() {
   )
 }
 
+// heading: Admin › Top Selling (the products themselves come with /home)
 function TopSelling({ products }) {
+  const ts = useSettings().data?.top_selling
   if (!products?.length) return null
   return (
     <section className="bg-white py-9 sm:py-16 lg:py-[72px]">
       <div className="container-x space-y-5 sm:space-y-9">
-        <SectionHead center eyebrow="Best sellers this month" title="Top Selling Products" />
+        <SectionHead center eyebrow={ts ? ts.eyebrow : 'Best sellers'} title={ts?.title || 'Top Selling Products'} />
         <div className="grid gap-3 sm:gap-6 xl:grid-cols-2">
           {products.map((p, i) => <TopProductCard key={p.id} p={p} rank={i + 1} />)}
         </div>
