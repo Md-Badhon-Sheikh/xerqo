@@ -313,7 +313,7 @@ export default function Shop() {
     <>
       {/* Page header */}
       <section className="bg-sand">
-        <div className="container-x space-y-2 py-6 sm:space-y-3 sm:py-10">
+        <div className="container-x space-y-2 py-4 sm:space-y-3 sm:py-6">
           <h1 className="h-display text-[34px] sm:text-[44px] lg:text-[52px]">{cat ? cat.name : 'Shop All'}</h1>
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pt-2 sm:mx-0 sm:flex-wrap sm:px-0">
             {chips.map((c) => (
