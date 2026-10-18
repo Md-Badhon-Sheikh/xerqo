@@ -9,13 +9,12 @@ import { useCategories } from '../../lib/queries'
 import { useCompare } from '../../context/CompareContext'
 import { useQuickAdd } from '../../context/StoreUIContext'
 import { useToast } from '../../context/ToastContext'
-import { Breadcrumb, Button, ProductCard, ProductCardSkeleton, Price, Stars, Pill, HeartBtn, EmptyState, cx } from '../../components/store/ui'
+import { Button, ProductCard, ProductCardSkeleton, Price, Stars, Pill, HeartBtn, EmptyState, cx } from '../../components/store/ui'
 import { ErrorState } from '../../components/common/feedback'
 import Select2 from '../../components/common/Select2'
 
 const PER_PAGE = 12
 const SORTS = [['featured', 'Featured'], ['popular', 'Best selling'], ['newest', 'Newest'], ['price_asc', 'Price: low to high'], ['price_desc', 'Price: high to low'], ['rating', 'Top rated']]
-const DEFAULT_SUB = 'Genuine leather wallets, bags and travel goods — hand-stitched in Dhaka.'
 
 /* ---------- URL <-> filter state ---------- */
 function useFilters() {
@@ -315,9 +314,7 @@ export default function Shop() {
       {/* Page header */}
       <section className="bg-sand">
         <div className="container-x space-y-2 py-6 sm:space-y-3 sm:py-10">
-          <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Shop', to: '/shop' }, ...(parent ? [{ label: parent.name, to: `/shop?c=${parent.slug}` }] : []), ...(cat ? [{ label: cat.name }] : [])]} />
           <h1 className="h-display text-[34px] sm:text-[44px] lg:text-[52px]">{cat ? cat.name : 'Shop All'}</h1>
-          <p className="max-w-2xl text-[13px] leading-relaxed text-mute sm:text-[15px]">{cat?.description || DEFAULT_SUB}</p>
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pt-2 sm:mx-0 sm:flex-wrap sm:px-0">
             {chips.map((c) => (
               <Link
