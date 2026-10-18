@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Search, Heart, User, ShoppingBag, Menu, X, ChevronUp, MessageCircle, Home, LayoutGrid, Plus, Trash2, Truck, ChevronDown, GitCompareArrows } from 'lucide-react'
+import { Search, Heart, User, ShoppingBag, Menu, X, ChevronUp, MessageCircle, Home, LayoutGrid, Minus, Plus, Trash2, Truck, ChevronDown, GitCompareArrows } from 'lucide-react'
 import { tk } from '../../data/store'
 import { Button, Qty, cx } from './ui'
 import { useAuth } from '../../context/AuthContext'
@@ -17,9 +17,9 @@ const NAV = [['Home', '/'], ['Shop', '/shop'], ['Wallets', '/shop?c=wallets'], [
 // Free-delivery threshold from the store settings (falls back to ৳2,000 while loading)
 const useFreeDelivery = () => useSettings().data?.delivery?.free_delivery_threshold ?? 2000
 
-export const Logo = ({ light, className }) => (
+export const Logo = ({ light, className, imgClassName = 'h-10 w-auto sm:h-12 lg:h-[52px]' }) => (
   <Link to="/" aria-label="XERQO home" className={cx('block shrink-0', className)}>
-    <img src={light ? '/images/logo-light.png' : '/images/logo-dark.png'} alt="XERQO" className="h-10 w-auto sm:h-12 lg:h-[52px]" />
+    <img src={light ? '/images/logo-light.png' : '/images/logo-dark.png'} alt="XERQO" className={imgClassName} />
   </Link>
 )
 
@@ -220,7 +220,6 @@ const FooterLink = ({ to, children }) => (/^(https?:|tel:|mailto:)/i.test(to || 
   ? <a href={to} target={/^https?:/i.test(to) ? '_blank' : undefined} rel="noreferrer" className="hover:text-white">{children}</a>
   : <Link to={to || '/'} className="hover:text-white">{children}</Link>)
 
-const PAYMENT_LABELS = [['cod', 'COD'], ['bkash', 'bKash'], ['rocket', 'Rocket'], ['nagad', 'Nagad'], ['bank', 'Bank / Card']]
 
 // brand icons (Simple Icons paths, 24×24)
 const SOCIAL_ICONS = {
@@ -229,8 +228,22 @@ const SOCIAL_ICONS = {
   WhatsApp: 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z',
 }
 
-// Text and link columns: Admin › Pages › Footer. Contact details, social links and payment methods: Admin › Settings.
+// Text and link columns: Admin › Pages › Footer. Contact details and social links: Admin › Settings.
+const useWide = () => {
+  const query = '(min-width: 1024px)'
+  const [wide, setWide] = useState(() => typeof window !== 'undefined' && window.matchMedia(query).matches)
+  useEffect(() => {
+    const mq = window.matchMedia(query)
+    const on = () => setWide(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return wide
+}
+
 function Footer({ sticky }) {
+  const wide = useWide()
+  const [openCols, setOpenCols] = useState({})
   const settings = useSettings().data
   const footer = settings?.footer ?? {}
   const store = settings?.store ?? {}
@@ -242,21 +255,19 @@ function Footer({ sticky }) {
     hours && [hours],
   ].filter(Boolean)
   const social = [['Facebook', store.facebook], ['Instagram', store.instagram], ['WhatsApp', waLink(store.whatsapp)]].filter(([, url]) => url)
-  const payments = PAYMENT_LABELS.filter(([k]) => settings?.payments?.[k]?.enabled).map(([, label]) => label)
   const columns = [...(footer.columns ?? []), ...(contact.length ? [{ title: 'Contact', links: contact.map(([label, link]) => ({ label, link })) }] : [])]
   const copyright = (footer.copyright || '© {year} XERQO. All rights reserved.').replaceAll('{year}', new Date().getFullYear())
   return (
     <footer className={cx('bg-espresso text-white sm:pb-8', sticky ? 'pb-40' : 'pb-24')}>
       <div className="container-x">
         {footer.newsletter?.enabled && (
-          <div className="flex flex-col gap-5 border-b border-white/10 py-10 md:flex-row md:items-center md:justify-between lg:py-14">
+          <div className="border-b border-white/10 py-6 lg:py-8">
             <div><h3 className="h-display text-3xl sm:text-4xl">{footer.newsletter.title}</h3>{footer.newsletter.text && <p className="mt-1 text-sm text-white/60">{footer.newsletter.text}</p>}</div>
-            <form className="flex w-full max-w-md" onSubmit={(e) => e.preventDefault()}><input className="flex-1 border border-white/25 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-white/50" placeholder="Email or phone number" /><button className="bg-white px-5 text-xs font-semibold uppercase tracking-widest text-ink">Subscribe</button></form>
           </div>
         )}
-        <div className={cx('grid gap-8 py-10 lg:py-14', ['lg:grid-cols-[1.4fr]', 'lg:grid-cols-[1.4fr_1fr]', 'lg:grid-cols-[1.4fr_repeat(2,1fr)]', 'lg:grid-cols-[1.4fr_repeat(3,1fr)]', 'lg:grid-cols-[1.4fr_repeat(4,1fr)]'][columns.length])}>
+        <div className={cx('grid gap-8 pb-4 pt-6 lg:pb-8 lg:pt-8', ['lg:grid-cols-[1.4fr]', 'lg:grid-cols-[1.4fr_1fr]', 'lg:grid-cols-[1.4fr_repeat(2,1fr)]', 'lg:grid-cols-[1.4fr_repeat(3,1fr)]', 'lg:grid-cols-[1.4fr_repeat(4,1fr)]'][columns.length])}>
           <div className="space-y-4">
-            <Logo light />
+            <Logo light imgClassName="h-14 w-auto sm:h-16 lg:h-[72px]" />
             {footer.about && <p className="max-w-[300px] text-sm leading-relaxed text-white/60">{footer.about}</p>}
             {social.length > 0 && (
               <div className="flex gap-2.5">
@@ -268,16 +279,23 @@ function Footer({ sticky }) {
               </div>
             )}
           </div>
-          {columns.map((col, ci) => (
-            <details key={ci} className="group border-b border-white/10 lg:border-0" open>
-              <summary className="flex cursor-pointer list-none items-center justify-between py-3 text-xs font-semibold uppercase tracking-[0.2em] text-gold lg:pointer-events-none lg:py-0 lg:pb-4">{col.title}<Plus className="size-4 text-white lg:hidden" /></summary>
-              <ul className="space-y-3 pb-4 text-sm text-white/70">{col.links.map((l, i) => <li key={i}>{l.link ? <FooterLink to={l.link}>{l.label}</FooterLink> : l.label}</li>)}</ul>
-            </details>
-          ))}
+          {columns.map((col, ci) => {
+            // phones / tablets: closed until tapped; desktop: always open
+            const open = wide || !!openCols[ci]
+            return (
+              <div key={ci} className="border-b border-white/10 lg:border-0">
+                <button type="button" onClick={() => setOpenCols((o) => ({ ...o, [ci]: !o[ci] }))} aria-expanded={open} disabled={wide}
+                  className="flex w-full items-center justify-between py-3 text-left text-xs font-semibold uppercase tracking-[0.2em] text-gold lg:cursor-default lg:py-0 lg:pb-4">
+                  {col.title}{open ? <Minus className="size-4 text-white lg:hidden" /> : <Plus className="size-4 text-white lg:hidden" />}
+                </button>
+                {open && <ul className="space-y-3 pb-4 text-sm text-white/70 lg:pb-0">{col.links.map((l, i) => <li key={i}>{l.link ? <FooterLink to={l.link}>{l.label}</FooterLink> : l.label}</li>)}</ul>}
+              </div>
+            )
+          })}
         </div>
-        <div className="flex flex-col gap-4 border-t border-white/10 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 border-t border-white/10 py-5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-white/50">{copyright}</p>
-          <div className="flex flex-wrap gap-1.5">{payments.map((p) => <span key={p} className="rounded-sm border border-white/25 px-2 py-1 text-[11px] font-semibold text-white/80">{p}</span>)}</div>
+          <p className="text-xs text-white/50">Design and Development By <span className="font-semibold text-white/80">Badhon Sheikh</span></p>
         </div>
       </div>
     </footer>
