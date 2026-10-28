@@ -156,11 +156,12 @@ function StoreStatus({ maintenance, auth, canEdit }) {
         )}
         {canEdit && <SaveBar save={sm.save} onSave={() => sm.save.mutate({ enabled: !!m.enabled, message: nul(m.message ?? '') })}>Save store status</SaveBar>}
       </Card>
-      <Card title="Customer sign-in" sub="Every order needs an account — guest checkout is off">
+      <Card title="Customer sign-in" sub={a.guest_checkout === false ? 'Every order needs an account — guest checkout is off' : 'Customers can order as a guest or with an account'}>
+        <SwitchRow label="Guest checkout" sub={a.guest_checkout === false ? 'Off — checkout asks customers to sign in or create an account' : 'On — checkout offers “Continue as guest” or “Sign in / Create account”'} checked={a.guest_checkout !== false} onChange={(guest_checkout) => setA({ guest_checkout })} disabled={!canEdit} />
         <SwitchRow label="Sign in with an SMS code" sub="Customers can log in with a one-time code instead of a password" checked={!!a.otp_login} onChange={(otp_login) => setA({ otp_login })} disabled={!canEdit} />
         <SwitchRow label="Confirm phone when registering" sub="New accounts verify their number with an SMS code" checked={!!a.register_otp} onChange={(register_otp) => setA({ register_otp })} disabled={!canEdit} />
         <p className="text-[11px] text-amute">Both use the SMS balance. If SMS is switched off or the balance runs out, customers can still use their password.</p>
-        {canEdit && <SaveBar save={sa.save} onSave={() => sa.save.mutate({ otp_login: !!a.otp_login, register_otp: !!a.register_otp })}>Save sign-in options</SaveBar>}
+        {canEdit && <SaveBar save={sa.save} onSave={() => sa.save.mutate({ otp_login: !!a.otp_login, register_otp: !!a.register_otp, guest_checkout: a.guest_checkout !== false })}>Save sign-in options</SaveBar>}
       </Card>
     </>
   )

@@ -71,6 +71,7 @@ class SettingSeeder extends Seeder
             'auth' => [[
                 'otp_login' => true,      // "sign in with a code" by SMS
                 'register_otp' => true,   // new accounts must confirm their phone by SMS
+                'guest_checkout' => true, // orders without an account (Checkout offers "as a guest" or "sign in / create account")
             ], 'general', true],
 
             // the strip above the storefront header

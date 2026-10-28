@@ -52,6 +52,12 @@ Route::get('health', function () {
 })->middleware('throttle:30,1');
 
 Route::get('orders/track', [OrderController::class, 'track'])->middleware('throttle:30,1');
+
+// checkout: signed in (Bearer token) or as a guest when Settings › Customer sign-in allows it
+Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:20,1');
+// a guest's own order, opened with the token from the checkout response (?token=…)
+Route::get('orders/{orderNumber}', [Customer\OrderController::class, 'show'])->middleware('throttle:30,1');
+Route::post('orders/{orderNumber}/payment', [Customer\OrderController::class, 'submitPayment'])->middleware('throttle:10,1');
 Route::post('coupons/validate', [CouponController::class, 'check'])->middleware('throttle:30,1');
 
 // ---------------------------------------------------------------- Auth
@@ -78,9 +84,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('me/orders', [Customer\OrderController::class, 'index']);
     Route::get('me/orders/{orderNumber}', [Customer\OrderController::class, 'show']);
     Route::post('me/orders/{orderNumber}/payment', [Customer\OrderController::class, 'submitPayment'])->middleware('throttle:10,1');
-
-    // checkout needs a signed-in customer (no guest orders)
-    Route::post('orders', [OrderController::class, 'store'])->middleware('throttle:20,1');
 
     Route::apiResource('me/addresses', Customer\AddressController::class);
 

@@ -1,0 +1,1 @@
+var e=`xq_guest_orders`,t=()=>{try{return JSON.parse(localStorage.getItem(e)||`{}`)}catch{return{}}},n=e=>t()[e]??null,r=(n,r)=>{try{localStorage.setItem(e,JSON.stringify({...t(),[n]:r}))}catch{}};export{r as n,n as t};

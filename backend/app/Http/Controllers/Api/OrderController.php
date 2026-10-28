@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreOrderRequest;
 use App\Http\Resources\OrderResource;
 use App\Models\Order;
+use App\Models\Setting;
 use App\Services\CheckoutService;
 use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -22,10 +24,21 @@ class OrderController extends Controller
     {
         $user = $request->user('sanctum');
 
+        if (! $user && ! Setting::getValue('auth.guest_checkout', true)) {
+            abort(401, 'Please sign in to place an order.');
+        }
+
         $order = $checkout->placeOrder($request->validated(), $user);
 
+        // a guest gets a secret token for the thank-you page and the payment screenshot upload
+        $guestToken = null;
+        if (! $user) {
+            $guestToken = Str::random(40);
+            $order->forceFill(['guest_token' => hash('sha256', $guestToken)])->save();
+        }
+
         return (new OrderResource($order))
-            ->additional(['message' => 'Order placed successfully.'])
+            ->additional(['message' => 'Order placed successfully.', 'guest_token' => $guestToken])
             ->response()
             ->setStatusCode(201);
     }

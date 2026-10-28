@@ -73,10 +73,10 @@ export default function App() {
           <Route path="login" element={<Login />} />
           <Route path="register" element={<Register />} />
           <Route path="forgot-password" element={<ForgotPassword />} />
+          {/* checkout works signed in or as a guest (Settings › Customer sign-in) */}
+          <Route path="checkout" element={<Checkout />} />
+          <Route path="order-success" element={<OrderSuccess />} />
           <Route element={<RequireAuth />}>
-            {/* ordering needs an account (no guest checkout) */}
-            <Route path="checkout" element={<Checkout />} />
-            <Route path="order-success" element={<OrderSuccess />} />
             <Route path="account" element={<Account />} />
             <Route path="account/review/:orderId" element={<WriteReview />} />
             <Route path="account/reviews" element={<MyReviews />} />

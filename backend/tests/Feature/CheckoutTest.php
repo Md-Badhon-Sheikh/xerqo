@@ -37,8 +37,32 @@ class CheckoutTest extends TestCase
         ];
     }
 
-    public function test_guests_cannot_place_orders(): void
+    public function test_guest_checkout_with_a_private_token(): void
     {
+        $res = $this->postJson('/api/orders', $this->payload(['payment_method' => 'bkash', 'transaction_id' => 'TRX1', 'sender_number' => '01812345678']))
+            ->assertCreated()->assertJsonPath('data.user_id', null);
+        $number = $res->json('data.order_number');
+        $token = $res->json('guest_token');
+        $this->assertSame(40, strlen($token));
+        $this->assertSame(hash('sha256', $token), Order::where('order_number', $number)->value('guest_token'));
+
+        // the thank-you page / payment upload need the token
+        $this->getJson("/api/orders/{$number}")->assertNotFound();
+        $this->getJson("/api/orders/{$number}?token=wrong")->assertNotFound();
+        $this->getJson("/api/orders/{$number}?token={$token}")->assertOk()->assertJsonPath('data.order_number', $number);
+        $this->post("/api/orders/{$number}/payment?token={$token}", ['proof' => UploadedFile::fake()->image('slip.jpg')], ['Accept' => 'application/json'])->assertOk();
+
+        // a signed-in customer's order can't be opened that way
+        Sanctum::actingAs(User::factory()->create(['is_active' => true]));
+        $mine = $this->postJson('/api/orders', $this->payload())->assertCreated()->assertJsonPath('guest_token', null)->json('data.order_number');
+        $this->app['auth']->forgetGuards();
+        $this->getJson("/api/orders/{$mine}?token=")->assertNotFound();
+    }
+
+    public function test_guest_checkout_can_be_switched_off(): void
+    {
+        Setting::setValue('auth', [...(array) Setting::getValue('auth'), 'guest_checkout' => false]);
+
         $this->postJson('/api/orders', $this->payload())->assertUnauthorized();
     }
 

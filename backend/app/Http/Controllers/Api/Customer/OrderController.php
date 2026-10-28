@@ -112,9 +112,20 @@ class OrderController extends Controller
         return new OrderResource($this->find($request, $orderNumber));
     }
 
+    /**
+     * The signed-in customer's order — or, without an account, a guest order opened with its secret token
+     * (?token=… from the checkout response; also used by the public /api/orders/{n} routes).
+     */
     private function find(Request $request, string $orderNumber): Order
     {
-        return $request->user()->orders()
+        $user = $request->user('sanctum');
+        $token = (string) $request->input('token');
+
+        $query = $user
+            ? $user->orders()
+            : Order::whereNull('user_id')->whereNotNull('guest_token')->where('guest_token', $token !== '' ? hash('sha256', $token) : '-');
+
+        return $query
             ->where('order_number', $orderNumber)
             ->with(['items.product:id,slug', 'statusHistories', 'reviews:id,order_id,product_id', 'returnRequests', 'latestPayment'])
             ->firstOrFail();

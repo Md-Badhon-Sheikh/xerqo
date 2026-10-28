@@ -6,6 +6,8 @@ import { Button, cx } from '../../components/store/ui'
 import { PageLoader, ErrorState } from '../../components/common/feedback'
 import { api } from '../../lib/api'
 import { prettyPhone } from '../../lib/bd'
+import { guestToken } from '../../lib/guestOrders'
+import { useAuth } from '../../context/AuthContext'
 
 export const METHOD_LABEL = { cod: 'Cash on Delivery', bkash: 'bKash', rocket: 'Rocket', nagad: 'Nagad', bank: 'Bank transfer', card: 'Card' }
 
@@ -38,10 +40,18 @@ const InfoCard = ({ title, children }) => (
 export default function OrderSuccess() {
   const [params] = useSearchParams()
   const number = params.get('order')
-  const { data: o, isPending, error, refetch } = useQuery({ queryKey: ['customer', 'orders', 'item', number], queryFn: () => api.get(`/me/orders/${number}`).then((r) => r.data), enabled: !!number })
+  const { user } = useAuth()
+  // a guest's order opens with the private token saved at checkout
+  const token = user ? null : guestToken(number)
+  const { data: o, isPending, error, refetch } = useQuery({
+    queryKey: ['customer', 'orders', 'item', number, token],
+    queryFn: () => api.get(token ? `/orders/${number}` : `/me/orders/${number}`, token ? { token } : undefined).then((r) => r.data),
+    enabled: !!number && (!!user || !!token),
+  })
   const { data: settings } = useQuery({ queryKey: ['settings'], queryFn: () => api.get('/settings').then((r) => r.data) })
 
-  if (!number) return <Navigate to="/account" replace />
+  if (!number) return <Navigate to={user ? '/account' : '/'} replace />
+  if (!user && !token) return <Navigate to={`/track?order=${number}`} replace />
   if (isPending) return <PageLoader />
   if (error) return <div className="container-x py-16"><ErrorState error={error} onRetry={refetch} /></div>
 

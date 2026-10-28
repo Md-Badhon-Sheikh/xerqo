@@ -51,6 +51,7 @@ class UpdateSettingsRequest extends AdminRequest
             'settings.auth' => ['sometimes', 'array'],
             'settings.auth.otp_login' => ['sometimes', 'boolean'],
             'settings.auth.register_otp' => ['sometimes', 'boolean'],
+            'settings.auth.guest_checkout' => ['sometimes', 'boolean'], // orders without an account
 
             'settings.returns' => ['sometimes', 'array'],
             'settings.returns.window_days' => ['sometimes', 'integer', 'between:0,60'],

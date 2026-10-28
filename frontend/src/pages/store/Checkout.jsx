@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Banknote, Check, ChevronDown, Copy, CreditCard, FileUp, Loader2, Lock, Smartphone, X } from 'lucide-react'
+import { Banknote, Check, ChevronDown, Copy, CreditCard, FileUp, Loader2, Lock, ShoppingBag, Smartphone, UserRound, X } from 'lucide-react'
 import { tk } from '../../data/store'
 import { Button, Checkbox, Field, cx } from '../../components/store/ui'
 import Select2 from '../../components/common/Select2'
@@ -12,6 +12,7 @@ import { api } from '../../lib/api'
 import { alertError, toast } from '../../lib/alert'
 import { DISTRICTS, prettyPhone, zoneFor } from '../../lib/bd'
 import { useCouponCheck, useSettings } from '../../lib/queries'
+import { saveGuestToken } from '../../lib/guestOrders'
 
 const STEPS = ['Cart', 'Information', 'Payment', 'Done']
 // chip colours are static class strings so Tailwind can see them
@@ -166,13 +167,58 @@ function Summary({ cart, fee, discount, total, couponQ, placing, onPlace }) {
   )
 }
 
+// "Continue as guest" is remembered for this browser tab
+const GUEST_KEY = 'xq_guest_checkout'
+
+// Not signed in: order as a guest, or sign in / create an account
+function CheckoutGate({ onGuest }) {
+  const from = { pathname: '/checkout' }
+  return (
+    <section className="container-x py-8 sm:py-14">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="space-y-1.5 text-center">
+          <h1 className="h-display text-[30px] sm:text-[40px]">How would you like to check out?</h1>
+          <p className="text-sm text-mute">Order as a guest in a minute, or use an account to track orders and save addresses.</p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 sm:p-6">
+            <span className="grid size-11 place-items-center rounded-full bg-sand text-tan"><ShoppingBag className="size-5" /></span>
+            <div className="flex-1 space-y-1">
+              <h2 className="text-lg font-semibold">Checkout as guest</h2>
+              <p className="text-[13px] leading-relaxed text-mute">No account needed — just your name, phone and address. Track the order later with its number and your phone.</p>
+            </div>
+            <Button size="lg" className="w-full" onClick={onGuest}>Continue as guest</Button>
+          </div>
+          <div className="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 sm:p-6">
+            <span className="grid size-11 place-items-center rounded-full bg-sand text-tan"><UserRound className="size-5" /></span>
+            <div className="flex-1 space-y-1">
+              <h2 className="text-lg font-semibold">Sign in or create an account</h2>
+              <p className="text-[13px] leading-relaxed text-mute">Faster checkout with saved addresses, order history and reviews. Sign in with your mobile number, email or Google.</p>
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              <Button to="/login" state={{ from }} variant="outline" size="lg" className="w-full">Sign in</Button>
+              <Button to="/register" state={{ from }} variant="tan" size="lg" className="w-full">Create account</Button>
+            </div>
+          </div>
+        </div>
+        <p className="text-center text-[13px]"><Link to="/cart" className="text-mute underline underline-offset-4 hover:text-ink">Back to cart</Link></p>
+      </div>
+    </section>
+  )
+}
+
 export default function Checkout() {
   const { user } = useAuth()
   const cart = useCart()
   const navigate = useNavigate()
   const qc = useQueryClient()
   const { data: settings } = useSettings()
-  const { data: addresses = [], isPending: addressesLoading } = useQuery({ queryKey: ['customer', 'addresses'], queryFn: () => api.get('/me/addresses').then((r) => r.data) })
+  // guests have no saved addresses
+  const addrQ = useQuery({ queryKey: ['customer', 'addresses'], queryFn: () => api.get('/me/addresses').then((r) => r.data), enabled: !!user })
+  const addresses = user ? addrQ.data ?? [] : []
+  const addressesLoading = !!user && addrQ.isPending
+  const guestOk = settings?.auth?.guest_checkout !== false
+  const [asGuest, setAsGuest] = useState(() => { try { return sessionStorage.getItem(GUEST_KEY) === '1' } catch { return false } })
   const paymentRef = useRef(null)
 
   const [contact, setContact] = useState({ name: user?.name ?? '', phone: user?.phone ?? '', email: user?.email ?? '' })
@@ -213,6 +259,11 @@ export default function Checkout() {
   const total = couponQ.data?.total ?? Math.max(0, cart.subtotal - discount + fee)
 
   if (!cart.items.length && !placing) return <Navigate to="/cart" replace />
+  // not signed in: choose guest checkout or an account first
+  if (!user && !asGuest) {
+    if (!guestOk) return <Navigate to="/login" replace state={{ from: { pathname: '/checkout' } }} />
+    return <CheckoutGate onGuest={() => { try { sessionStorage.setItem(GUEST_KEY, '1') } catch { /* private mode */ } setAsGuest(true) }} />
+  }
 
 
   const place = async () => {
@@ -224,7 +275,7 @@ export default function Checkout() {
 
     setPlacing(true); setErrors({})
     try {
-      if (usingNew && saveAddress) {
+      if (user && usingNew && saveAddress) {
         await api.post('/me/addresses', { label: 'Home', name: contact.name, phone: contact.phone, ...addr, is_default: addresses.length === 0 }).catch(() => {})
         qc.invalidateQueries({ queryKey: ['customer', 'addresses'] })
       }
@@ -239,10 +290,11 @@ export default function Checkout() {
         items: cart.orderLines,
       })
       const number = res.data.order_number
+      if (res.guest_token) saveGuestToken(number, res.guest_token)
       if (pay.proof && method !== 'cod') {
         const fd = new FormData()
         fd.append('proof', pay.proof)
-        await api.post(`/me/orders/${number}/payment`, fd).catch((e) => toast.error(`Order placed, but the file upload failed: ${e.message}. You can upload it from the order page.`))
+        await api.post(res.guest_token ? `/orders/${number}/payment?token=${res.guest_token}` : `/me/orders/${number}/payment`, fd).catch((e) => toast.error(`Order placed, but the file upload failed: ${e.message}. You can upload it from the order page.`))
       }
       cart.clear()
       qc.invalidateQueries({ queryKey: ['customer', 'orders'] })
@@ -314,7 +366,7 @@ export default function Checkout() {
                 <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
                 <Field label="Area / Thana" error={errors.area}><AreaSelect district={addr.district} value={addr.area} onChange={(area) => setAddr((x) => ({ ...x, area }))} invalid={!!errors.area} /></Field>
                 <Field label="Full address *" className="sm:col-span-2" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, block, landmark" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>
-                <Checkbox label="Save this address to my account" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />
+                {user && <Checkbox label="Save this address to my account" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />}
               </div>
             )}
             {delivery?.district && d && (
