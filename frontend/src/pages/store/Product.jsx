@@ -59,8 +59,9 @@ function Gallery({ p, images, video, active, setActive }) {
   const [viewer, setViewer] = useState(false)
   const items = [...images.map((src) => ({ src })), ...(video ? [{ src: video, video: true }] : [])]
   return (
-    <div className="flex flex-col gap-3 sm:mx-auto sm:max-w-[560px] sm:gap-4 lg:mx-0 lg:max-w-[600px] lg:flex-row-reverse">
-      <div className="group relative flex-1 overflow-hidden bg-tile max-sm:-mx-4 sm:rounded-lg">
+    // thumbnails in a column on the left, the photo on the right — on every screen size
+    <div className="flex flex-row-reverse justify-end gap-2.5 sm:mx-auto sm:max-w-[560px] sm:gap-4 lg:mx-0 lg:max-w-[600px]">
+      <div className={cx('group relative min-w-0 flex-1 overflow-hidden rounded-lg bg-tile lg:max-w-[calc(100vh-170px)]', total <= 1 && 'max-sm:mx-auto max-sm:max-w-[80%]')}>
         {showVideo
           ? <video key={video} src={video} controls autoPlay muted playsInline preload="metadata" className={cx(mediaCls, 'bg-black object-contain')} />
           : <button type="button" onClick={() => setViewer(true)} aria-label="View larger photo" className="block w-full cursor-zoom-in"><img src={images[active]} alt={p.name} className={cx(mediaCls, 'object-cover')} /></button>}
@@ -73,19 +74,22 @@ function Gallery({ p, images, video, active, setActive }) {
         {!showVideo && <button type="button" onClick={() => setViewer(true)} className="absolute bottom-4 right-4 hidden items-center gap-1.5 rounded-full bg-white px-3.5 py-2 text-xs font-medium shadow-sm sm:flex"><Maximize2 className="size-3.5" /> Zoom</button>}
       </div>
       {total > 1 && (
-        <div className="no-scrollbar flex gap-2.5 overflow-x-auto lg:w-[84px] lg:shrink-0 lg:flex-col lg:overflow-visible">
+        // as tall as the photo; scrolls when there are more thumbnails than fit
+        <div className="relative w-14 shrink-0 sm:w-20 lg:w-[92px]">
+        <div className="no-scrollbar absolute inset-0 flex flex-col gap-2 overflow-y-auto p-1 sm:gap-2.5">
           {images.map((src, i) => (
-            <button key={src + i} onClick={() => setActive(i)} aria-label={`View image ${i + 1}`} aria-current={i === active} className={cx('aspect-square w-[68px] shrink-0 overflow-hidden rounded bg-tile transition sm:w-20 lg:w-full', i === active ? 'ring-2 ring-tan ring-offset-2 ring-offset-cream' : 'opacity-75 hover:opacity-100')}>
+            <button key={src + i} onClick={() => setActive(i)} aria-label={`View image ${i + 1}`} aria-current={i === active} className={cx('aspect-square w-full shrink-0 overflow-hidden rounded bg-tile transition', i === active ? 'ring-2 ring-tan ring-offset-2 ring-offset-cream' : 'opacity-75 hover:opacity-100')}>
               <img src={src} alt="" className="size-full object-cover" />
             </button>
           ))}
           {video && (
-            <button onClick={() => setActive(images.length)} aria-label="Play video" aria-current={!!showVideo} className={cx('relative aspect-square w-[68px] shrink-0 overflow-hidden rounded bg-black transition sm:w-20 lg:w-full', showVideo ? 'ring-2 ring-tan ring-offset-2 ring-offset-cream' : 'opacity-75 hover:opacity-100')}>
+            <button onClick={() => setActive(images.length)} aria-label="Play video" aria-current={!!showVideo} className={cx('relative aspect-square w-full shrink-0 overflow-hidden rounded bg-black transition', showVideo ? 'ring-2 ring-tan ring-offset-2 ring-offset-cream' : 'opacity-75 hover:opacity-100')}>
               {/* #t=0.1 makes phones show the first frame instead of a black box */}
               <video src={`${video}#t=0.1`} muted playsInline preload="metadata" className="pointer-events-none size-full object-cover" />
               <span className="absolute inset-0 grid place-items-center"><span className="grid size-7 place-items-center rounded-full bg-white/90 text-ink shadow"><Play className="ml-0.5 size-3.5 fill-current" /></span></span>
             </button>
           )}
+        </div>
         </div>
       )}
       {viewer && items.length > 0 && <Lightbox items={items} index={Math.min(active, items.length - 1)} onIndex={setActive} onClose={() => setViewer(false)} alt={p.name} />}
@@ -132,10 +136,13 @@ function BuyBox({ p, buy, settings, openTab }) {
             <Countdown endsAt={p.flash_sale.ends_at} />
           </div>
         )}
-        <p className={cx('flex items-center gap-2 text-[13px] font-medium', soldOut ? 'text-rust' : 'text-leaf')}>
-          <span className={cx('size-2 rounded-full', soldOut ? 'bg-rust' : 'bg-leaf')} />
-          {soldOut ? (variant ? `${variant.name} is out of stock — try another colour` : 'Out of stock') : stock <= 5 ? `In stock — only ${stock} left` : 'In stock · Ships in 24h'}
-        </p>
+        {/* only when it matters: sold out, or just a few left */}
+        {(soldOut || stock <= 5) && (
+          <p className={cx('flex items-center gap-2 text-[13px] font-medium', soldOut ? 'text-rust' : 'text-leaf')}>
+            <span className={cx('size-2 rounded-full', soldOut ? 'bg-rust' : 'bg-leaf')} />
+            {soldOut ? (variant ? `${variant.name} is out of stock — try another colour` : 'Out of stock') : `In stock — only ${stock} left`}
+          </p>
+        )}
       </div>
 
       {/* Colour */}
@@ -169,7 +176,7 @@ function BuyBox({ p, buy, settings, openTab }) {
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <span className="text-[13px] font-semibold">Quantity</span>
+            <span className="text-[13px] text-mute">Quantity:</span>
             <Qty value={qty} onChange={setQty} max={stock} />
           </div>
           <p className="text-right text-[13px] text-mute">Total <b className="block text-lg text-ink sm:inline sm:pl-1.5">{tk(price * qty)}</b></p>

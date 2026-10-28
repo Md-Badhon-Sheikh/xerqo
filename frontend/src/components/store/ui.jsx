@@ -79,13 +79,17 @@ export const Dots = ({ n = 4, className }) => (
 )
 
 // Quantity stepper; pass onChange to make it interactive (max = available stock)
-export const Qty = ({ value = 1, small, onChange, min = 1, max = 99 }) => (
-  <div className={cx('inline-flex items-center rounded border border-line bg-white', small ? 'h-9' : 'h-11')}>
-    <button type="button" onClick={() => onChange?.(value - 1)} disabled={value <= min} className="grid h-full w-9 place-items-center text-mute hover:text-ink disabled:opacity-40" aria-label="Decrease"><Minus className="size-3.5" /></button>
-    <span className="w-8 text-center text-sm font-semibold" aria-live="polite">{value}</span>
-    <button type="button" onClick={() => onChange?.(value + 1)} disabled={max > 0 && value >= max} className="grid h-full w-9 place-items-center text-mute hover:text-ink disabled:opacity-40" aria-label="Increase"><Plus className="size-3.5" /></button>
-  </div>
-)
+// − 1 + stepper: three cells split by thin lines; the buttons tint on hover
+export const Qty = ({ value = 1, small, onChange, min = 1, max = 99 }) => {
+  const btn = cx('grid h-full place-items-center text-ink transition hover:bg-sand hover:text-tan active:bg-line/60 disabled:pointer-events-none disabled:opacity-35', small ? 'w-9' : 'w-10')
+  return (
+    <div className={cx('inline-flex items-stretch divide-x divide-line overflow-hidden rounded-xl border border-line bg-white', small ? 'h-9' : 'h-11')}>
+      <button type="button" onClick={() => onChange?.(value - 1)} disabled={value <= min} className={btn} aria-label="Decrease"><Minus className="size-4" /></button>
+      <span className={cx('grid place-items-center text-center font-semibold tabular-nums', small ? 'w-9 text-[13px]' : 'w-12 text-[15px]')} aria-live="polite">{value}</span>
+      <button type="button" onClick={() => onChange?.(value + 1)} disabled={max > 0 && value >= max} className={btn} aria-label="Increase"><Plus className="size-4" /></button>
+    </div>
+  )
+}
 
 export const Field = ({ label, help, error, className, children, ...input }) => (
   <label className={cx('block space-y-1.5', className)}>
