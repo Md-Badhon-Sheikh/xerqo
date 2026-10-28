@@ -187,15 +187,18 @@ function CategorySection({ category, products, delay }) {
   const count = category.products_count ?? products.length
   return (
     <section className="container-x space-y-3.5 pt-7 sm:space-y-6 sm:pt-[52px]">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+      {/* title centred; "View all" on the right from tablet up, a small link under the title on phones */}
+      <div className="grid items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
+        <span className="max-sm:hidden" />
+        <div className="text-center">
           <h2 className="h-display text-2xl sm:text-[30px] lg:text-[34px]">{category.name}</h2>
           <p className="mt-0.5 text-xs text-mute sm:text-[13px]">
             {count} {count === 1 ? 'product' : 'products'}
             {category.description && <span className="max-sm:hidden"> · {category.description}</span>}
+            <Link to={`/shop?c=${category.slug}`} className="font-semibold text-tan underline underline-offset-2 sm:hidden"> · View all →</Link>
           </p>
         </div>
-        <Button to={`/shop?c=${category.slug}`} size="sm" className="sm:!px-[18px] sm:!py-2.5 sm:!text-[11px]">View all</Button>
+        <Button to={`/shop?c=${category.slug}`} size="sm" className="justify-self-end max-sm:hidden sm:!px-[18px] sm:!py-2.5 sm:!text-[11px]">View all</Button>
       </div>
       <Carousel label={category.name} breakpoints={BP.products} delay={delay} arrowTop="top-[calc(50%-16px)]">
         {products.map((p) => <CatProductCard key={p.id} p={p} className="h-full" />)}
