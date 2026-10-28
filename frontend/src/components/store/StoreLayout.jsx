@@ -216,9 +216,15 @@ export function CartDrawer({ forceOpen }) {
 }
 
 // internal paths use the router; https://, tel: and mailto: links are plain links
-const FooterLink = ({ to, children }) => (/^(https?:|tel:|mailto:)/i.test(to || '')
-  ? <a href={to} target={/^https?:/i.test(to) ? '_blank' : undefined} rel="noreferrer" className="hover:text-white">{children}</a>
-  : <Link to={to || '/'} className="hover:text-white">{children}</Link>)
+function FooterLink({ to, children }) {
+  const { pathname, search } = useLocation()
+  if (/^(https?:|tel:|mailto:)/i.test(to || '')) {
+    return <a href={to} target={/^https?:/i.test(to) ? '_blank' : undefined} rel="noreferrer" className="hover:text-white">{children}</a>
+  }
+  // already on that page: the address doesn't change, so take the visitor back to the top ourselves
+  const onClick = () => { if ((to || '/') === pathname + search) window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  return <Link to={to || '/'} onClick={onClick} className="hover:text-white">{children}</Link>
+}
 
 
 // brand icons (Simple Icons paths, 24×24)
