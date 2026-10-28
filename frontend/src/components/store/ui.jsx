@@ -124,11 +124,10 @@ export const Breadcrumb = ({ items, light }) => (
   </nav>
 )
 
-export const PageHero = ({ crumbs, title, sub, image }) => (
+export const PageHero = ({ title, sub, image }) => (
   <section className={cx('relative overflow-hidden', image ? 'bg-espresso text-white' : 'bg-sand')}>
     {image && <img src={image} alt="" className="absolute inset-0 size-full object-cover opacity-30" />}
     <div className="container-x relative space-y-2 py-7 sm:space-y-3 sm:py-12">
-      {crumbs && <Breadcrumb items={crumbs} light={!!image} />}
       <h1 className="h-display text-[34px] sm:text-[44px] lg:text-[56px]">{title}</h1>
       {sub && <p className={cx('max-w-2xl text-[13px] leading-relaxed sm:text-base', image ? 'text-white/80' : 'text-mute')}>{sub}</p>}
     </div>

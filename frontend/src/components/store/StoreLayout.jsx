@@ -258,7 +258,7 @@ function Footer({ sticky }) {
   const columns = [...(footer.columns ?? []), ...(contact.length ? [{ title: 'Contact', links: contact.map(([label, link]) => ({ label, link })) }] : [])]
   const copyright = (footer.copyright || '© {year} XERQO. All rights reserved.').replaceAll('{year}', new Date().getFullYear())
   return (
-    <footer className={cx('bg-espresso text-white sm:pb-8', sticky ? 'pb-40' : 'pb-24')}>
+    <footer className={cx('bg-espresso text-white sm:pb-0', sticky ? 'pb-40' : 'pb-24')}>
       <div className="container-x">
         {footer.newsletter?.enabled && (
           <div className="border-b border-white/10 py-6 lg:py-8">

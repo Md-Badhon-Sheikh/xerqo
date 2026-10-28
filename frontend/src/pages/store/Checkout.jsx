@@ -161,7 +161,7 @@ function Summary({ cart, fee, discount, total, couponQ, placing, onPlace }) {
         <span className="text-[28px] font-bold leading-none tracking-tight tabular-nums">{tk(total)}</span>
       </div>
       <Button size="lg" className="w-full max-sm:hidden" disabled={placing} onClick={onPlace}>{placing && <Loader2 className="size-4 animate-spin" />}{placing ? 'Placing order…' : `Place order — ${tk(total)}`}</Button>
-      <p className="text-center text-xs leading-relaxed text-mute">By placing your order you agree to our <Link to="/policy" className="underline">Terms</Link> &amp; <Link to="/policy" className="underline">Return Policy</Link>. You'll receive an SMS confirmation.</p>
+      <p className="text-center text-xs leading-relaxed text-mute">By placing your order you agree to our <Link to="/pages/terms-conditions" className="underline">Terms</Link> &amp; <Link to="/pages/returns-exchange" className="underline">Return Policy</Link>. You'll receive an SMS confirmation.</p>
     </div>
   )
 }

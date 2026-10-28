@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Routes, Route, Outlet } from 'react-router-dom'
+import { Routes, Route, Outlet, Navigate, useSearchParams } from 'react-router-dom'
 import StoreLayout from './components/store/StoreLayout'
 import AdminLayout from './components/admin/AdminLayout'
 import { AdminAuthProvider } from './context/AuthContext'
@@ -14,7 +14,7 @@ const A = (name) => lazy(() => import(`./pages/admin/${name}.jsx`))
 const Home = S('Home'), Shop = S('Shop'), Product = S('Product'), Cart = S('Cart'), Checkout = S('Checkout'), OrderSuccess = S('OrderSuccess')
 const Login = S('Login'), Register = S('Register'), ForgotPassword = S('ForgotPassword'), Account = S('Account'), WriteReview = S('WriteReview')
 const MyReviews = S('MyReviews'), Wishlist = S('Wishlist'), TrackOrder = S('TrackOrder'), Profile = S('Profile'), About = S('About')
-const Contact = S('Contact'), Faq = S('Faq'), Policy = S('Policy'), Search = S('Search'), NotFound = S('NotFound'), DesignIndex = S('DesignIndex')
+const Contact = S('Contact'), SitePage = S('SitePage'), Search = S('Search'), NotFound = S('NotFound'), DesignIndex = S('DesignIndex')
 const Compare = S('Compare')
 
 // Admin
@@ -24,7 +24,14 @@ const Customers = A('Customers'), CustomerDetail = A('CustomerDetail'), Reviews 
 const Returns = A('Returns'), Shipments = A('Shipments'), Payments = A('Payments'), Reports = A('Reports'), Accounts = A('Accounts'), Staff = A('Staff'), RoleEdit = A('RoleEdit')
 const Settings = A('Settings'), SettingsGeneral = A('SettingsGeneral'), SettingsSms = A('SettingsSms'), SettingsSecurity = A('SettingsSecurity')
 const Notifications = A('Notifications'), AProfile = A('Profile'), Brands = A('Brands'), FlashSales = A('FlashSales')
-const Pages = A('Pages'), Messages = A('Messages'), TopSelling = A('TopSelling')
+const Pages = A('Pages'), Messages = A('Messages'), TopSelling = A('TopSelling'), SitePages = A('SitePages'), SitePageEditor = A('SitePageEditor')
+
+// old /policy?p=… addresses -> the policy pages in Admin › Pages
+const POLICY_PAGES = { shipping: 'shipping-delivery', returns: 'returns-exchange', privacy: 'privacy-policy', terms: 'terms-conditions', warranty: 'warranty' }
+function PolicyRedirect() {
+  const [params] = useSearchParams()
+  return <Navigate to={`/pages/${POLICY_PAGES[params.get('p')] ?? 'returns-exchange'}`} replace />
+}
 
 // Admin session lives only under /admin so the storefront never loads it
 const AdminScope = () => <AdminAuthProvider><Outlet /></AdminAuthProvider>
@@ -79,8 +86,9 @@ export default function App() {
           <Route path="track" element={<TrackOrder />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
-          <Route path="faq" element={<Faq />} />
-          <Route path="policy" element={<Policy />} />
+          <Route path="pages/:slug" element={<SitePage />} />
+          <Route path="faq" element={<SitePage slug="faq" />} />
+          <Route path="policy" element={<PolicyRedirect />} />
           <Route path="search" element={<Search />} />
           <Route path="compare" element={<Compare />} />
           <Route path="design" element={<DesignIndex />} />
@@ -109,6 +117,9 @@ export default function App() {
             <Route path="content" element={<Content />} />
             <Route path="pages" element={<Pages />} />
             <Route path="top-selling" element={<TopSelling />} />
+            <Route path="site-pages" element={<SitePages />} />
+            <Route path="site-pages/new" element={<SitePageEditor />} />
+            <Route path="site-pages/:id" element={<SitePageEditor />} />
             <Route path="messages" element={<Messages />} />
             <Route path="returns" element={<Returns />} />
             <Route path="shipments" element={<Shipments />} />

@@ -4,7 +4,7 @@ import { ArrowLeft, BadgeCheck, Loader2, RotateCcw, ShieldCheck, ShoppingBag, Tr
 import { tk } from '../../data/store'
 import { useCouponCheck, useSettings } from '../../lib/queries'
 import { useCart } from '../../context/CartContext'
-import { Breadcrumb, Button, EmptyState, Qty, cx } from '../../components/store/ui'
+import { Button, EmptyState, Qty, cx } from '../../components/store/ui'
 
 const PayChips = () => (
   <div className="flex flex-wrap justify-center gap-1.5">
@@ -133,7 +133,6 @@ export default function Cart() {
   if (cart.items.length === 0) {
     return (
       <section className="container-x space-y-4 py-8 sm:py-12">
-        <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Cart' }]} />
         <EmptyState icon={ShoppingBag} title="Your cart is empty" text="Looks like you haven't added anything yet. Our handcrafted pieces are waiting." action={<Button to="/shop">Start shopping</Button>} />
       </section>
     )
@@ -142,7 +141,6 @@ export default function Cart() {
   return (
     <div className="pb-20 sm:pb-0">
       <section className="container-x space-y-2 pb-14 pt-5 sm:pt-10 lg:pb-20">
-        <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Cart' }]} />
         <h1 className="h-display text-[34px] sm:text-5xl lg:text-[56px]">Your cart ({cart.count})</h1>
 
         <div className="grid items-start gap-8 pt-4 sm:pt-6 lg:grid-cols-[1fr_400px] lg:gap-10 xl:grid-cols-[1fr_420px]">

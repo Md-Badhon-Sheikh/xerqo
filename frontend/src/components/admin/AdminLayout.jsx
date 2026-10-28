@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutGrid, ClipboardList, Undo2, Truck, Package, Tag, Layers, Users, Star, Percent, Image, Wallet, BarChart3, Shield, Settings,
-  Search, Eye, Bell, Menu, X, MoreHorizontal, MessageSquare, Lock, LogOut, ShieldOff, BadgeCheck, Zap, Landmark, Mail, FileText, TrendingUp,
+  Search, Eye, Bell, Menu, X, MoreHorizontal, MessageSquare, Lock, LogOut, ShieldOff, BadgeCheck, Zap, Landmark, Mail, FileText, TrendingUp, ChevronDown,
 } from 'lucide-react'
 import { cx, Btn } from './ui'
 import { useAdminAuth } from '../../context/AuthContext'
@@ -10,7 +10,7 @@ import { RequireAdmin } from '../common/guards'
 import { useAdminList } from '../../lib/adminQueries'
 
 // Permission module (Role::MODULES on the API) that guards an /admin/... path; null = every staff member
-const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders', brands: 'categories', 'flash-sales': 'coupons', accounts: 'reports', pages: 'content', messages: 'customers', 'top-selling': 'products' }
+const MODULE_ALIASES = { '': 'dashboard', invoice: 'orders', brands: 'categories', 'flash-sales': 'coupons', accounts: 'reports', pages: 'content', messages: 'customers', 'top-selling': 'products', 'site-pages': 'content' }
 const MODULES = ['dashboard', 'orders', 'returns', 'shipments', 'products', 'categories', 'inventory', 'customers', 'reviews', 'coupons', 'content', 'payments', 'reports', 'staff', 'settings']
 export function moduleFor(path) {
   const seg = path.replace(/^\/admin\/?/, '').split(/[/#?]/)[0]
@@ -24,7 +24,7 @@ export const NAV = [
   ['MAIN', [['Dashboard', '/admin', LayoutGrid], ['Orders', '/admin/orders', ClipboardList, 'orders'], ['Returns', '/admin/returns', Undo2, 'returns'], ['Shipping', '/admin/shipments', Truck, 'shipments']]],
   ['CATALOG', [['Products', '/admin/products', Package], ['Categories', '/admin/categories', Tag], ['Brands', '/admin/brands', BadgeCheck], ['Top Selling', '/admin/top-selling', TrendingUp], ['Inventory', '/admin/inventory', Layers]]],
   ['CUSTOMERS', [['Customers', '/admin/customers', Users], ['Reviews', '/admin/reviews', Star, 'reviews'], ['Messages', '/admin/messages', Mail, 'messages']]],
-  ['MARKETING', [['Coupons', '/admin/coupons', Percent], ['Flash Sales', '/admin/flash-sales', Zap], ['Content & Banners', '/admin/content', Image], ['Pages', '/admin/pages', FileText]]],
+  ['MARKETING', [['Coupons', '/admin/coupons', Percent], ['Flash Sales', '/admin/flash-sales', Zap], ['Content & Banners', '/admin/content', Image], ['Pages', '/admin/site-pages', FileText, null, 'pages']]],
   ['FINANCE', [['Payments & COD', '/admin/payments', Wallet, 'payments'], ['Accounts', '/admin/accounts', Landmark], ['Reports', '/admin/reports', BarChart3]]],
   ['SYSTEM', [['Staff & Roles', '/admin/staff', Shield], ['Settings', '/admin/settings', Settings]]],
 ]
@@ -32,6 +32,34 @@ export const NAV = [
 const LogoTile = ({ size = 34 }) => (
   <span style={{ width: size, height: size }} className="grid shrink-0 place-items-center rounded-lg bg-white p-1"><img src="/images/logo-dark.png" alt="XERQO" className="max-h-full" /></span>
 )
+
+// Sidebar "Pages" with its child menu: every store page, the About / Contact / Footer editor and "New page"
+function PagesNav({ name, Icon, onNavigate }) {
+  const { pathname } = useLocation()
+  const inside = pathname.startsWith('/admin/site-pages') || pathname.startsWith('/admin/pages')
+  const [open, setOpen] = useState(inside)
+  useEffect(() => { if (inside) setOpen(true) }, [inside])
+  const pages = useAdminList('site-pages', {}, { staleTime: 60_000 }).data?.data ?? []
+  const child = ({ isActive }) => cx('block truncate rounded-md py-1.5 pl-3 pr-2 text-[12.5px]', isActive ? 'bg-white/10 font-semibold text-white' : 'text-white/60 hover:bg-white/5 hover:text-white')
+  return (
+    <div>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
+        className={cx('flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px]', inside ? 'font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white')}>
+        <Icon className={cx('size-[17px] shrink-0', inside && 'text-gold')} />
+        <span className="flex-1">{name}</span>
+        <ChevronDown className={cx('size-4 text-white/50 transition', open && 'rotate-180')} />
+      </button>
+      {open && (
+        <div className="mb-1 ml-[19px] space-y-0.5 border-l border-white/10 pl-2.5">
+          <NavLink to="/admin/site-pages" end onClick={onNavigate} className={child}>All pages</NavLink>
+          <NavLink to="/admin/pages" onClick={onNavigate} className={child}>About · Contact · Footer</NavLink>
+          {pages.map((p) => <NavLink key={p.id} to={`/admin/site-pages/${p.id}`} onClick={onNavigate} className={child} title={p.title}>{p.title}{!p.is_published && <span className="ml-1 text-[10px] text-white/40">(hidden)</span>}</NavLink>)}
+          <NavLink to="/admin/site-pages/new" onClick={onNavigate} className={(a) => cx(child(a), '!text-gold')}>+ New page</NavLink>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function Sidebar({ rail, onNavigate }) {
   const { can } = useAdminAuth()
@@ -50,8 +78,9 @@ function Sidebar({ rail, onNavigate }) {
         {nav.map(([group, items]) => (
           <div key={group} className={cx(rail && 'border-t border-white/10 pt-2 first:border-0')}>
             {!rail && <p className="px-2 pb-1 pt-2.5 text-[10px] font-semibold tracking-[0.14em] text-white/40">{group}</p>}
-            {items.map(([name, to, Icon, badge]) => {
+            {items.map(([name, to, Icon, badge, sub]) => {
               const count = badge ? badges[badge] : 0
+              if (sub === 'pages' && !rail) return <PagesNav key={name} name={name} Icon={Icon} onNavigate={onNavigate} />
               return (
               <NavLink key={name} to={to} end={to === '/admin'} onClick={onNavigate} title={count ? `${name} (${count})` : name}
                 className={({ isActive }) => cx('relative flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px]', rail && 'justify-center', isActive ? 'bg-white/10 font-semibold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white')}>

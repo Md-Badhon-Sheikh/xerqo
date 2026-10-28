@@ -16,7 +16,7 @@ import { useCart } from '../../context/CartContext'
 import { useCompare } from '../../context/CompareContext'
 import { useToast } from '../../context/ToastContext'
 import { useUI } from '../../context/StoreUIContext'
-import { Breadcrumb, Button, Checkbox, Field, Stars, Qty, CatProductCard, EmptyState, Bone, cx } from '../../components/store/ui'
+import { Button, Checkbox, Field, Stars, Qty, CatProductCard, EmptyState, Bone, cx } from '../../components/store/ui'
 import { Carousel, BP } from '../../components/store/Carousel'
 import Lightbox from '../../components/store/Lightbox'
 import { ErrorState, Spinner } from '../../components/common/feedback'
@@ -581,9 +581,6 @@ export default function Product() {
 
   return (
     <div className="pb-16 sm:pb-0">
-      <div className="container-x pt-4 sm:pt-6">
-        <Breadcrumb items={[{ label: 'Home', to: '/' }, ...(p.category ? [{ label: p.category.name, to: `/shop?c=${p.category.slug}` }] : []), { label: p.name }]} />
-      </div>
       <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-6 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} video={p.video} active={Math.min(active, gallery.length - (p.video ? 0 : 1))} setActive={setActive} /></div>
         <BuyBox p={p} buy={buy} settings={settings} openTab={openTab} />

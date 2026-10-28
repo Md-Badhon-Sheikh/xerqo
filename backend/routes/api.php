@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\CouponController;
 use App\Http\Controllers\Api\Customer;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\PageController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\SettingController;
 use Illuminate\Support\Facades\DB;
@@ -29,6 +30,7 @@ Route::get('products', [ProductController::class, 'index']);
 Route::get('products/{slug}', [ProductController::class, 'show']);
 Route::get('products/{slug}/reviews', [ProductController::class, 'reviews']);
 Route::get('banners', [BannerController::class, 'index']);
+Route::get('pages/{slug}', [PageController::class, 'show']);
 Route::get('settings', [SettingController::class, 'index']);
 Route::post('contact', [ContactController::class, 'store'])->middleware('throttle:5,1');
 
@@ -234,6 +236,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:sanctum', 'admin', 'ad
     Route::put('content/announcement', [Admin\SettingController::class, 'announcement'])->middleware('admin:content,edit');
     Route::put('content/highlights', [Admin\SettingController::class, 'highlights'])->middleware('admin:content,edit');
     Route::put('content/testimonials', [Admin\SettingController::class, 'testimonials'])->middleware('admin:content,edit');
+    // the store's own pages (policies, FAQ, …) — permission follows the request (view / create / edit / delete)
+    Route::apiResource('site-pages', Admin\SitePageController::class)->parameters(['site-pages' => 'page'])->middleware('admin:content');
     Route::put('content/pages/{page}', [Admin\PageContentController::class, 'update'])->whereIn('page', ['about', 'contact', 'footer', 'craft'])->middleware('admin:content,edit');
     Route::post('content/images', [Admin\PageContentController::class, 'uploadImage'])->middleware('admin:content,edit');
     Route::delete('messages/{message}', [Admin\ContactMessageController::class, 'destroy'])->middleware('admin:customers,delete');

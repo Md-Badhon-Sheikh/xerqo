@@ -6,7 +6,7 @@ import { tk } from '../../data/store'
 import { useCompare, COMPARE_MAX } from '../../context/CompareContext'
 import { useQuickAdd } from '../../context/StoreUIContext'
 import { normalizeProduct } from '../../lib/product'
-import { Breadcrumb, Button, EmptyState, Stars, Bone, cx } from '../../components/store/ui'
+import { Button, EmptyState, Stars, Bone, cx } from '../../components/store/ui'
 
 // One row per attribute; each cell renders a product
 const ROWS = [
@@ -41,7 +41,6 @@ export default function Compare() {
   return (
     <section className="container-x space-y-6 py-6 sm:space-y-8 sm:py-10">
       <div className="space-y-2">
-        <Breadcrumb items={[{ label: 'Home', to: '/' }, { label: 'Compare' }]} />
         <div className="flex flex-wrap items-end justify-between gap-3">
           <h1 className="h-display text-[34px] sm:text-[44px]">Compare products</h1>
           {items.length > 0 && <button onClick={clear} className="text-[13px] font-semibold text-tan underline underline-offset-4">Clear all</button>}

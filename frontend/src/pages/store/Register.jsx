@@ -220,7 +220,7 @@ export default function Register() {
       <div className="mx-auto max-w-sm space-y-4"><GoogleSection text="signup_with" onDone={done} /></div>
 
       <div className="space-y-2 border-t border-line pt-4 text-center text-[13px]">
-        <p className="text-xs text-mute">By creating an account you agree to our <Link to="/policy" className="underline underline-offset-2">Terms &amp; Privacy Policy</Link>.</p>
+        <p className="text-xs text-mute">By creating an account you agree to our <Link to="/pages/terms-conditions" className="underline underline-offset-2">Terms</Link> &amp; <Link to="/pages/privacy-policy" className="underline underline-offset-2">Privacy Policy</Link>.</p>
         <p className="text-mute">Already have an account? <Link to="/login" className="font-semibold text-tan underline underline-offset-4">Sign in</Link></p>
       </div>
     </AuthShell>

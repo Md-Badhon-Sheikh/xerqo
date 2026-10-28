@@ -145,7 +145,7 @@ export default function Contact() {
   const hasAside = (page.showroom?.enabled && page.showroom?.area) || page.promo?.enabled || store.facebook
   return (
     <>
-      <PageHero image={page.hero?.image || undefined} crumbs={[{ label: 'Home', to: '/' }, { label: 'Contact' }]} title={page.hero?.title} sub={page.hero?.subtitle} />
+      <PageHero image={page.hero?.image || undefined} title={page.hero?.title} sub={page.hero?.subtitle} />
       <div className="container-x space-y-5 py-6 sm:space-y-8 sm:py-10">
         {list.length > 0 && (
           <div className={cx('grid grid-cols-2 gap-3 sm:gap-4', LG_COLS[list.length])}>
