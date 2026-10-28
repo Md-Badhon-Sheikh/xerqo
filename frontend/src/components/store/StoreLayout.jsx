@@ -97,8 +97,24 @@ function MobileSearch() {
   )
 }
 
+// Which header menu item is the current page. Menu links like /shop?c=wallets differ only in the query, which
+// NavLink ignores: match the category too; "Shop" covers /shop pages for categories that have no menu item.
+function useNavActive() {
+  const { pathname, search } = useLocation()
+  const c = new URLSearchParams(search).get('c')
+  const menuCats = NAV.map(([, to]) => new URL(to, 'http://x').searchParams.get('c')).filter(Boolean)
+  return (to) => {
+    const u = new URL(to, 'http://x')
+    const cat = u.searchParams.get('c')
+    if (u.pathname === '/') return pathname === '/'
+    if (u.pathname === '/shop') return pathname === '/shop' && (cat ? c === cat : !menuCats.includes(c))
+    return pathname === u.pathname || pathname.startsWith(u.pathname + '/')
+  }
+}
+
 function Header() {
   const { setDrawer, setMenu } = useUI()
+  const navActive = useNavActive()
   return (
     <header className="sticky top-0 z-40">
       <AnnouncementBar />
@@ -113,7 +129,8 @@ function Header() {
           <div className="hidden lg:block"><Logo /></div>
           <nav className="hidden items-center gap-6 lg:flex xl:gap-8">
             {NAV.map(([n, to]) => (
-              <NavLink key={n} to={to} end className={({ isActive }) => cx('text-sm font-medium transition hover:text-tan', isActive && to === '/' && 'text-tan')}>{n}</NavLink>
+              <Link key={n} to={to} aria-current={navActive(to) ? 'page' : undefined}
+                className={cx('relative py-1 text-sm font-medium transition hover:text-tan', navActive(to) && 'text-tan after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-tan')}>{n}</Link>
             ))}
           </nav>
           <div className="flex shrink-0 items-center gap-4 sm:gap-5">

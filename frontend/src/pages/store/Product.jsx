@@ -181,12 +181,12 @@ function BuyBox({ p, buy, settings, openTab }) {
         {(whatsapp || phone) && (
           <div className={cx('grid gap-2.5 sm:gap-3', whatsapp && phone && 'grid-cols-2')}>
             {whatsapp && (
-              <a href={`${whatsapp}?text=${encodeURIComponent(`Hi! I'd like to order: ${p.name}${variant ? ` (${variant.name})` : ''} × ${qty}`)}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded bg-leaf px-3 py-3 text-[13px] font-semibold text-white transition hover:opacity-90">
+              <a href={`${whatsapp}?text=${encodeURIComponent(`Hi! I'd like to order: ${p.name}${variant ? ` (${variant.name})` : ''} × ${qty}`)}`} target="_blank" rel="noreferrer" className="flex items-center justify-center gap-2 rounded-lg bg-leaf px-3 py-3 text-[13px] font-semibold text-white transition hover:opacity-90">
                 <MessageCircle className="size-4" /> Order on WhatsApp
               </a>
             )}
             {phone && (
-              <a href={`tel:${phone}`} className="flex items-center justify-center gap-2 rounded border border-ink px-3 py-3 text-[13px] font-semibold transition hover:bg-ink hover:text-white">
+              <a href={`tel:${phone}`} className="flex items-center justify-center gap-2 rounded-lg border border-ink px-3 py-3 text-[13px] font-semibold transition hover:bg-ink hover:text-white">
                 <Phone className="size-4" /> Call for order
               </a>
             )}

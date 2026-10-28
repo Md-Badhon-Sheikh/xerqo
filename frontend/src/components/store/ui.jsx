@@ -19,7 +19,7 @@ const btnVariants = {
   white: 'bg-white text-ink border border-line hover:border-ink',
   danger: 'border border-rust text-rust hover:bg-rust hover:text-white',
 }
-const btnSizes = { sm: 'text-[10px] px-3 py-2 rounded', md: 'text-[11px] sm:text-xs px-5 py-3 rounded', lg: 'text-xs sm:text-[13px] px-7 py-4 rounded-sm' }
+const btnSizes = { sm: 'text-[10px] px-3 py-2 rounded-md', md: 'text-[11px] sm:text-xs px-5 py-3 rounded-lg', lg: 'text-xs sm:text-[13px] px-7 py-4 rounded-lg' }
 
 export function Button({ as, to, variant = 'dark', size = 'md', className, children, ...rest }) {
   const cls = cx(btnBase, btnVariants[variant], btnSizes[size], className)
