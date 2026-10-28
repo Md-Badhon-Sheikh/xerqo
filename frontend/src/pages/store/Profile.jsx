@@ -11,7 +11,8 @@ import AreaSelect from '../../components/common/AreaSelect'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
 import { confirmAndRun, toast } from '../../lib/alert'
-import { DISTRICTS, prettyPhone } from '../../lib/bd'
+import { prettyPhone } from '../../lib/bd'
+import { DISTRICT_OPTIONS } from '../../lib/bdBangla'
 import { PasswordInput } from './Login'
 
 const Card = ({ className, children }) => <div className={cx('rounded-lg bg-white p-4 sm:p-6', className)}>{children}</div>
@@ -204,7 +205,7 @@ function AddressForm({ initial, user, onDone }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Recipient name" placeholder="Full name" value={f.name} onChange={(e) => set({ name: e.target.value })} error={errors.name} />
           <Field label="Phone" inputMode="tel" placeholder="01XXXXXXXXX" value={f.phone} onChange={(e) => set({ phone: e.target.value.replace(/\D/g, '').slice(0, 11) })} error={errors.phone} />
-          <Field label="District" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={f.district} onChange={(district) => set({ district, ...(district !== f.district ? { area: '' } : {}) })} invalid={!!errors.district} /></Field>
+          <Field label="District" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICT_OPTIONS} value={f.district} onChange={(district) => set({ district, ...(district !== f.district ? { area: '' } : {}) })} invalid={!!errors.district} /></Field>
           <Field label="Area / Thana" error={errors.area}><AreaSelect district={f.district} value={f.area} onChange={(area) => set({ area })} invalid={!!errors.area} /></Field>
         </div>
         <Field label="Full address" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, landmark" value={f.address_line} onChange={(e) => set({ address_line: e.target.value })} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>

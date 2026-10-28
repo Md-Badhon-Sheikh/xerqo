@@ -10,7 +10,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useCart } from '../../context/CartContext'
 import { api } from '../../lib/api'
 import { alertError, toast } from '../../lib/alert'
-import { DISTRICTS, prettyPhone, zoneFor } from '../../lib/bd'
+import { prettyPhone, zoneFor } from '../../lib/bd'
+import { DISTRICT_OPTIONS } from '../../lib/bdBangla'
 import { useCouponCheck, useSettings } from '../../lib/queries'
 import { saveGuestToken } from '../../lib/guestOrders'
 
@@ -363,7 +364,7 @@ export default function Checkout() {
             )}
             {usingNew && !addressesLoading && (
               <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
+                <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICT_OPTIONS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
                 <Field label="Area / Thana" error={errors.area}><AreaSelect district={addr.district} value={addr.area} onChange={(area) => setAddr((x) => ({ ...x, area }))} invalid={!!errors.area} /></Field>
                 <Field label="Full address *" className="sm:col-span-2" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, block, landmark" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>
                 {user && <Checkbox label="Save this address to my account" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />}

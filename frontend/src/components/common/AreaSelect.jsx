@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Select2 from './Select2'
 import { AREAS, areaOptions } from '../../lib/bdAreas'
+import { AREA_BN, withBn } from '../../lib/bdBangla'
 
 const OTHER = '__other__'
 
@@ -16,8 +17,8 @@ export default function AreaSelect({ district, value, onChange, variant = 'store
   const [forDistrict, setForDistrict] = useState(district)
   if (forDistrict !== district) { setForDistrict(district); setTyping(false) }
   const options = [
-    ...areaOptions(district, typing ? '' : value).map((a) => ({ value: a, label: a })),
-    { value: OTHER, label: 'Other — type it' },
+    ...areaOptions(district, typing ? '' : value).map((a) => ({ value: a, label: withBn(a, AREA_BN[district]?.[a]) })),
+    { value: OTHER, label: 'Other — type it (অন্যান্য)' },
   ]
   return (
     <div className="space-y-2">
