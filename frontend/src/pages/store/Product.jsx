@@ -144,13 +144,14 @@ function BuyBox({ p, buy, settings, openTab }) {
 
       {/* Colour */}
       {p.variants?.length > 0 && (
-        <div className="space-y-3">
-          <p className="text-[13px]">Colour: <b>{variant?.name ?? <span className="font-normal text-rust">Please choose</span>}</b></p>
-          <div className="flex flex-wrap gap-3">
+        // label and swatches on one line, small swatches
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="min-w-[110px] text-[13px] text-mute">Colour: <b className="text-ink">{variant?.name ?? <span className="font-normal text-rust">Please choose</span>}</b></p>
+          <div className="flex flex-wrap gap-2.5">
             {p.variants.map((v) => (
               <button key={v.id} onClick={() => setVariant(v)} aria-label={`${v.name}${v.in_stock ? '' : ' (out of stock)'}`} title={v.in_stock ? v.name : `${v.name} — out of stock`} aria-pressed={variant?.id === v.id}
                 style={{ backgroundColor: v.color_hex || '#ccc' }}
-                className={cx('relative size-9 rounded-full ring-offset-[3px] ring-offset-cream transition', variant?.id === v.id ? 'ring-2 ring-ink' : 'ring-1 ring-line hover:ring-mute', !v.in_stock && 'opacity-40')}>
+                className={cx('relative size-7 rounded-full ring-offset-2 ring-offset-cream transition sm:size-8', variant?.id === v.id ? 'ring-2 ring-ink' : 'ring-1 ring-line hover:ring-mute', !v.in_stock && 'opacity-40')}>
                 {!v.in_stock && <span className="absolute inset-x-0 top-1/2 h-px -rotate-45 bg-white" />}
               </button>
             ))}
