@@ -118,12 +118,9 @@ function BuyBox({ p, buy, settings, openTab }) {
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <p className="eyebrow">{[p.category?.name?.replace(/s$/, ''), p.brand?.name].filter(Boolean).join(' · ')}</p>
-          {p.reviews_count > 0 && <button type="button" onClick={() => openTab('reviews')}><Stars n={p.rating} count={`${p.rating} · ${p.reviews_count}`} className="text-[11px]" /></button>}
-        </div>
-        <h1 className="h-display text-[32px] sm:text-[42px] lg:text-[44px]">{p.name}</h1>
+      <div className="space-y-2.5 sm:space-y-3">
+        <h1 className="h-display text-[30px] sm:text-[42px] lg:text-[44px]">{p.name}</h1>
+        {p.reviews_count > 0 && <button type="button" onClick={() => openTab('reviews')} className="block"><Stars n={p.rating} count={`${p.rating} · ${p.reviews_count}`} className="text-[11px]" /></button>}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <span className="text-2xl font-bold text-tan sm:text-[28px]">{tk(price)}</span>
           {save > 0 && <span className="text-base text-mute line-through">{tk(p.compare_price)}</span>}
@@ -588,7 +585,7 @@ export default function Product() {
 
   return (
     <div className="pb-16 sm:pb-0">
-      <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-6 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
+      <section className="container-x grid grid-cols-[minmax(0,1fr)] gap-4 pt-4 sm:gap-10 sm:pt-6 lg:grid-cols-2 lg:gap-12 xl:gap-16">
         <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} video={p.video} active={Math.min(active, gallery.length - (p.video ? 0 : 1))} setActive={setActive} /></div>
         <BuyBox p={p} buy={buy} settings={settings} openTab={openTab} />
       </section>
