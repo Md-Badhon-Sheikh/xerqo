@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect } from 'react'
-import { Routes, Route, Outlet, Navigate, useSearchParams } from 'react-router-dom'
+import { Link, Routes, Route, Outlet, Navigate, useSearchParams } from 'react-router-dom'
 import StoreLayout from './components/store/StoreLayout'
 import AdminLayout from './components/admin/AdminLayout'
 import { AdminAuthProvider } from './context/AuthContext'
@@ -28,6 +28,20 @@ const Pages = A('Pages'), Messages = A('Messages'), TopSelling = A('TopSelling')
 
 // old /policy?p=… addresses -> the policy pages in Admin › Pages
 const POLICY_PAGES = { shipping: 'shipping-delivery', returns: 'returns-exchange', privacy: 'privacy-policy', terms: 'terms-conditions', warranty: 'warranty' }
+// unknown /admin/… address
+function AdminNotFound() {
+  return (
+    <div className="grid place-items-center rounded-xl border border-aline bg-white px-6 py-16 text-center">
+      <div className="space-y-3">
+        <p className="font-display text-[64px] font-semibold leading-none text-tan">404</p>
+        <p className="text-base font-semibold">This admin page doesn’t exist.</p>
+        <p className="text-[13px] text-amute">Check the address, or go back to the dashboard.</p>
+        <Link to="/admin" className="inline-flex rounded-lg bg-ink px-4 py-2.5 text-[13px] font-semibold text-white">Back to dashboard</Link>
+      </div>
+    </div>
+  )
+}
+
 function PolicyRedirect() {
   const [params] = useSearchParams()
   return <Navigate to={`/pages/${POLICY_PAGES[params.get('p')] ?? 'returns-exchange'}`} replace />
@@ -134,6 +148,7 @@ export default function App() {
             <Route path="settings/security" element={<SettingsSecurity />} />
             <Route path="notifications" element={<Notifications />} />
             <Route path="profile" element={<AProfile />} />
+            <Route path="*" element={<AdminNotFound />} />
           </Route>
         </Route>
       </Routes>

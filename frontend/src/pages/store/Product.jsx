@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Check, ChevronLeft, ChevronRight, GitCompareArrows, Heart, ImagePlus, Maximize2, MessageCircle, PackageX, Phone, Play, Timer, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronLeft, ChevronRight, GitCompareArrows, Heart, ImagePlus, Maximize2, MessageCircle, Phone, Play, Timer, X } from 'lucide-react'
 import { useWishlist } from '../../context/WishlistContext'
 import { tk } from '../../data/store'
 import { cartLine } from '../../lib/product'
@@ -16,9 +16,10 @@ import { useCart } from '../../context/CartContext'
 import { useCompare } from '../../context/CompareContext'
 import { useToast } from '../../context/ToastContext'
 import { useUI } from '../../context/StoreUIContext'
-import { Button, Checkbox, Field, Stars, Qty, CatProductCard, EmptyState, Bone, cx } from '../../components/store/ui'
+import { Button, Checkbox, Field, Stars, Qty, CatProductCard, Bone, cx } from '../../components/store/ui'
 import { Carousel, BP } from '../../components/store/Carousel'
 import Lightbox from '../../components/store/Lightbox'
+import NotFound from './NotFound'
 import { ErrorState, Spinner } from '../../components/common/feedback'
 
 const initials = (name = '') => name.split(' ').filter(Boolean).slice(0, 2).map((x) => x[0]).join('')
@@ -580,7 +581,7 @@ export default function Product() {
 
   if (isPending) return <ProductSkeleton />
   if (error?.status === 404) {
-    return <div className="container-x py-16"><EmptyState icon={PackageX} title="Product not found" text="This product may have been removed or is no longer available." action={<Button to="/shop" variant="outlineTan" size="sm">Browse all products</Button>} /></div>
+    return <NotFound title="This product isn’t here any more." text="It may have been removed or is no longer available. Have a look at our other pieces." />
   }
   if (error) return <div className="container-x py-16"><ErrorState error={error} onRetry={refetch} /></div>
 

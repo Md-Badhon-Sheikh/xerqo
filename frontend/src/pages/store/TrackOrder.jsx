@@ -5,6 +5,7 @@ import { AlertTriangle, Check, Clock, ExternalLink, FileUp, Loader2, Phone, X } 
 import { tk } from '../../data/store'
 import { Button, Field, PageHero, cx } from '../../components/store/ui'
 import { ErrorState } from '../../components/common/feedback'
+import { NotFoundBlock } from './NotFound'
 import { useAuth } from '../../context/AuthContext'
 import { api } from '../../lib/api'
 import { toast } from '../../lib/alert'
@@ -208,7 +209,14 @@ export default function TrackOrder() {
         </form>
 
         {loading && <div className="grid h-40 place-items-center rounded-lg bg-white"><Loader2 className="size-6 animate-spin text-tan" /></div>}
-        {notFound && !loading && <p className="rounded-lg bg-white px-5 py-8 text-center text-sm text-mute">No order found with these details. Check the order number{user ? '' : ' and phone number'} and try again.</p>}
+        {notFound && !loading && (
+          <NotFoundBlock compact title="We couldn’t find that order"
+            text={`No order matches these details. Check the order number${user ? '' : ' and the phone number you used at checkout'} and try again.`}
+            actions={<>
+              <Button size="lg" onClick={() => { setLookup(null); setParams({}); setForm({ order_number: '', phone: '' }); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>Try again</Button>
+              <Button to="/contact" variant="outline" size="lg">Contact us</Button>
+            </>} />
+        )}
         {(pub.error || own.error) && !notFound && !loading && <ErrorState error={pub.error || own.error} />}
         {order && !loading && <OrderView o={order} own={!!own.data} refresh={() => qc.invalidateQueries({ queryKey: ['customer', 'orders'] })} />}
       </div>

@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { MessageCircle, Minus, PackageX, Phone, Plus, Search } from 'lucide-react'
-import { Button, EmptyState, cx } from '../../components/store/ui'
+import { MessageCircle, Minus, Phone, Plus, Search } from 'lucide-react'
+import { Button, cx } from '../../components/store/ui'
 import { ErrorState, PageLoader } from '../../components/common/feedback'
+import NotFound from './NotFound'
 import { api } from '../../lib/api'
 import { waLink } from '../../lib/bd'
 import { useSettings } from '../../lib/queries'
@@ -106,7 +107,7 @@ export default function SitePage({ slug: fixedSlug }) {
   }, [page])
 
   if (isPending) return <PageLoader className="min-h-[60vh]" />
-  if (error?.status === 404) return <div className="container-x py-16"><EmptyState icon={PackageX} title="Page not found" text="This page may have been moved or removed." action={<Button to="/" variant="outlineTan" size="sm">Go to the homepage</Button>} /></div>
+  if (error?.status === 404) return <NotFound />
   if (error) return <div className="container-x py-16"><ErrorState error={error} onRetry={refetch} /></div>
 
   return (
