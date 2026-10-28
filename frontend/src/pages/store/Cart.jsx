@@ -1,16 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, BadgeCheck, Loader2, RotateCcw, ShieldCheck, ShoppingBag, Truck, X } from 'lucide-react'
+import { ArrowLeft, Loader2, ShoppingBag, Truck, X } from 'lucide-react'
 import { tk } from '../../data/store'
 import { useCouponCheck, useSettings } from '../../lib/queries'
 import { useCart } from '../../context/CartContext'
 import { Button, EmptyState, Qty, cx } from '../../components/store/ui'
-
-const PayChips = () => (
-  <div className="flex flex-wrap justify-center gap-1.5">
-    {['COD', 'bKash', 'Rocket', 'Nagad', 'Bank'].map((p) => <span key={p} className="rounded-sm border border-line px-2 py-0.5 text-[10px] font-semibold text-mute">{p}</span>)}
-  </div>
-)
 
 function FreeDeliveryBar({ subtotal, freeAt }) {
   if (!freeAt) return null
@@ -105,12 +99,6 @@ function Summary({ cart, zone, setZone, delivery, couponQ, totals }) {
         <span className="text-[28px] font-bold leading-none tracking-tight tabular-nums">{tk(totals.total)}</span>
       </div>
       <Button to="/checkout" size="lg" className="w-full">Proceed to checkout</Button>
-      <PayChips />
-      <ul className="grid gap-2.5 border-t border-line pt-4 text-xs text-mute">
-        {[[ShieldCheck, '100% genuine leather, 1-year warranty'], [RotateCcw, '7-day easy return & free exchange'], [BadgeCheck, 'Cash on Delivery available nationwide']].map(([Icon, t]) => (
-          <li key={t} className="flex items-center gap-2"><Icon className="size-4 text-tan" strokeWidth={1.7} />{t}</li>
-        ))}
-      </ul>
     </div>
   )
 }
@@ -140,10 +128,10 @@ export default function Cart() {
 
   return (
     <div className="pb-20 sm:pb-0">
-      <section className="container-x space-y-2 pb-14 pt-5 sm:pt-10 lg:pb-20">
-        <h1 className="h-display text-[34px] sm:text-5xl lg:text-[56px]">Your cart ({cart.count})</h1>
+      <section className="container-x space-y-2 pb-14 pt-4 sm:pt-6 lg:pb-20">
+        <h1 className="h-display text-[26px] sm:text-[32px] lg:text-[36px]">Your cart ({cart.count})</h1>
 
-        <div className="grid items-start gap-8 pt-4 sm:pt-6 lg:grid-cols-[1fr_400px] lg:gap-10 xl:grid-cols-[1fr_420px]">
+        <div className="grid items-start gap-8 pt-2 sm:pt-3 lg:grid-cols-[1fr_400px] lg:gap-10 xl:grid-cols-[1fr_420px]">
           <div className="min-w-0">
             <FreeDeliveryBar subtotal={cart.subtotal} freeAt={freeAt} />
             <div className="mt-6 hidden grid-cols-[110px_1fr_110px_120px_100px] gap-5 border-b border-line pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-mute md:grid">
