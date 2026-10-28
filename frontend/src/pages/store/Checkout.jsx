@@ -42,7 +42,7 @@ function Steps() {
 }
 
 const SectionTitle = ({ n, children }) => (
-  <h2 className="flex items-center gap-3 font-display text-[26px] font-semibold sm:text-3xl">
+  <h2 className="flex items-center gap-3 font-display text-[22px] font-semibold sm:text-[24px]">
     <span className="grid size-6 place-items-center rounded-full bg-ink font-sans text-xs font-bold text-white">{n}</span>{children}
   </h2>
 )
@@ -108,7 +108,7 @@ function PaymentDetails({ method, cfg, total, pay, setPay, errors }) {
             <button type="button" onClick={() => copy(cfg.number, 'Number')} aria-label="Copy number" className="text-tan"><Copy className="size-3.5" /></button></span>
         </div>
         {cfg.instructions && <p className="text-xs leading-relaxed text-mute">{cfg.instructions}</p>}
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
           <Field label="Your wallet number *" inputMode="tel" placeholder="01XXXXXXXXX" value={pay.sender_number} onChange={(e) => setPay({ sender_number: e.target.value.replace(/\D/g, '').slice(0, 11) })} error={errors.sender_number} />
           <Field label="Transaction ID *" placeholder="e.g. 9BK7XQ2LMN" value={pay.transaction_id} onChange={(e) => setPay({ transaction_id: e.target.value.toUpperCase().replace(/\s/g, '') })} error={errors.transaction_id} />
         </div>
@@ -180,7 +180,7 @@ function CheckoutGate({ onGuest }) {
           <h1 className="h-display text-[30px] sm:text-[40px]">How would you like to check out?</h1>
           <p className="text-sm text-mute">Order as a guest in a minute, or use an account to track orders and save addresses.</p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
           <div className="flex flex-col gap-4 rounded-xl border border-line bg-white p-5 sm:p-6">
             <span className="grid size-11 place-items-center rounded-full bg-sand text-tan"><ShoppingBag className="size-5" /></span>
             <div className="flex-1 space-y-1">
@@ -319,8 +319,8 @@ export default function Checkout() {
         </div>
       </div>
 
-      <section className="container-x grid items-start gap-8 pb-14 pt-5 sm:pt-10 lg:grid-cols-[1fr_400px] lg:gap-12 lg:pb-20 xl:grid-cols-[1fr_460px]">
-        <div className="min-w-0 space-y-8 sm:space-y-10">
+      <section className="container-x grid items-start gap-8 pb-14 pt-4 sm:pt-6 lg:grid-cols-[1fr_400px] lg:gap-12 lg:pb-20 xl:grid-cols-[1fr_460px]">
+        <div className="min-w-0 space-y-6 sm:space-y-7">
           {/* Mobile: collapsible order summary */}
           <div className="rounded border border-line bg-white lg:hidden">
             <button type="button" onClick={() => setShowItems(!showItems)} className="flex w-full items-center justify-between px-4 py-3.5 text-sm">
@@ -335,13 +335,13 @@ export default function Checkout() {
           </div>
 
           <div className="space-y-4">
-            <h1 className="h-display text-[34px] max-sm:hidden sm:text-5xl lg:text-[56px]">Checkout</h1>
+            <h1 className="h-display text-[28px] max-sm:hidden sm:text-[32px] lg:text-[36px]">Checkout</h1>
           </div>
 
           {/* 1. Contact */}
-          <fieldset className="space-y-4">
+          <fieldset className="space-y-3">
             <SectionTitle n={1}>Contact</SectionTitle>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
               <Field label="Full name *" autoComplete="name" value={contact.name} onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))} error={errors.name} />
               <Field label="Mobile number *" placeholder="01XXXXXXXXX" inputMode="tel" autoComplete="tel" value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value.replace(/\D/g, '').slice(0, 11) }))} error={errors.phone} help="We'll call this number to confirm your order" />
               <Field label="Email (optional)" type="email" placeholder="For order updates" className="sm:col-span-2" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} error={errors.email} />
@@ -349,7 +349,7 @@ export default function Checkout() {
           </fieldset>
 
           {/* 2. Delivery */}
-          <fieldset className="space-y-4">
+          <fieldset className="space-y-3">
             <SectionTitle n={2}>Delivery address</SectionTitle>
             {addressesLoading && <div className="h-20 animate-pulse rounded border border-line bg-white" />}
             {addresses.length > 0 && (
@@ -362,7 +362,7 @@ export default function Checkout() {
               </div>
             )}
             {usingNew && !addressesLoading && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                 <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICTS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
                 <Field label="Area / Thana" error={errors.area}><AreaSelect district={addr.district} value={addr.area} onChange={(area) => setAddr((x) => ({ ...x, area }))} invalid={!!errors.area} /></Field>
                 <Field label="Full address *" className="sm:col-span-2" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, block, landmark" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>
@@ -378,11 +378,11 @@ export default function Checkout() {
           </fieldset>
 
           {/* 3. Billing */}
-          <fieldset className="space-y-4">
+          <fieldset className="space-y-3">
             <SectionTitle n={3}>Billing address</SectionTitle>
             <Checkbox label="Same as the delivery address" checked={billingSame} onChange={(e) => setBillingSame(e.target.checked)} />
             {!billingSame && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
                 <Field label="Billing name *" value={billing.billing_name} onChange={(e) => setBilling((b) => ({ ...b, billing_name: e.target.value }))} error={errors.billing_name} />
                 <Field label="Billing phone *" inputMode="tel" placeholder="01XXXXXXXXX" value={billing.billing_phone} onChange={(e) => setBilling((b) => ({ ...b, billing_phone: e.target.value.replace(/\D/g, '').slice(0, 11) }))} error={errors.billing_phone} />
                 <Field label="Billing address *" className="sm:col-span-2" value={billing.billing_address} onChange={(e) => setBilling((b) => ({ ...b, billing_address: e.target.value }))} error={errors.billing_address} />
@@ -391,7 +391,7 @@ export default function Checkout() {
           </fieldset>
 
           {/* 4. Payment */}
-          <fieldset ref={paymentRef} className="scroll-mt-28 space-y-4">
+          <fieldset ref={paymentRef} className="scroll-mt-28 space-y-3">
             <SectionTitle n={4}>Payment method</SectionTitle>
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3" role="radiogroup" aria-label="Payment method">
               {methods.map((m) => <PayTile key={m.id} m={m} checked={method === m.id} onPick={() => { setMethod(m.id); setErrors({}) }} />)}
