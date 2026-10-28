@@ -112,9 +112,23 @@ function useNavActive() {
   }
 }
 
+// Sub menus: "Shop" lists every category; a category item lists its sub-categories (Admin › Categories → parent).
+// Items without children have no sub menu.
+function useNavItems() {
+  const { data: categories = [] } = useCategories()
+  return NAV.map(([name, to]) => {
+    const slug = new URL(to, 'http://x').searchParams.get('c')
+    const cat = slug && categories.find((c) => c.slug === slug)
+    const kids = to === '/shop' ? categories.filter((c) => !c.parent_id) : cat?.children ?? []
+    return { name, to, sub: kids.map((c) => ({ name: c.name, to: `/shop?c=${c.slug}` })) }
+  })
+}
+
 function Header() {
   const { setDrawer, setMenu } = useUI()
   const navActive = useNavActive()
+  const items = useNavItems()
+  const [shut, setShut] = useState(null) // menu item whose sub menu was just used
   return (
     <header className="sticky top-0 z-40">
       <AnnouncementBar />
@@ -128,9 +142,23 @@ function Header() {
           <MobileSearch />
           <div className="hidden lg:block"><Logo /></div>
           <nav className="hidden items-center gap-6 lg:flex xl:gap-8">
-            {NAV.map(([n, to]) => (
-              <Link key={n} to={to} aria-current={navActive(to) ? 'page' : undefined}
-                className={cx('relative py-1 text-sm font-medium transition hover:text-tan', navActive(to) && 'text-tan after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-tan')}>{n}</Link>
+            {items.map(({ name: n, to, sub }) => (
+              // hover (or keyboard focus) opens the sub menu; a click closes it until the pointer leaves
+              <div key={n} className={cx('relative', shut !== n && 'group')} onMouseLeave={() => shut === n && setShut(null)}>
+                <Link to={to} aria-current={navActive(to) ? 'page' : undefined} aria-haspopup={sub.length ? 'true' : undefined}
+                  className={cx('relative flex items-center gap-1 py-1 text-sm font-medium transition hover:text-tan', navActive(to) && 'text-tan after:absolute after:inset-x-0 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-tan')}>
+                  {n}{sub.length > 0 && <ChevronDown className="size-3.5 transition group-hover:rotate-180" />}
+                </Link>
+                {sub.length > 0 && (
+                  <div className="invisible absolute left-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition group-focus-within:visible group-focus-within:opacity-100 group-hover:visible group-hover:opacity-100">
+                    <ul className="min-w-[200px] rounded-xl border border-line bg-white p-2 shadow-[0_12px_30px_rgba(35,26,21,0.12)]">
+                      {sub.map((x) => (
+                        <li key={x.to}><Link to={x.to} onClick={(e) => { setShut(n); e.currentTarget.blur() }} className="block whitespace-nowrap rounded-lg px-3.5 py-2 text-[13px] text-ink transition hover:bg-sand hover:text-tan">{x.name}</Link></li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
             ))}
           </nav>
           <div className="flex shrink-0 items-center gap-4 sm:gap-5">
@@ -153,6 +181,8 @@ function MobileMenu() {
   const { menu, setMenu } = useUI()
   const { user, logout } = useAuth()
   const { data: categories = [] } = useCategories()
+  const items = useNavItems()
+  const [openSub, setOpenSub] = useState(null)
   const close = () => setMenu(false)
   return (
     <div className={cx('fixed inset-0 z-50 lg:hidden', menu ? 'visible' : 'invisible')}>
@@ -160,7 +190,21 @@ function MobileMenu() {
       <aside className={cx('absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col bg-white transition-transform', menu ? 'translate-x-0' : '-translate-x-full')}>
         <div className="flex items-center justify-between border-b border-line p-4"><Logo /><button onClick={() => setMenu(false)} aria-label="Close"><X /></button></div>
         <nav className="flex-1 overflow-y-auto p-4">
-          {NAV.map(([n, to]) => <Link key={n} to={to} onClick={() => setMenu(false)} className="flex items-center justify-between border-b border-line py-3.5 text-[15px] font-medium">{n}<ChevronDown className="size-4 -rotate-90 text-mute" /></Link>)}
+          {items.map(({ name: n, to, sub }) => (
+            <div key={n} className="border-b border-line">
+              <div className="flex items-center">
+                <Link to={to} onClick={close} className="flex-1 py-3.5 text-[15px] font-medium">{n}</Link>
+                {sub.length > 0
+                  ? <button type="button" onClick={() => setOpenSub((o) => (o === n ? null : n))} aria-expanded={openSub === n} aria-label={`${n} sub menu`} className="grid size-9 place-items-center text-mute"><ChevronDown className={cx('size-4 transition', openSub === n && 'rotate-180')} /></button>
+                  : <ChevronDown className="mr-2.5 size-4 -rotate-90 text-mute" />}
+              </div>
+              {sub.length > 0 && openSub === n && (
+                <ul className="mb-3 space-y-0.5 border-l-2 border-tan/40 pl-3">
+                  {sub.map((x) => <li key={x.to}><Link to={x.to} onClick={close} className="block py-2 text-sm text-mute hover:text-tan">{x.name}</Link></li>)}
+                </ul>
+              )}
+            </div>
+          ))}
           <p className="eyebrow mt-6 mb-3">Categories</p>
           <div className="grid grid-cols-3 gap-3">
             {categories.slice(0, 6).map((c) => <Link key={c.slug} to={`/shop?c=${c.slug}`} onClick={() => setMenu(false)} className="space-y-1.5 text-center text-[11px]"><img src={c.image} alt="" className="aspect-square w-full rounded-xl object-cover" />{c.name}</Link>)}
