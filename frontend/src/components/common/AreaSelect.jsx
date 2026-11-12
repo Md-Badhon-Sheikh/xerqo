@@ -26,7 +26,7 @@ export default function AreaSelect({ district, value, onChange, variant = 'store
         variant={variant}
         search
         disabled={!district}
-        placeholder={district ? 'Select area / thana' : 'Select district first'}
+        placeholder={district ? 'Select Thana (Optional)' : 'Select district first'}
         options={district ? options : []}
         value={typing ? OTHER : value || ''}
         onChange={(v) => {

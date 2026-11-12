@@ -339,19 +339,19 @@ export default function Checkout() {
             <h1 className="h-display text-[28px] max-sm:hidden sm:text-[32px] lg:text-[36px]">Checkout</h1>
           </div>
 
-          {/* 1. Contact */}
+          {/* 1. Shipping address: contact + delivery in one block, placeholders instead of labels */}
           <fieldset className="space-y-3">
-            <SectionTitle n={1}>Contact</SectionTitle>
-            <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-              <Field label="Full name *" autoComplete="name" value={contact.name} onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))} error={errors.name} />
-              <Field label="Mobile number *" placeholder="01XXXXXXXXX" inputMode="tel" autoComplete="tel" value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value.replace(/\D/g, '').slice(0, 11) }))} error={errors.phone} help="We'll call this number to confirm your order" />
-              <Field label="Email (optional)" type="email" placeholder="For order updates" className="sm:col-span-2" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} error={errors.email} />
+            <SectionTitle n={1}>Shipping address</SectionTitle>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field placeholder="Your Full Name *" autoComplete="name" value={contact.name} onChange={(e) => setContact((c) => ({ ...c, name: e.target.value }))} error={errors.name} />
+              <Field error={errors.phone}>
+                <div className="flex">
+                  <span className="grid shrink-0 place-items-center rounded-l border border-r-0 border-line bg-sand px-3.5 text-sm font-semibold text-ink">88</span>
+                  <input className={cx('input rounded-l-none', errors.phone && 'border-rust')} placeholder="01XXXXXXXXX *" inputMode="tel" autoComplete="tel" value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value.replace(/\D/g, '').slice(0, 11) }))} />
+                </div>
+              </Field>
+              <Field type="email" placeholder="example@gmail.com (Optional)" className="sm:col-span-2" autoComplete="email" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} error={errors.email} />
             </div>
-          </fieldset>
-
-          {/* 2. Delivery */}
-          <fieldset className="space-y-3">
-            <SectionTitle n={2}>Delivery address</SectionTitle>
             {addressesLoading && <div className="h-20 animate-pulse rounded border border-line bg-white" />}
             {addresses.length > 0 && (
               <div className="grid gap-3 sm:grid-cols-2">
@@ -363,11 +363,11 @@ export default function Checkout() {
               </div>
             )}
             {usingNew && !addressesLoading && (
-              <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
-                <Field label="District *" error={errors.district}><Select2 variant="store" search placeholder="Select district" options={DISTRICT_OPTIONS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
-                <Field label="Area / Thana" error={errors.area}><AreaSelect district={addr.district} value={addr.area} onChange={(area) => setAddr((x) => ({ ...x, area }))} invalid={!!errors.area} /></Field>
-                <Field label="Full address *" className="sm:col-span-2" error={errors.address_line}><textarea rows={3} maxLength={500} placeholder="House, road, block, landmark" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} className={cx('input resize-y', errors.address_line && 'border-rust')} /></Field>
-                {user && <Checkbox label="Save this address to my account" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} />}
+              <div className="grid grid-cols-2 gap-3">
+                <Field className="col-span-2" placeholder="ex: House no. / building / street / area *" maxLength={500} autoComplete="street-address" value={addr.address_line} onChange={(e) => setAddr((x) => ({ ...x, address_line: e.target.value }))} error={errors.address_line} />
+                <Field error={errors.district}><Select2 variant="store" search placeholder="Select District *" options={DISTRICT_OPTIONS} value={addr.district} onChange={(district) => setAddr((x) => ({ ...x, district, area: x.district === district ? x.area : '' }))} invalid={!!errors.district} /></Field>
+                <Field error={errors.area}><AreaSelect district={addr.district} value={addr.area} onChange={(area) => setAddr((x) => ({ ...x, area }))} invalid={!!errors.area} /></Field>
+                {user && <div className="col-span-2"><Checkbox label="Save this address to my account" checked={saveAddress} onChange={(e) => setSaveAddress(e.target.checked)} /></div>}
               </div>
             )}
             {delivery?.district && d && (
@@ -380,7 +380,7 @@ export default function Checkout() {
 
           {/* 3. Billing */}
           <fieldset className="space-y-3">
-            <SectionTitle n={3}>Billing address</SectionTitle>
+            <SectionTitle n={2}>Billing address</SectionTitle>
             <Checkbox label="Same as the delivery address" checked={billingSame} onChange={(e) => setBillingSame(e.target.checked)} />
             {!billingSame && (
               <div className="grid gap-x-4 gap-y-3 sm:grid-cols-2">
@@ -393,7 +393,7 @@ export default function Checkout() {
 
           {/* 4. Payment */}
           <fieldset ref={paymentRef} className="scroll-mt-28 space-y-3">
-            <SectionTitle n={4}>Payment method</SectionTitle>
+            <SectionTitle n={3}>Payment method</SectionTitle>
             <div className="grid grid-cols-2 gap-2.5 sm:gap-3" role="radiogroup" aria-label="Payment method">
               {methods.map((m) => <PayTile key={m.id} m={m} checked={method === m.id} onPick={() => { setMethod(m.id); setErrors({}) }} />)}
             </div>

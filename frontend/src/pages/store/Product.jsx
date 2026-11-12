@@ -214,9 +214,8 @@ function BuyBox({ p, buy, settings, openTab }) {
 }
 
 /* ---------- Details tabs (full width under the product) ---------- */
-function DetailTabs({ p, settings, tab, setTab }) {
-  const delivery = settings?.delivery
-  const tabs = [['description', 'Description'], ['reviews', `Reviews (${p.reviews_count ?? 0})`], ['shipping', 'Shipping & Returns']]
+function DetailTabs({ p, tab, setTab }) {
+  const tabs = [['description', 'Description'], ['reviews', `Reviews (${p.reviews_count ?? 0})`]]
   return (
     <section id="details" className="container-x scroll-mt-28 pt-10 sm:pt-14">
       <div role="tablist" className="no-scrollbar flex gap-6 overflow-x-auto border-b border-line sm:gap-10">
@@ -228,22 +227,8 @@ function DetailTabs({ p, settings, tab, setTab }) {
         ))}
       </div>
       <div role="tabpanel" className="py-6 sm:py-8">
-        {tab === 'description' && (
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)] lg:gap-12">
-            <p className="whitespace-pre-line text-sm leading-relaxed text-mute sm:text-[15px]">{p.description || 'No description yet.'}</p>
-            <div className="h-fit space-y-2 rounded-lg bg-sand p-5 text-[13px] leading-relaxed text-mute sm:text-sm">
-              <p className="font-semibold text-ink">Leather &amp; care</p>
-              <p>Genuine leather from Bangladeshi tanneries. Wipe with a dry cloth, condition every 3–4 months and keep away from direct heat. A natural patina develops over time — that's the leather getting better, not worse.</p>
-            </div>
-          </div>
-        )}
+        {tab === 'description' && <p className="max-w-3xl whitespace-pre-line text-sm leading-relaxed text-mute sm:text-[15px]">{p.description || 'No description yet.'}</p>}
         {tab === 'reviews' && <Reviews p={p} />}
-        {tab === 'shipping' && (
-          <div className="max-w-3xl space-y-3 text-sm leading-relaxed text-mute sm:text-[15px]">
-            {delivery && <p>Inside Dhaka delivery in {delivery.inside_dhaka_eta} ({tk(delivery.inside_dhaka)}), outside Dhaka in {delivery.outside_dhaka_eta} ({tk(delivery.outside_dhaka)}){delivery.free_delivery_threshold > 0 && <> — free on orders over {tk(delivery.free_delivery_threshold)}</>}. Cash on delivery all over Bangladesh.</p>}
-            {settings?.returns?.policy && <p className="whitespace-pre-line">{settings.returns.policy}</p>}
-          </div>
-        )}
       </div>
     </section>
   )
@@ -591,7 +576,7 @@ export default function Product() {
         <div className="lg:sticky lg:top-28 lg:self-start"><Gallery p={p} images={gallery} video={p.video} active={Math.min(active, gallery.length - (p.video ? 0 : 1))} setActive={setActive} /></div>
         <BuyBox p={p} buy={buy} settings={settings} openTab={openTab} />
       </section>
-      <DetailTabs p={p} settings={settings} tab={tab} setTab={setTab} />
+      <DetailTabs p={p} tab={tab} setTab={setTab} />
       <Related items={data.related} category={p.category} />
       <StickyBar buy={buy} />
     </div>
