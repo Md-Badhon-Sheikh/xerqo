@@ -24,9 +24,9 @@ export const Logo = ({ light, className, imgClassName = 'h-10 w-auto sm:h-12 lg:
 )
 
 // "xerqo" wordmark (same drawing as the page-load intro in index.html) — used in the mobile header
-const Wordmark = ({ className }) => (
+const Wordmark = ({ className, svgClassName = 'h-[22px] sm:h-7' }) => (
   <Link to="/" aria-label="XERQO home" className={cx('block shrink-0', className)}>
-    <svg viewBox="100 655 1310 300" className="h-[22px] w-auto text-ink sm:h-7" role="img" aria-label="XERQO">
+    <svg viewBox="100 655 1310 300" className={cx('w-auto text-ink', svgClassName)} role="img" aria-label="XERQO">
       <defs><clipPath id="xq-wordmark-x"><rect x="110" y="688" width="278" height="252" /></clipPath></defs>
       <g fill="none" stroke="currentColor" strokeWidth="36">
         <g clipPath="url(#xq-wordmark-x)"><path d="M127 668 L370 960" /><path d="M370 668 L127 960" /></g>
@@ -180,24 +180,29 @@ function Header() {
 function MobileMenu() {
   const { menu, setMenu } = useUI()
   const { user, logout } = useAuth()
+  // The drawer lists every top-level category (Admin › Categories), not the desktop NAV: Home / About Us /
+  // Contact live in the bottom bar. A category with sub-categories gets an arrow and expands on tap; a
+  // sub-category link opens its products. One without sub-categories is a plain link, no arrow.
   const { data: categories = [] } = useCategories()
-  const items = useNavItems()
+  const items = categories.filter((c) => !c.parent_id).map((c) => ({ name: c.name, to: `/shop?c=${c.slug}`, sub: (c.children ?? []).map((k) => ({ name: k.name, to: `/shop?c=${k.slug}` })) }))
   const [openSub, setOpenSub] = useState(null)
   const close = () => setMenu(false)
   return (
     <div className={cx('fixed inset-0 z-50 lg:hidden', menu ? 'visible' : 'invisible')}>
       <div onClick={() => setMenu(false)} className={cx('absolute inset-0 bg-black/40 transition', menu ? 'opacity-100' : 'opacity-0')} />
       <aside className={cx('absolute inset-y-0 left-0 flex w-[86%] max-w-sm flex-col bg-white transition-transform', menu ? 'translate-x-0' : '-translate-x-full')}>
-        <div className="flex items-center justify-between border-b border-line p-4"><Logo /><button onClick={() => setMenu(false)} aria-label="Close"><X /></button></div>
+        <div className="grid grid-cols-[auto_1fr_auto] items-center border-b border-line bg-cream px-5 py-4">
+          <Logo imgClassName="h-9 w-auto" />
+          <Wordmark svgClassName="h-6" className="justify-self-center" />
+          <button onClick={() => setMenu(false)} aria-label="Close" className="grid size-9 place-items-center rounded-full border border-line bg-white text-ink transition hover:bg-sand"><X className="size-4" /></button>
+        </div>
         <nav className="flex-1 overflow-y-auto p-4">
+          <Link to="/shop" onClick={close} className="block border-b border-line py-3.5 text-[15px] font-medium">Shop</Link>
           {items.map(({ name: n, to, sub }) => (
             <div key={n} className="border-b border-line">
-              <div className="flex items-center">
-                <Link to={to} onClick={close} className="flex-1 py-3.5 text-[15px] font-medium">{n}</Link>
-                {sub.length > 0
-                  ? <button type="button" onClick={() => setOpenSub((o) => (o === n ? null : n))} aria-expanded={openSub === n} aria-label={`${n} sub menu`} className="grid size-9 place-items-center text-mute"><ChevronDown className={cx('size-4 transition', openSub === n && 'rotate-180')} /></button>
-                  : <ChevronDown className="mr-2.5 size-4 -rotate-90 text-mute" />}
-              </div>
+              {sub.length > 0
+                ? <button type="button" onClick={() => setOpenSub((o) => (o === n ? null : n))} aria-expanded={openSub === n} className="flex w-full items-center py-3.5 text-left text-[15px] font-medium"><span className="flex-1">{n}</span><ChevronDown className={cx('mr-2.5 size-4 text-mute transition', openSub === n && 'rotate-180')} /></button>
+                : <Link to={to} onClick={close} className="block py-3.5 text-[15px] font-medium">{n}</Link>}
               {sub.length > 0 && openSub === n && (
                 <ul className="mb-3 space-y-0.5 border-l-2 border-tan/40 pl-3">
                   {sub.map((x) => <li key={x.to}><Link to={x.to} onClick={close} className="block py-2 text-sm text-mute hover:text-tan">{x.name}</Link></li>)}
@@ -205,10 +210,6 @@ function MobileMenu() {
               )}
             </div>
           ))}
-          <p className="eyebrow mt-6 mb-3">Categories</p>
-          <div className="grid grid-cols-3 gap-3">
-            {categories.slice(0, 6).map((c) => <Link key={c.slug} to={`/shop?c=${c.slug}`} onClick={() => setMenu(false)} className="space-y-1.5 text-center text-[11px]"><img src={c.image} alt="" className="aspect-square w-full rounded-xl object-cover" />{c.name}</Link>)}
-          </div>
         </nav>
         <div className="grid grid-cols-2 gap-2 border-t border-line p-4">
           {user ? (
